@@ -98,6 +98,16 @@ def main():
 
     pred_int = int(pred)
 
+    if hasattr(clf, "predict_proba"):
+        probs = clf.predict_proba(X_new)[0]
+        confidence = float(np.max(probs))
+
+        print("\nProbabilidades por clase:")
+        for class_id, prob in enumerate(probs):
+            print(f"  Clase {class_id}: {prob:.4%}")
+
+        print(f"\nConfianza de la predicción: {confidence:.4%}")
+
     print("Clase predicha:", pred_int)
 
     if class_names is not None:
