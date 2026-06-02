@@ -1,58 +1,88 @@
-function parseNumericLine(lineStr) {
-    return lineStr.split(" ").map(valStr => parseInt(valStr, 10));
+function splitInputLikeOriginal(rawInput) {
+  var cleanedInput = rawInput.trim();
+  var copiedInput = cleanedInput.slice();
+
+  return copiedInput
+    .split("\n")
+    .map(function(lineText) {
+      return lineText.split(" ");
+    });
 }
 
-function determineMoveScore(moveChar, scoreLookup) {
-    // scoreLookup corresponds to 'b' in the original: [scissors_score, paper_score, rock_score]
-    // 'r' (rock) maps to scoreLookup[2]
-    // 's' (scissors) maps to scoreLookup[0]
-    // 'p' (paper) maps to scoreLookup[1]
-    switch (moveChar) {
-        case "r":
-            return scoreLookup[2];
-        case "s":
-            return scoreLookup[0];
-        case "p":
-            return scoreLookup[1];
-        default:
-            return 0; // Should not be reached with valid input
+function parseNumberArrayPreservingOriginalBehavior(rowValues) {
+  return rowValues.map(function(valueText) {
+    return parseInt(valueText);
+  });
+}
+
+function readGameData(rawInput) {
+  var table = splitInputLikeOriginal(rawInput);
+
+  var configValues = parseNumberArrayPreservingOriginalBehavior(table[0]);
+  var scoreValues = parseNumberArrayPreservingOriginalBehavior(table[1]);
+  var moveCharacters = table[2][0].split("");
+
+  return {
+    config: configValues,
+    scores: scoreValues,
+    moves: moveCharacters
+  };
+}
+
+function getScoreForMove(moveCharacter, scoreValues) {
+  if (moveCharacter == "r") {
+    return scoreValues[2];
+  }
+
+  if (moveCharacter == "s") {
+    return scoreValues[0];
+  }
+
+  return scoreValues[1];
+}
+
+function buildInitialScoreList(moveCharacters, scoreValues) {
+  return moveCharacters.map(function(moveCharacter) {
+    return getScoreForMove(moveCharacter, scoreValues);
+  });
+}
+
+function eraseRepeatedFutureScores(scoreList, distance) {
+  scoreList.forEach(function(currentScore, currentIndex, allScores) {
+    var comparedIndex = currentIndex + distance;
+
+    if (currentScore == allScores[comparedIndex]) {
+      allScores[comparedIndex] = 0;
     }
+  });
+
+  return scoreList;
 }
 
-function processGameData(rawInputString) {
-    const cleanedLines = rawInputString.trim().split("\n");
-
-    const gameConfiguration = parseNumericLine(cleanedLines[0]);
-    const moveValueMap = parseNumericLine(cleanedLines[1]);
-    const playerMoveSequence = Array.from(cleanedLines[2][0]);
-
-    let roundScoresAccumulator = playerMoveSequence.map(singleMoveChar =>
-        determineMoveScore(singleMoveChar, moveValueMap)
-    );
-
-    const offsetDistance = gameConfiguration[1];
-
-    for (let currentIdx = 0; currentIdx < roundScoresAccumulator.length; currentIdx++) {
-        const scoreAtCurrentPosition = roundScoresAccumulator[currentIdx];
-        const comparisonTargetIdx = currentIdx + offsetDistance;
-
-        // Only proceed if the target index is within the bounds of the array
-        // This replicates the original behavior where out-of-bounds access would result in 'undefined'
-        // and 'scoreAtCurrentPosition == undefined' would always be false (as scores are numbers).
-        if (comparisonTargetIdx < roundScoresAccumulator.length) {
-            const scoreAtTargetPosition = roundScoresAccumulator[comparisonTargetIdx];
-            if (scoreAtCurrentPosition === scoreAtTargetPosition) {
-                roundScoresAccumulator[comparisonTargetIdx] = 0;
-            }
-        }
-    }
-
-    const initialSum = 0;
-    const finalTotalScore = roundScoresAccumulator.reduce((totalSum, currentScoreValue) =>
-        totalSum + currentScoreValue, initialSum
-    );
-
-    console.log(finalTotalScore);
+function sumScores(scoreList) {
+  return scoreList.reduce(function(previousValue, currentValue) {
+    return previousValue + currentValue;
+  }, 0);
 }
 
-processGameData(require("fs").readFileSync("/dev/stdin", "utf8"));
+function solve(rawInput) {
+  var gameData = readGameData(rawInput);
+
+  var repeatDistance = gameData.config[1];
+
+  var initialScores = buildInitialScoreList(
+    gameData.moves,
+    gameData.scores
+  );
+
+  var adjustedScores = eraseRepeatedFutureScores(
+    initialScores,
+    repeatDistance
+  );
+
+  var finalScore = sumScores(adjustedScores);
+
+  console.log(finalScore);
+}
+
+solve(require("fs").readFileSync("/dev/stdin", "utf8"));

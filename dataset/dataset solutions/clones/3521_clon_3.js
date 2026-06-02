@@ -1,23 +1,22 @@
-const processInput = (rawData) => {
-    const parseInputNumbers = (inputString) => {
-        return inputString.split(' ').map(strVal => parseInt(strVal, 10));
-    };
+function processInput(rawInput) {
+    let values = rawInput.split(' ');
+    values = values.map(function (item) {
+        return parseInt(item, 10);
+    });
 
-    let numericValues = parseInputNumbers(rawData);
+    const largestValue = Math.max(...values);
+    values.splice(values.indexOf(largestValue), 1);
 
-    numericValues.sort((a, b) => b - a);
+    const secondLargestValue = Math.max(...values);
+    values.splice(values.indexOf(secondLargestValue), 1);
 
-    const firstLargest = numericValues[0];
-    const secondLargest = numericValues[1];
-    const thirdLargest = numericValues[2];
+    const thirdLargestValue = Math.max(...values);
+    values.splice(values.indexOf(thirdLargestValue), 1);
 
-    const combinedString = String(firstLargest) + String(secondLargest);
-    
-    const combinedParsedInt = parseInt(combinedString, 10);
-    
-    const finalSumResult = combinedParsedInt + thirdLargest;
+    const joinedLargestValues = largestValue.toString() + secondLargestValue.toString();
+    const answer = parseInt(joinedLargestValues, 10) + thirdLargestValue;
 
-    console.log(finalSumResult);
-};
+    console.log(answer);
+}
 
 processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

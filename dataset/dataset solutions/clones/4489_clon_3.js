@@ -1,34 +1,21 @@
-function processInputData(rawDataString) {
-  const stringParts = rawDataString.split(' ');
+function Solve(sourceText) {
+  const pieces = sourceText.split(' ');
+  const numbers = pieces.map(function(value) {
+    const converted = Number(value);
+    return converted;
+  });
 
-  const parsedNumericArray = [];
-  let currentIndex = 0;
-  const totalParts = stringParts.length;
+  const x = numbers[0];
+  const y = numbers[1];
+  const z = numbers[2];
 
-  while (currentIndex < totalParts) {
-    const currentNumStr = stringParts[currentIndex];
-    const numericValue = Number(currentNumStr);
-    parsedNumericArray.push(numericValue);
-    currentIndex++;
-  }
+  const total = x + y + z;
+  const largest = Math.max(...numbers);
+  const answer = total - largest;
 
-  const firstValue = parsedNumericArray[0];
-  const secondValue = parsedNumericArray[1];
-  const thirdValue = parsedNumericArray[2];
-
-  const sumOfAllThree = firstValue + secondValue + thirdValue;
-
-  const maximumValue = Math.max(...parsedNumericArray);
-
-  const computedResult = sumOfAllThree - maximumValue;
-
-  console.log(computedResult);
+  console.log(answer);
 }
 
-const fileSystemModule = require("fs");
-const standardInputFilePath = "/dev/stdin";
-const fileEncoding = "utf8";
-
-const fileContent = fileSystemModule.readFileSync(standardInputFilePath, fileEncoding);
-
-processInputData(fileContent);
+const fs = require("fs");
+const sourceText = fs.readFileSync("/dev/stdin", "utf8");
+Solve(sourceText);

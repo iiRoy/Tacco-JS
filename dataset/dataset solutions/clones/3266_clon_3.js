@@ -1,27 +1,21 @@
-function processInputData(rawInputString) {
-    const inputTokens = rawInputString.split(" ");
+function Main(input) {
+    input = input.split(" ");
 
-    const requiredNumericStrings = ["1", "7", "4", "9"];
-    const requiredValuesSet = new Set(requiredNumericStrings);
+    var hasOne = false;
+    var hasSeven = false;
+    var hasFour = false;
+    var hasNine = false;
 
-    const discoveredValuesSet = new Set();
-
-    const numberOfChecks = 4;
-    for (let currentElementIndex = 0; currentElementIndex < numberOfChecks; currentElementIndex++) {
-        const currentToken = inputTokens[currentElementIndex];
-
-        if (requiredValuesSet.has(currentToken)) {
-            discoveredValuesSet.add(currentToken);
-        }
+    for (var index = 0; index < 4; index++) {
+        if (input[index] === "1") hasOne = true;
+        if (input[index] == "7") hasSeven = true;
+        if (input[index] == "4") hasFour = true;
+        if (input[index] == "9") hasNine = true;
     }
 
-    const areAllRequiredFound = (targetSet, foundSet) => {
-        return foundSet.size === targetSet.size;
-    };
-
-    if (areAllRequiredFound(requiredValuesSet, discoveredValuesSet)) {
-        console.log('YES');
+    if (hasOne && hasSeven && hasNine && hasFour) {
+        console.log("YES");
     }
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

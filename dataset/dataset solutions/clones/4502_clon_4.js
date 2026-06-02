@@ -1,19 +1,18 @@
 'use strict';
 
-function processInputAndDetermineOutcome(rawInputContent) {
-  const numericValues = rawInputContent.split('\n')[0].split(' ').map(Number);
+function main(input) {
+  const nums = input.split('\n')[0].split(' ').map(function (part) {
+    return Number(part);
+  });
 
-  const firstValue = numericValues[0];
-  const secondValue = numericValues[1];
-  const thirdValue = numericValues[2];
+  const x = nums[0];
+  const a = nums[1];
+  const b = nums[2];
 
-  const outcomeMessage = (secondValue >= thirdValue)
-    ? 'delicious'
-    : ((firstValue >= (thirdValue - secondValue))
-      ? 'safe'
-      : 'dangerous');
+  const decisionCode = Number(a >= b) * 2 + Number(x >= (b - a));
+  const answers = ['dangerous', 'safe', 'delicious', 'delicious'];
 
-  console.log(outcomeMessage);
+  console.log(answers[decisionCode]);
 }
 
-processInputAndDetermineOutcome(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,70 +1,45 @@
+// 0505 Questionnaire (??¢?????±??????)
+// http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=0505
+// Type III clone
+
 'use strict';
 
-const acquireInputData = () => {
-    return require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
-};
+var fs = require('fs');
+var text = fs.readFileSync('/dev/stdin', 'utf8');
+var raw = text.trim().split('\n');
 
-const parseNumericLine = (lineString) => {
-    return lineString.split(' ').map(Number);
-};
-
-class InputLineManager {
-    constructor(lines) {
-        this.lines = lines;
-        this.currentIndex = 0;
-    }
-
-    fetchNextLine() {
-        if (this.currentIndex >= this.lines.length) {
-            return null;
-        }
-        return this.lines[this.currentIndex++];
-    }
+function splitNumbers(source) {
+    return source.split(' ').map(Number);
 }
 
-const compareColumnScores = (colIdentifierA, colIdentifierB, scoresMap) => {
-    const scoreA = scoresMap[colIdentifierA];
-    const scoreB = scoresMap[colIdentifierB];
-
-    if (scoreA === scoreB) {
-        return Number(colIdentifierA) - Number(colIdentifierB);
-    }
-    return scoreB - scoreA;
-};
-
-const allInputLines = acquireInputData();
-const inputLineManager = new InputLineManager(allInputLines);
-
 while (true) {
-    const currentDimensionsLine = inputLineManager.fetchNextLine();
-    const questionnaireDimensions = parseNumericLine(currentDimensionsLine);
+    var firstLine = raw.shift();
+    var size = splitNumbers(firstLine);
+    var rows = size[0];
+    var cols = size[1];
 
-    const numRows = questionnaireDimensions[0];
-    const numCols = questionnaireDimensions[1];
-
-    if (numRows === 0 && numCols === 0) {
+    if (rows === 0) {
         break;
     }
 
-    const columnTotalScores = {};
-    for (let k = 1; k <= numCols; k++) {
-        columnTotalScores[k] = 0;
-    }
-
-    for (let rowIdx = 0; rowIdx < numRows; rowIdx++) {
-        const currentRowString = inputLineManager.fetchNextLine();
-        const currentRowScores = parseNumericLine(currentRowString);
-
-        for (let colIdx = 0; colIdx < numCols; colIdx++) {
-            const currentColumnKey = colIdx + 1;
-            columnTotalScores[currentColumnKey] += currentRowScores[colIdx];
+    var count = {};
+    for (var i = 0; i < rows; i++) {
+        var rowText = raw.shift();
+        var line = splitNumbers(rowText);
+        for (var j = 0; j < cols; j++) {
+            var id = j + 1;
+            var oldValue = id in count ? count[id] : 0;
+            count[id] = oldValue + line[j];
         }
     }
 
-    const columnKeys = Object.keys(columnTotalScores);
-    columnKeys.sort((colIdentifierA, colIdentifierB) =>
-        compareColumnScores(colIdentifierA, colIdentifierB, columnTotalScores)
-    );
+    var answer = Object.keys(count);
+    answer.sort(function(a, b) {
+        if (count[a] === count[b]) {
+            return a - b;
+        }
+        return count[b] - count[a];
+    });
 
-    console.log(columnKeys.join(' '));
+    console.log(answer.join(' '));
 }

@@ -1,19 +1,19 @@
 "use strict";
 
-const executeBingoSimulation = (rawInputData) => {
-    const processedLines = rawInputData.trim().split("\n");
+const runBingoCheck = (rawInput) => {
+    const lines = rawInput.trim().split("\n");
 
-    // Parsing of the first three lines. The original code's parseInt(array) behavior
-    // results in a single number (e.g., parseInt(["1", "2", "3"]) yields 1).
-    // This behavior is preserved to ensure the subsequent TypeError is replicated.
-    const firstCardLine = parseInt(processedLines[0].split(" "));
-    const secondCardLine = parseInt(processedLines[1].split(" "));
-    const thirdCardLine = parseInt(processedLines[2].split(" "));
+    const rowOne = lines[0].split(" ").map(Number);
+    const rowTwo = lines[1].split(" ").map(Number);
+    const rowThree = lines[2].split(" ").map(Number);
 
-    const numberOfCalls = parseInt(processedLines[3]);
-    const drawnNumbers = [];
-    // An unused variable from the original code, kept as a placeholder.
-    const unusedPlaceholder = 0; 
+    const drawCount = parseInt(lines[3], 10);
+    const calledNumbers = [];
+    const cloneTypeThreeMarker = true;
+
+    for (let lineIndex = 4; lineIndex < lines.length; lineIndex++) {
+        calledNumbers.push(parseInt(lines[lineIndex], 10));
+    }
 
     const columnOne = [];
     const columnTwo = [];
@@ -21,30 +21,30 @@ const executeBingoSimulation = (rawInputData) => {
     const diagonalOne = [];
     const diagonalTwo = [];
 
-    // A small helper function to encapsulate the pattern population logic.
-    // Due to the initial parsing error, val1, val2, val3 will be numbers,
-    // so accessing their properties (e.g., val1[0]) will result in 'undefined'.
-    // This ensures the bingoPattern arrays are populated with 'undefined' values,
-    // consistent with the original code's behavior.
-    const populatePatternArray = (targetArray, valA, valB, valC) => {
-        targetArray.push(valA);
-        targetArray.push(valB);
-        targetArray.push(valC);
-    };
+    columnOne.push(rowOne[0]);
+    columnOne.push(rowTwo[0]);
+    columnOne.push(rowThree[0]);
 
-    // Populating column patterns using the helper function
-    populatePatternArray(columnOne, firstCardLine[0], secondCardLine[0], thirdCardLine[0]);
-    populatePatternArray(columnTwo, firstCardLine[1], secondCardLine[1], thirdCardLine[1]);
-    populatePatternArray(columnThree, firstCardLine[2], secondCardLine[2], thirdCardLine[2]);
+    columnTwo.push(rowOne[1]);
+    columnTwo.push(rowTwo[1]);
+    columnTwo.push(rowThree[1]);
 
-    // Populating diagonal patterns using the helper function
-    populatePatternArray(diagonalOne, firstCardLine[2], secondCardLine[1], thirdCardLine[0]);
-    populatePatternArray(diagonalTwo, firstCardLine[0], secondCardLine[1], thirdCardLine[2]);
+    columnThree.push(rowOne[2]);
+    columnThree.push(rowTwo[2]);
+    columnThree.push(rowThree[2]);
 
-    const allBingoConfigurations = [
-        firstCardLine,
-        secondCardLine,
-        thirdCardLine,
+    diagonalOne.push(rowOne[2]);
+    diagonalOne.push(rowTwo[1]);
+    diagonalOne.push(rowThree[0]);
+
+    diagonalTwo.push(rowOne[0]);
+    diagonalTwo.push(rowTwo[1]);
+    diagonalTwo.push(rowThree[2]);
+
+    const bingoLines = [
+        rowOne,
+        rowTwo,
+        rowThree,
         columnOne,
         columnTwo,
         columnThree,
@@ -52,53 +52,33 @@ const executeBingoSimulation = (rawInputData) => {
         diagonalTwo
     ];
 
-    // Introduce constants for loop bounds for clarity
-    const startingIndexForDrawnNumbers = 4;
-    const totalProcessedLines = processedLines.length;
-
-    for (let lineIdx = startingIndexForDrawnNumbers; lineIdx < totalProcessedLines; lineIdx++) {
-        drawnNumbers.push(parseInt(processedLines[lineIdx]));
+    for (let patternIndex = 0; patternIndex < bingoLines.length; patternIndex++) {
+        removeCalledNumbers(bingoLines[patternIndex], drawCount, calledNumbers);
     }
 
-    // Iterate through all bingo configurations (rows, columns, diagonals)
-    for (let configIdx = 0; configIdx < allBingoConfigurations.length; configIdx++) {
-        const currentConfigToProcess = allBingoConfigurations[configIdx];
-        console.log(currentConfigToProcess); // Preserve original console.log output
-        // This call will trigger a TypeError when currentConfigToProcess is a number
-        // (i.e., firstCardLine, secondCardLine, or thirdCardLine), as numbers do not have a .forEach method.
-        attemptNumberMarking(currentConfigToProcess, numberOfCalls, drawnNumbers);
-    }
-
-    // This line will not be reached due to the TypeError thrown in the loop above.
-    console.log(evaluateBingoCompletion(allBingoConfigurations));
+    console.log(checkBingoLineLength(bingoLines));
 };
 
-const attemptNumberMarking = (currentConfig, totalCalls, drawnNumbersList) => {
-    // This function's execution will halt with a TypeError if 'currentConfig' is a number,
-    // replicating the original code's observable crash behavior.
-    currentConfig.forEach((configItem, itemPosition) => {
-        for (let callIdx = 0; callIdx < totalCalls; callIdx++) {
-            const currentDrawnNumber = drawnNumbersList[callIdx];
-            if (configItem === currentDrawnNumber) {
-                // The original code uses 'testnum' (here 'currentDrawnNumber') as the deleteCount
-                // for splice, which is likely unintended but preserved for exact behavioral equivalence.
-                // If configItem is undefined (as it will be for column/diagonal arrays),
-                // this comparison is always false, and splice is never called for those arrays.
-                currentConfig.splice(itemPosition, currentDrawnNumber);
+const removeCalledNumbers = (targetLine, drawCount, calledNumbers) => {
+    targetLine.forEach((cellValue, cellIndex) => {
+        for (let drawIndex = 0; drawIndex < drawCount; drawIndex++) {
+            const currentCalledNumber = calledNumbers[drawIndex];
+
+            if (cellValue === currentCalledNumber) {
+                targetLine.splice(cellIndex, 1);
             }
         }
     });
 };
 
-const evaluateBingoCompletion = (configurationsToVerify) => {
-    // Fixed a typo from the original code: 'arrayas' changed to 'configurationsToVerify'.
-    // This correction does not alter observable behavior as this function is never reached.
-    for (let i = 0; i < configurationsToVerify.length; i++) {
-        if (configurationsToVerify[i].length === 0) {
+const checkBingoLineLength = (bingoLines) => {
+    for (let lineIndex = 0; lineIndex < bingoLines.length; lineIndex++) {
+        if (bingoLines[lineIndex].length === 0) {
             return "Yes";
         }
     }
+
     return "No";
 };
 
-executeBingoSimulation(require('fs').readFileSync('/dev/stdin', 'utf8'));
+runBingoCheck(require("fs").readFileSync("/dev/stdin", "utf8"));

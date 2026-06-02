@@ -1,61 +1,73 @@
-function processInput(inputString) {
-  let initialValue = BigInt(inputString);
+const fs = require("fs");
 
-  if (initialValue === 1n) {
-    return '0';
-  }
+function isPrimeNumber(value) {
+    if (value < 2n) return false;
+    if (value === 2n) return true;
+    if (value % 2n === 0n) return false;
 
-  let factorTally = 0;
-  let currentNumber = initialValue;
-  const knownPrimes = [];
-
-  const checkAndFactor = (divisorCandidate) => {
-    let powerAccumulator = divisorCandidate;
-    let foundFactor = false;
-    while (powerAccumulator <= currentNumber) {
-      if (currentNumber % powerAccumulator === 0n) {
-        factorTally++;
-        currentNumber /= powerAccumulator;
-        foundFactor = true;
-      } else {
-        break;
-      }
-      // Prevent overflow for z*=p if N is very large and p is small
-      if (powerAccumulator > currentNumber / divisorCandidate) { // Check before multiplication
-          break;
-      }
-      powerAccumulator *= divisorCandidate;
+    for (let divisor = 3n; divisor * divisor <= value; divisor += 2n) {
+        if (value % divisor === 0n) return false;
     }
-    return foundFactor;
-  };
 
-  const isConsideredPrime = (num, primesList, limit) => {
-    for (const prime of primesList) {
-      if (prime * prime > limit) { // This is the original's specific limit, not num
-        break;
-      }
-      if (num % prime === 0n) {
-        return false;
-      }
-    }
     return true;
-  };
-
-  let candidate = 2n;
-  while (candidate * candidate <= currentNumber || candidate === currentNumber) {
-    if (isConsideredPrime(candidate, knownPrimes, currentNumber)) {
-      knownPrimes.push(candidate);
-      checkAndFactor(candidate);
-    }
-    candidate++;
-  }
-
-  if (factorTally === 0) {
-    factorTally = 1;
-  }
-
-  return factorTally.toString();
 }
 
-const inputData = require("fs").readFileSync("/dev/stdin", "utf8");
-console.log(processInput(inputData));
+function exponentInside(number, base) {
+    let exponent = 0;
+
+    while (number % base === 0n) {
+        exponent++;
+        number /= base;
+    }
+
+    return exponent;
+}
+
+function completeLayers(exponent) {
+    let layers = 0;
+    let required = 1;
+
+    while (exponent >= required) {
+        exponent -= required;
+        layers++;
+        required++;
+    }
+
+    return layers;
+}
+
+function removePower(number, base, exponent) {
+    for (let i = 0; i < exponent; i++) {
+        number /= base;
+    }
+
+    return number;
+}
+
+function solve(input) {
+    let remaining = BigInt(input);
+
+    if (remaining === 1n) return "0";
+
+    let total = 0;
+    let candidate = 2n;
+
+    while (candidate * candidate <= remaining || candidate === remaining) {
+        if (isPrimeNumber(candidate)) {
+            const exponent = exponentInside(remaining, candidate);
+            const layers = completeLayers(exponent);
+
+            if (layers > 0) {
+                total += layers;
+                const consumed = (layers * (layers + 1)) / 2;
+                remaining = removePower(remaining, candidate, consumed);
+            }
+        }
+
+        candidate++;
+    }
+
+    return String(total === 0 ? 1 : total);
+}
+
+console.log(solve(fs.readFileSync("/dev/stdin", "utf8")));

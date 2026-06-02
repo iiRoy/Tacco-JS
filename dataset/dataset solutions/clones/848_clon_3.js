@@ -1,36 +1,28 @@
-const fileSystem = require('fs');
+var input = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const EGG_IDENTIFIER = "egg";
-const CHICKEN_IDENTIFIER = "chicken";
-const E_REPLACEMENT_CHAR = "E";
-const C_REPLACEMENT_CHAR = "C";
-const SPLIT_DELIMITER_CHAR = "A";
-const STANDARD_INPUT_FILE_PATH = '/dev/stdin';
+var trimmed = input.trim();
+var str = trimmed.replace(/egg/g, "E");
+str = str.replace(/chicken/g, "C");
 
-const rawInputData = fileSystem.readFileSync(STANDARD_INPUT_FILE_PATH, 'utf8');
+var expanded = str.replace(/EE/g, "EAE");
+expanded = expanded.replace(/CC/g, "CAC");
 
-const cleanedInputString = rawInputData.trim();
+var ary = expanded.split("A");
+var ans = "";
 
-let firstPassTransformedString = cleanedInputString.replace(new RegExp(EGG_IDENTIFIER, 'g'), E_REPLACEMENT_CHAR);
-firstPassTransformedString = firstPassTransformedString.replace(new RegExp(CHICKEN_IDENTIFIER, 'g'), C_REPLACEMENT_CHAR);
+ary.forEach(function(v){
+   var candidateLength = v.length;
+   var answerLength = ans.length;
+   if(answerLength < candidateLength){
+      ans = v;
+   }
+});
 
-const secondPassTransformedString = firstPassTransformedString
-    .replace(new RegExp(E_REPLACEMENT_CHAR + E_REPLACEMENT_CHAR, 'g'), E_REPLACEMENT_CHAR + SPLIT_DELIMITER_CHAR + E_REPLACEMENT_CHAR)
-    .replace(new RegExp(C_REPLACEMENT_CHAR + C_REPLACEMENT_CHAR, 'g'), C_REPLACEMENT_CHAR + SPLIT_DELIMITER_CHAR + C_REPLACEMENT_CHAR);
-
-const contentSegmentsArray = secondPassTransformedString.split(SPLIT_DELIMITER_CHAR);
-
-const longestContentSegment = contentSegmentsArray.reduce((currentLongest, segment) => {
-    return (segment.length > currentLongest.length) ? segment : currentLongest;
-}, "");
-
-const lastCharacterOfLongest = longestContentSegment.slice(-1);
-let finalOutputMessage;
-
-if (lastCharacterOfLongest === E_REPLACEMENT_CHAR) {
-    finalOutputMessage = EGG_IDENTIFIER;
-} else {
-    finalOutputMessage = CHICKEN_IDENTIFIER;
+var tail = ans.slice(-1);
+var result;
+if(tail == "E"){
+   result = "egg";
+}else{
+   result = "chicken";
 }
-
-console.log(finalOutputMessage);
+console.log(result);

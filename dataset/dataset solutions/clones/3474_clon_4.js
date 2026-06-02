@@ -1,68 +1,83 @@
-const parseNumericValue = (textualItem) => Number(textualItem);
+const fs = require("fs");
 
-const calculateAdjacentAbsoluteSum = (numericSequence) => {
-  if (numericSequence.length < 2) {
-    return 0;
+const lines = fs.readFileSync(0, "utf8").split("\n");
+const total = parseInt(lines[0], 10);
+
+const pending = [];
+for (let i = 0; i < total; i++) {
+  pending.push(parseInt(lines[i + 1], 10));
+}
+
+pending.sort();
+
+function edgeDistance(sequence, value) {
+  return {
+    left: Math.abs(sequence[0] - value),
+    right: Math.abs(sequence[sequence.length - 1] - value)
+  };
+}
+
+function putSmallest(sequence, values, totalCount) {
+  const value = values.shift();
+
+  if (sequence.length === 0) {
+    sequence.push(value);
+    return;
   }
-  return numericSequence.slice(0, numericSequence.length - 1).reduce((accumulator, currentElement, index) => {
-    return accumulator + Math.abs(currentElement - numericSequence[index + 1]);
-  }, 0);
-};
 
-const processSequenceArrangement = (rawDataInput) => {
-  const allNumericData = rawDataInput.match(/\d+/g).map(parseNumericValue);
-  const elementQuantity = allNumericData[0];
-  const availableNumbers = allNumericData.slice(1, 1 + elementQuantity);
+  const distance = edgeDistance(sequence, value);
 
-  availableNumbers.sort((first, second) => first - second);
-
-  const arrangedCollection = [];
-
-  let currentProcessingState = 'takeSmallest';
-
-  while (arrangedCollection.length < elementQuantity) {
-    if (currentProcessingState === 'takeSmallest') {
-      if (arrangedCollection.length === 0) {
-        arrangedCollection.push(availableNumbers.shift());
-      } else {
-        const candidateSmallest = availableNumbers[0];
-        const diffFromStart = Math.abs(arrangedCollection[0] - candidateSmallest);
-        const diffFromEnd = Math.abs(arrangedCollection[arrangedCollection.length - 1] - candidateSmallest);
-
-        if (diffFromStart > diffFromEnd) {
-          arrangedCollection.unshift(availableNumbers.shift());
-          if (arrangedCollection.length !== elementQuantity) {
-            arrangedCollection.push(availableNumbers.shift());
-          }
-        } else {
-          arrangedCollection.push(availableNumbers.shift());
-          if (arrangedCollection.length !== elementQuantity) {
-            arrangedCollection.unshift(availableNumbers.shift());
-          }
-        }
-      }
-      currentProcessingState = 'takeLargest';
-    } else {
-      const candidateLargest = availableNumbers[availableNumbers.length - 1];
-      const diffFromStart = Math.abs(arrangedCollection[0] - candidateLargest);
-      const diffFromEnd = Math.abs(arrangedCollection[arrangedCollection.length - 1] - candidateLargest);
-
-      if (diffFromStart > diffFromEnd) {
-        arrangedCollection.unshift(availableNumbers.pop());
-        if (arrangedCollection.length !== elementQuantity) {
-          arrangedCollection.push(availableNumbers.pop());
-        }
-      } else {
-        arrangedCollection.push(availableNumbers.pop());
-        if (arrangedCollection.length !== elementQuantity) {
-          arrangedCollection.unshift(availableNumbers.pop());
-        }
-      }
-      currentProcessingState = 'takeSmallest';
+  if (distance.left > distance.right) {
+    sequence.unshift(value);
+    if (sequence.length !== totalCount) {
+      sequence.push(values.shift());
+    }
+  } else {
+    sequence.push(value);
+    if (sequence.length !== totalCount) {
+      sequence.unshift(values.shift());
     }
   }
+}
 
-  console.log(calculateAdjacentAbsoluteSum(arrangedCollection));
-};
+function putLargest(sequence, values, totalCount) {
+  const value = values.pop();
+  const distance = edgeDistance(sequence, value);
 
-processSequenceArrangement(require("node:fs").readFileSync(0, "utf8"));
+  if (distance.left > distance.right) {
+    sequence.unshift(value);
+    if (sequence.length !== totalCount) {
+      sequence.push(values.pop());
+    }
+  } else {
+    sequence.push(value);
+    if (sequence.length !== totalCount) {
+      sequence.unshift(values.pop());
+    }
+  }
+}
+
+function adjacentSum(sequence) {
+  let totalDistance = 0;
+
+  for (let i = 0; i + 1 < sequence.length; i++) {
+    totalDistance += Math.abs(sequence[i] - sequence[i + 1]);
+  }
+
+  return totalDistance;
+}
+
+const arranged = [];
+let takeSmall = true;
+
+while (arranged.length < total) {
+  if (takeSmall) {
+    putSmallest(arranged, pending, total);
+  } else {
+    putLargest(arranged, pending, total);
+  }
+
+  takeSmall = !takeSmall;
+}
+
+console.log(adjacentSum(arranged));

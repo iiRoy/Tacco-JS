@@ -2,147 +2,172 @@ const EMPTY_CELL = ".";
 const WALL_CELL = "#";
 const BRICK_CELL = "*";
 
-const isEmptyCell = (cellValue) => cellValue === EMPTY_CELL;
-const isWallCell = (cellValue) => cellValue === WALL_CELL;
-const isBrickCell = (cellValue) => cellValue === BRICK_CELL;
+const isEmptyCell = cellValue => cellValue === EMPTY_CELL;
+const isWallCell = cellValue => cellValue === WALL_CELL;
+const isBrickCell = cellValue => cellValue === BRICK_CELL;
 
-function updateTankPosition(deltaY, deltaX, tankChar, gameGrid, tankCoords){
-   const currentTankY = tankCoords[0];
-   const currentTankX = tankCoords[1];
-   const targetY = currentTankY + deltaY;
-   const targetX = currentTankX + deltaX;
+function updateTankPosition(deltaY, deltaX, tankChar, gameGrid, tankCoords) {
+    const currentY = tankCoords[0];
+    const currentX = tankCoords[1];
 
-   if(isEmptyCell(gameGrid[targetY][targetX])){
-      gameGrid[targetY][targetX] = tankChar;
-      gameGrid[currentTankY][currentTankX] = EMPTY_CELL;
-      tankCoords[0] = targetY;
-      tankCoords[1] = targetX;
-   } else {
-     gameGrid[currentTankY][currentTankX] = tankChar;
-   }
+    const nextY = currentY + deltaY;
+    const nextX = currentX + deltaX;
+
+    if (isEmptyCell(gameGrid[nextY][nextX])) {
+        gameGrid[nextY][nextX] = tankChar;
+        gameGrid[currentY][currentX] = EMPTY_CELL;
+
+        tankCoords[0] += deltaY;
+        tankCoords[1] += deltaX;
+    } else {
+        gameGrid[currentY][currentX] = tankChar;
+    }
 }
 
-function fireProjectile(deltaY, deltaX, gameGrid, tankCoords){
-   const MAX_SHOT_DISTANCE = 200;
+function fireProjectile(deltaY, deltaX, gameGrid, tankCoords) {
+    let step = 0;
 
-   for(let stepCount = 1; stepCount <= MAX_SHOT_DISTANCE; stepCount++){
-      const projectileY = tankCoords[0] + (deltaY * stepCount);
-      const projectileX = tankCoords[1] + (deltaX * stepCount);
+    while (true) {
+        step++;
 
-      if (projectileY < 0 || projectileX < 0 || projectileY >= gameGrid.length || projectileX >= gameGrid[0].length) {
-          break;
-      }
+        const targetY = tankCoords[0] + deltaY * step;
+        const targetX = tankCoords[1] + deltaX * step;
 
-      const targetCell = gameGrid[projectileY][projectileX];
-
-      if(isWallCell(targetCell)) {
-          break;
-      } else if(isBrickCell(targetCell)) {
-          gameGrid[projectileY][projectileX] = EMPTY_CELL;
-          break;
-      }
-   }
+        if (isWallCell(gameGrid[targetY][targetX])) {
+            break;
+        } else if (isBrickCell(gameGrid[targetY][targetX])) {
+            gameGrid[targetY][targetX] = EMPTY_CELL;
+            break;
+        }
+    }
 }
 
-function processRawInput(rawString) {
-    return rawString
+function normalizeInputDirections(sourceText) {
+    return sourceText
         .replace(/\^/g, "U")
         .replace(/v/g, "D")
         .replace(/\</g, "L")
         .replace(/\>/g, "R");
 }
 
-const createGridBorderRow = (length = 20) => Array(length).fill(WALL_CELL);
-
-function findTankInRow(rowChars) {
-    const tankDirections = ["U", "D", "L", "R"];
-    for (let i = 0; i < rowChars.length; i++) {
-        if (tankDirections.includes(rowChars[i])) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-function formatFinalGridForOutput(gridString) {
-    return gridString
+function restoreOutputDirections(sourceText) {
+    return sourceText
         .replace(/U/g, "^")
         .replace(/D/g, "v")
         .replace(/L/g, "<")
         .replace(/R/g, ">");
 }
 
-const fs = require('fs');
-let rawInputData = fs.readFileSync('/dev/stdin', 'utf8');
+function createBorderRow() {
+    return "####################".split("");
+}
 
-let processedInput = processRawInput(rawInputData);
-let inputLines = processedInput.trim().split("\n");
+function findTankColumn(rowChars) {
+    let foundColumn = -1;
 
-let testCaseCount = parseInt(inputLines.shift(), 10);
+    rowChars.forEach(function (cellValue, cellIndex) {
+        if (
+            cellValue === "U" ||
+            cellValue === "D" ||
+            cellValue === "L" ||
+            cellValue === "R"
+        ) {
+            foundColumn = cellIndex;
+        }
+    });
 
-for(let caseIndex = 0; caseIndex < testCaseCount; caseIndex++){
-   if(caseIndex !== 0) {
-       console.log("");
-   }
+    return foundColumn;
+}
 
-   const [gridHeight, gridWidth] = inputLines.shift().split(" ").map(Number);
+const directionDelta = {
+    U: [-1, 0],
+    D: [1, 0],
+    L: [0, -1],
+    R: [0, 1]
+};
 
-   let gameGrid = [];
-   gameGrid.push(createGridBorderRow());
+let input = require("fs").readFileSync("/dev/stdin", "utf8");
+input = normalizeInputDirections(input);
 
-   let tankCoords = [0,0];
+const lines = input.trim().split("\n");
+const testCases = lines.shift() - 0;
 
-   for(let rowIndex = 0; rowIndex < gridHeight; rowIndex++){
-      let currentRowChars = inputLines.shift().split("");
-      const foundTankCol = findTankInRow(currentRowChars);
+for (let caseIndex = 0; caseIndex < testCases; caseIndex++) {
+    if (caseIndex !== 0) {
+        console.log("");
+    }
 
-      if(foundTankCol !== -1) {
-          tankCoords = [rowIndex + 1, foundTankCol + 1];
-      }
-      currentRowChars.unshift(WALL_CELL);
-      currentRowChars.push(WALL_CELL);
-      gameGrid.push(currentRowChars);
-   }
+    const hw = lines.shift().split(" ").map(Number);
+    const gridHeight = hw[0];
 
-   gameGrid.push(createGridBorderRow());
+    const gameGrid = [];
+    gameGrid.push(createBorderRow());
 
-   inputLines.shift();
+    const tankCoords = [0, 0];
 
-   const commandSequence = inputLines.shift().split("");
+    for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
+        const rowChars = lines.shift().split("");
+        const tankColumn = findTankColumn(rowChars);
 
-   const shotDirectionMap = {
-       "U": [-1, 0],
-       "D": [1, 0],
-       "L": [0, -1],
-       "R": [0, 1]
-   };
+        if (tankColumn !== -1) {
+            tankCoords[0] = rowIndex + 1;
+            tankCoords[1] = tankColumn + 1;
+        }
 
-   for (const currentCommand of commandSequence) {
-      const tankCurrentY = tankCoords[0];
-      const tankCurrentX = tankCoords[1];
-      const tankDirectionChar = gameGrid[tankCurrentY][tankCurrentX];
+        rowChars.unshift(WALL_CELL);
+        rowChars.push(WALL_CELL);
 
-      switch(currentCommand) {
-          case "U":
-          case "D":
-          case "L":
-          case "R":
-              updateTankPosition(shotDirectionMap[currentCommand][0], shotDirectionMap[currentCommand][1], currentCommand, gameGrid, tankCoords);
-              break;
-          case "S":
-              const [shotDeltaY, shotDeltaX] = shotDirectionMap[tankDirectionChar] || [0,0];
-              fireProjectile(shotDeltaY, shotDeltaX, gameGrid, tankCoords);
-              break;
-      }
-   }
+        gameGrid.push(rowChars);
+    }
 
-   gameGrid.shift();
-   gameGrid.pop();
+    gameGrid.push(createBorderRow());
 
-   const gridRowsWithoutInternalCommas = gameGrid.map(row => row.join(""));
-   let finalOutputGridString = gridRowsWithoutInternalCommas.join("\n");
+    lines.shift();
 
-   finalOutputGridString = finalOutputGridString.replace(/^#|#$/mg, "");
+    const commandSequence = lines.shift().split("");
 
-   console.log(formatFinalGridForOutput(finalOutputGridString));
+    commandSequence.forEach(function (commandChar) {
+        if (
+            commandChar === "U" ||
+            commandChar === "D" ||
+            commandChar === "L" ||
+            commandChar === "R"
+        ) {
+            const moveDelta = directionDelta[commandChar];
+            updateTankPosition(
+                moveDelta[0],
+                moveDelta[1],
+                commandChar,
+                gameGrid,
+                tankCoords
+            );
+        } else if (commandChar === "S") {
+            const currentDirection = gameGrid[tankCoords[0]][tankCoords[1]];
+
+            if (
+                currentDirection === "U" ||
+                currentDirection === "D" ||
+                currentDirection === "L" ||
+                currentDirection === "R"
+            ) {
+                const shotDelta = directionDelta[currentDirection];
+                fireProjectile(
+                    shotDelta[0],
+                    shotDelta[1],
+                    gameGrid,
+                    tankCoords
+                );
+            }
+        }
+    });
+
+    gameGrid.shift();
+    gameGrid.pop();
+
+    const answer = gameGrid
+        .join("\n")
+        .replace(/\,/g, "")
+        .replace(/^#|#$/mg, "");
+
+    console.log(restoreOutputDirections(answer));
 }

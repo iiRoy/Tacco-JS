@@ -1,62 +1,132 @@
-function processGraphData(inputString) {
-    const inputLines = inputString.split('\n');
+/*
+ * ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+ * ┃ メンバー: 吉田芽依, 山田樹, 渡辺琴音, 小林健太                       ┃
+ * ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ */
 
-    const [nodeCount, edgeCount] = inputLines[0].split(' ').map(Number);
-
-    const targetNodes = inputLines[1].split(' ').map(Number);
-
-    const graphEdges = [];
-    for (let edgeIndex = 0; edgeIndex < edgeCount; edgeIndex++) {
-        graphEdges.push(inputLines[edgeIndex + 2].split(' ').map(Number));
-    }
-
-    let reachableTargetCount = 0;
-
-    const NODE_ID_OFFSET = 1;
-
-    const findConnectedNeighbor = (currentNodeId, edgePair) => {
-        const [nodeA, nodeB] = edgePair;
-        if (nodeA === currentNodeId) {
-            return nodeB;
-        } else if (nodeB === currentNodeId) {
-            return nodeA;
-        }
-        return null;
-    };
-
-    for (let startNodeZeroBasedIndex = 0; startNodeZeroBasedIndex < nodeCount; startNodeZeroBasedIndex++) {
-        const initialTraversalNode = startNodeZeroBasedIndex + NODE_ID_OFFSET;
-        const targetNodeForCurrentTraversal = targetNodes[startNodeZeroBasedIndex];
-
-        const traversalQueue = [initialTraversalNode];
-        const visitedNodesInTraversal = new Set();
-        visitedNodesInTraversal.add(initialTraversalNode);
-
-        let currentQueuePointer = 0;
-        let targetWasReached = false;
-
-        while (currentQueuePointer < traversalQueue.length) {
-            const currentNodeBeingExplored = traversalQueue[currentQueuePointer++];
-
-            if (currentNodeBeingExplored === targetNodeForCurrentTraversal) {
-                reachableTargetCount++;
-                targetWasReached = true;
-                break;
-            }
-
-            for (let edgeIdx = 0; edgeIdx < edgeCount; edgeIdx++) {
-                const currentEdge = graphEdges[edgeIdx];
-                const neighborNode = findConnectedNeighbor(currentNodeBeingExplored, currentEdge);
-
-                if (neighborNode !== null && !visitedNodesInTraversal.has(neighborNode)) {
-                    visitedNodesInTraversal.add(neighborNode);
-                    traversalQueue.push(neighborNode);
-                }
-            }
-        }
-    }
-
-    console.log(reachableTargetCount);
+function parseIntegerLine(lineText) {
+  return lineText.split(' ').map(function (value) {
+    return parseInt(value, 10);
+  });
 }
 
-processGraphData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+function readProblemData(rawInput) {
+  var lines = rawInput.split('\n');
+
+  var headerValues = parseIntegerLine(lines[0]);
+  var N = headerValues[0];
+  var M = headerValues[1];
+
+  var targetNodes = parseIntegerLine(lines[1]);
+
+  var edges = [];
+  for (var edgeIndex = 0; edgeIndex < M; edgeIndex++) {
+    var edgeValues = parseIntegerLine(lines[edgeIndex + 2]);
+
+    edges.push({
+      from: edgeValues[0],
+      to: edgeValues[1]
+    });
+  }
+
+  return {
+    nodeCount: N,
+    edgeCount: M,
+    targetNodes: targetNodes,
+    edges: edges
+  };
+}
+
+function getNeighborThroughEdge(currentNode, edge) {
+  if (edge.from === currentNode) {
+    return edge.to;
+  }
+
+  if (edge.to === currentNode) {
+    return edge.from;
+  }
+
+  return null;
+}
+
+function collectNeighbors(currentNode, edges, edgeCount) {
+  var neighbors = [];
+
+  for (var edgeIndex = 0; edgeIndex < edgeCount; edgeIndex++) {
+    var neighbor = getNeighborThroughEdge(currentNode, edges[edgeIndex]);
+
+    if (neighbor !== null) {
+      neighbors.push(neighbor);
+    }
+  }
+
+  return neighbors;
+}
+
+function hasAlreadyAppeared(nodeList, candidateNode) {
+  return nodeList.indexOf(candidateNode) !== -1;
+}
+
+function canReachTargetNode(startNode, targetNode, edges, edgeCount) {
+  var queue = [startNode];
+  var visited = [startNode];
+  var queuePosition = 0;
+
+  while (queuePosition < queue.length) {
+    var currentNode = queue[queuePosition];
+
+    if (currentNode === targetNode) {
+      return true;
+    }
+
+    var neighbors = collectNeighbors(currentNode, edges, edgeCount);
+
+    for (var neighborIndex = 0; neighborIndex < neighbors.length; neighborIndex++) {
+      var nextNode = neighbors[neighborIndex];
+
+      if (!hasAlreadyAppeared(visited, nextNode)) {
+        visited.push(nextNode);
+        queue.push(nextNode);
+
+        if (nextNode === targetNode) {
+          return true;
+        }
+      }
+    }
+
+    queuePosition++;
+  }
+
+  return false;
+}
+
+function countNodesThatReachTheirTarget(problemData) {
+  var count = 0;
+
+  for (var nodeIndex = 0; nodeIndex < problemData.nodeCount; nodeIndex++) {
+    var startNode = nodeIndex + 1;
+    var targetNode = problemData.targetNodes[nodeIndex];
+
+    if (
+      canReachTargetNode(
+        startNode,
+        targetNode,
+        problemData.edges,
+        problemData.edgeCount
+      )
+    ) {
+      count++;
+    }
+  }
+
+  return count;
+}
+
+function main(input) {
+  var problemData = readProblemData(input);
+  var answer = countNodesThatReachTheirTarget(problemData);
+
+  console.log(answer);
+}
+
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

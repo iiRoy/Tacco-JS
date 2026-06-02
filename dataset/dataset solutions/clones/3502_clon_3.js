@@ -1,31 +1,25 @@
-function processInput(rawData) {
-    function transformDigit(digitChar) {
-        let currentTransformedValue;
-        switch (digitChar) {
-            case '1':
-                currentTransformedValue = '9';
-                break;
-            case '9':
-                currentTransformedValue = '1';
-                break;
-            default:
-                currentTransformedValue = digitChar;
-                break;
-        }
-        return currentTransformedValue;
+function Ejecutar(entrada){
+  function cambia(valor){
+    var salida = valor;
+    if(valor == 1){
+      salida = "9";
+      return salida;
     }
-
-    const inputSegments = [rawData[0], rawData[1], rawData[2]];
-    let intermediateTransformedSegments = [];
-
-    for (let segmentIndex = 0; segmentIndex < inputSegments.length; segmentIndex++) {
-        const currentSegmentChar = inputSegments[segmentIndex];
-        const processedSegmentChar = transformDigit(currentSegmentChar);
-        intermediateTransformedSegments.push(processedSegmentChar);
+    if(valor == 9){
+      salida = "1";
+      return salida;
     }
+    return salida;
+  }
 
-    const finalOutputString = intermediateTransformedSegments.join('');
-    return finalOutputString;
+  var primero = cambia(entrada[0]);
+  var segundo = cambia(entrada[1]);
+  var tercero = cambia(entrada[2]);
+
+  resultado = primero + segundo;
+  resultado = resultado + tercero;
+
+  return resultado;
 }
 
-console.log(processInput(require("fs").readFileSync("/dev/stdin", "utf8")));
+console.log(Ejecutar(require("fs").readFileSync("/dev/stdin", "utf8")));

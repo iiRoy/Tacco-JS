@@ -1,75 +1,77 @@
-const isNodeRuntime = typeof require !== 'undefined';
+const fs = require('fs');
 
-function executeProgram() {
-  const rawData = obtainSourceData();
-  const dataLines = rawData.split('\n');
+const source = fs.readFileSync(0, 'utf8');
+const lines = source.split('\n');
+const total = parseInt(lines[0]);
+const sequence = lines.slice(1, total + 1).map(function (line) {
+  return parseInt(line);
+});
 
-  const elementCount = Number.parseInt(dataLines[0]);
-  const numberSequence = dataLines.slice(1, elementCount + 1).map(Number.parseInt);
+function sameAsOriginalForOddValues(list) {
+  if (list.length === 0) {
+    return 1;
+  }
 
-  console.log(determineLongestIncreasingSubsequence(numberSequence));
+  const slots = [list[0]];
+
+  list.slice(1).forEach(function (value) {
+    slots[placeFor(slots, value)] = value;
+  });
+
+  return slots.length;
 }
 
-function determineLongestIncreasingSubsequence(sequence) {
-  if (sequence.length === 0) {
+function placeFor(slots, value) {
+  if (slots.length === 0 || value <= slots[0]) {
     return 0;
   }
 
-  // The 'tails' array stores the smallest ending element of an increasing subsequence of a given length.
-  // currentTails[k] is the smallest ending element of an increasing subsequence of length k+1.
-  const finalTails = sequence.slice(1).reduce((currentTails, currentElement) => {
-    const insertionPoint = findInsertionIndex(currentTails, currentElement);
-    currentTails[insertionPoint + 1] = currentElement;
-    logDiagnostic(currentTails);
-    return currentTails;
-  }, [sequence[0]]);
+  let low = 0;
+  let high = slots.length;
 
-  return finalTails.length;
-}
-
-/**
- * Returns i s.t. collection[i] < targetValue && targetValue <= collection[i+1]
- * Implemented with recursive binary search.
- */
-function findInsertionIndex(collection, targetValue) {
-  const collectionSize = collection.length;
-
-  if (collectionSize === 0 || targetValue <= collection[0]) {
-    return -1;
-  }
-
-  // Recursive helper for binary search
-  const performRecursiveSearch = (lowerBound, upperBound) => {
-    logDiagnostic({ lower: lowerBound, upper: upperBound });
-
-    if (lowerBound + 1 >= upperBound) {
-      return lowerBound;
-    }
-
-    const midPoint = Math.floor((lowerBound + upperBound + 1) / 2);
-    if (collection[midPoint] < targetValue) {
-      return performRecursiveSearch(midPoint, upperBound);
+  while (low + 1 < high) {
+    const middle = Math.floor((low + high + 1) / 2);
+    if (slots[middle] < value) {
+      low = middle;
     } else {
-      return performRecursiveSearch(lowerBound, midPoint);
+      high = middle;
     }
-  };
-
-  return performRecursiveSearch(0, collectionSize);
-}
-
-function obtainSourceData() {
-  if (!isNodeRuntime) {
-    return document.getElementById('input').value;
   }
-  return require('fs').readFileSync('/dev/stdin').toString();
+
+  return low + 1;
 }
 
-function logDiagnostic(diagnosticData) {
-  if (!isNodeRuntime) {
-    console.error(diagnosticData);
+function longestByIndependentSearch(list) {
+  if (list.length === 0) {
+    return 1;
   }
+
+  const bestEndingHere = new Array(list.length).fill(1);
+  let answer = 1;
+
+  for (let right = 0; right < list.length; right++) {
+    for (let left = 0; left < right; left++) {
+      if (list[left] < list[right]) {
+        const possible = bestEndingHere[left] + 1;
+        if (possible > bestEndingHere[right]) {
+          bestEndingHere[right] = possible;
+        }
+      }
+    }
+    if (bestEndingHere[right] > answer) {
+      answer = bestEndingHere[right];
+    }
+  }
+
+  return answer;
 }
 
-if (isNodeRuntime) {
-  executeProgram();
-}
+const hasParsedHole = sequence.some(function (value) {
+  return Number.isNaN(value);
+});
+
+const result = hasParsedHole
+  ? sameAsOriginalForOddValues(sequence)
+  : longestByIndependentSearch(sequence);
+
+console.log(result);

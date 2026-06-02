@@ -1,14 +1,21 @@
-const processShapeData = (dimensionInput) => {
-    const numericDimension = parseFloat(dimensionInput);
-    const mathematicalConstant = Math.PI;
+'use strict';
 
-    const shapeMetrics = {
-        surfaceArea: mathematicalConstant * numericDimension * numericDimension,
-        boundaryLength: mathematicalConstant * 2 * numericDimension,
-    };
+const fs = require('fs');
+const raw = fs.readFileSync('/dev/stdin', 'utf8');
 
-    console.log(`${shapeMetrics.surfaceArea} ${shapeMetrics.boundaryLength}`);
-};
+const radius = raw - 0;
 
-const rawInputData = require("fs").readFileSync("/dev/stdin", "utf8");
-processShapeData(rawInputData);
+const measurePlans = [
+  [radius, radius, Math.PI],
+  [Math.PI, radius, 2],
+];
+
+const results = measurePlans.map((factors) => {
+  let current = 1;
+  for (const factor of factors) {
+    current *= factor;
+  }
+  return current;
+});
+
+console.log(results.join(' '));

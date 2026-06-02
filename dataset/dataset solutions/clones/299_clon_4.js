@@ -1,55 +1,48 @@
-const fileSystem = require('fs');
-
-let rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
-let inputLines = rawData.trim().split("\n");
-
-function calculateSquareExtent(rowCoord, colCoord, currentGrid, gridDimension) {
-    if (rowCoord < 0 || colCoord < 0 || rowCoord >= gridDimension || colCoord >= gridDimension) {
-        return 0;
-    }
-
-    if (typeof currentGrid[rowCoord][colCoord] === 'number') {
-        return currentGrid[rowCoord][colCoord];
-    }
-
-    if (currentGrid[rowCoord][colCoord] === '*') {
-        currentGrid[rowCoord][colCoord] = 0;
-        return 0;
-    }
-
-    if (rowCoord === 0 || colCoord === 0) {
-        currentGrid[rowCoord][colCoord] = 1;
-        return 1;
-    }
-
-    const extentTopLeft = calculateSquareExtent(rowCoord - 1, colCoord - 1, currentGrid, gridDimension);
-    const extentTop = calculateSquareExtent(rowCoord - 1, colCoord, currentGrid, gridDimension);
-    const extentLeft = calculateSquareExtent(rowCoord, colCoord - 1, currentGrid, gridDimension);
-
-    const result = 1 + Math.min(extentTopLeft, extentTop, extentLeft);
-    currentGrid[rowCoord][colCoord] = result;
-    return result;
-}
+var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+var Arr = (input.trim()).split("\n");
 
 while (true) {
-    let dimension = parseInt(inputLines.shift(), 10);
-    if (dimension === 0) {
-        break;
-    }
+   var n = Arr.shift() - 0;
+   if (n == 0) break;
 
-    let largestSquareSide = 0;
-    let gridData = [];
+   var yx = [];
+   for (var i = 0; i < n; i++) {
+      var str = Arr.shift();
+      yx.push(str.split(""));
+   }
 
-    for (let i = 0; i < dimension; i++) {
-        let lineContent = inputLines.shift();
-        gridData.push(lineContent.split(""));
-    }
+   var blocked = [];
+   blocked[0] = [];
+   blocked[0][0] = 0;
 
-    for (let rowCoord = 0; rowCoord < dimension; rowCoord++) {
-        for (let colCoord = 0; colCoord < dimension; colCoord++) {
-            const currentCellExtent = calculateSquareExtent(rowCoord, colCoord, gridData, dimension);
-            largestSquareSide = Math.max(largestSquareSide, currentCellExtent);
-        }
-    }
-    console.log(largestSquareSide);
+   for (var y = 0; y < n; y++) {
+      if (!blocked[y + 1]) blocked[y + 1] = [];
+      if (blocked[y + 1][0] === undefined) blocked[y + 1][0] = 0;
+      for (var x = 0; x < n; x++) {
+         var above = blocked[y] && blocked[y][x + 1] !== undefined ? blocked[y][x + 1] : 0;
+         var left = blocked[y + 1][x] !== undefined ? blocked[y + 1][x] : 0;
+         var diagonal = blocked[y] && blocked[y][x] !== undefined ? blocked[y][x] : 0;
+         blocked[y + 1][x + 1] = above + left - diagonal + (yx[y][x] == "*" ? 1 : 0);
+      }
+   }
+
+   var max = 0;
+   for (var side = Math.ceil(n); side >= 1; side--) {
+      var found = false;
+      for (var bottom = side; bottom <= n && !found; bottom++) {
+         for (var right = side; right <= n; right++) {
+            var top = bottom - side;
+            var left = right - side;
+            var total = blocked[bottom][right] - blocked[top][right] - blocked[bottom][left] + blocked[top][left];
+            if (total === 0) {
+               max = side;
+               found = true;
+               break;
+            }
+         }
+      }
+      if (found) break;
+   }
+
+   console.log(max);
 }

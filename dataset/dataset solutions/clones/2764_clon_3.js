@@ -1,52 +1,81 @@
 "use strict";
 
-function parseLineOfNumbers(lineString) {
-    return lineString.split(" ").map(Number);
+function splitInputLikeOriginal(rawInput) {
+  return rawInput.trim().split("\n");
 }
 
-function calculateSquaredEuclideanDistance(pointA, pointB) {
-    let sumOfSquaredDifferences = 0;
-    // Assuming both points have the same number of dimensions
-    for (let dimIndex = 0; dimIndex < pointA.length; dimIndex++) {
-        const coordinateDifference = pointA[dimIndex] - pointB[dimIndex];
-        sumOfSquaredDifferences += coordinateDifference * coordinateDifference;
-    }
-    return sumOfSquaredDifferences;
+function parseHeaderValues(headerLine) {
+  const pieces = headerLine.split(" ");
+
+  return {
+    N: parseInt(pieces[0]),
+    D: parseInt(pieces[1])
+  };
 }
 
-function isPerfectSquare(value) {
-    if (value < 0) {
-        return false; // Square root of a negative number is not real
-    }
-    const sqrtResult = Math.sqrt(value);
-    return sqrtResult % 1 === 0; // Check if the square root is an integer
+function extractPointLines(inputLines, totalPoints) {
+  return inputLines.slice(1, totalPoints + 1);
 }
 
-const calculateIntegerDistances = (rawInputString) => {
-    const inputLines = rawInputString.trim().split("\n");
+function parsePointCoordinates(pointLine) {
+  const rawValues = pointLine.split(" ");
+  const coordinates = [];
 
-    const [numPoints, dimensions] = parseLineOfNumbers(inputLines[0]);
-    
-    const pointDataStrings = inputLines.slice(1, numPoints + 1);
-    const parsedPoints = pointDataStrings.map(parseLineOfNumbers);
+  for (let index = 0; index < rawValues.length; index++) {
+    coordinates.push(parseInt(rawValues[index]));
+  }
 
-    let integerDistancePairsCount = 0;
-    
-    for (let pointIndexA = 0; pointIndexA < numPoints; pointIndexA++) {
-        const currentPointCoords = parsedPoints[pointIndexA];
-        
-        for (let pointIndexB = pointIndexA + 1; pointIndexB < numPoints; pointIndexB++) {
-            const targetPointCoords = parsedPoints[pointIndexB];
-            
-            const squaredDist = calculateSquaredEuclideanDistance(currentPointCoords, targetPointCoords);
-            
-            if (isPerfectSquare(squaredDist)) {
-                integerDistancePairsCount++;
-            }
-        }
+  return coordinates;
+}
+
+function calculateDistanceLikeOriginal(sourcePoint, targetPoint) {
+  let distanceAccumulator = 0;
+
+  for (let coordinateIndex = 0; coordinateIndex < targetPoint.length; coordinateIndex++) {
+    distanceAccumulator += Math.abs(
+      Math.pow(sourcePoint[coordinateIndex] - targetPoint[coordinateIndex], 2)
+    );
+  }
+
+  return Math.sqrt(distanceAccumulator);
+}
+
+function isIntegerDistance(distanceValue) {
+  return distanceValue % 1 === 0;
+}
+
+function countIntegerDistancePairs(pointLines, totalPoints) {
+  let answer = 0;
+
+  for (let sourceIndex = 0; sourceIndex < pointLines.length; sourceIndex++) {
+    const sourcePoint = parsePointCoordinates(pointLines[sourceIndex]);
+
+    for (let targetIndex = sourceIndex + 1; targetIndex < totalPoints; targetIndex++) {
+      const targetPoint = parsePointCoordinates(pointLines[targetIndex]);
+
+      const distance = calculateDistanceLikeOriginal(sourcePoint, targetPoint);
+
+      if (isIntegerDistance(distance)) {
+        answer++;
+      }
     }
-    
-    console.log(integerDistancePairsCount);
+  }
+
+  return answer;
+}
+
+const main = rawInput => {
+  const inputLines = splitInputLikeOriginal(rawInput);
+
+  const header = parseHeaderValues(inputLines[0]);
+  const N = header.N;
+  const D = header.D;
+
+  const pointLines = extractPointLines(inputLines, N);
+
+  const answer = countIntegerDistancePairs(pointLines, N);
+
+  console.log(answer);
 };
 
-calculateIntegerDistances(require('fs').readFileSync('/dev/stdin', 'utf8'));
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

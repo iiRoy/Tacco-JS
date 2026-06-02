@@ -1,43 +1,30 @@
-const processInputAndSolve = (inputString) => {
-  const processedLines = inputString.trim().split('\n');
+const solve = (inputText => {
+  const rawRows = inputText.trim().split`\n`;
+  const parsedRows = rawRows.map(row => {
+    return row.split` `.map(cell => cell | 0);
+  });
 
-  const firstLineData = processedLines[0].split(' ').map(valueString => Number.parseInt(valueString, 10));
-  const numElements = firstLineData[0];
+  const header = parsedRows[0];
+  const values = parsedRows[1];
+  const count = header[0];
 
-  const numberSequence = processedLines[1].split(' ').map(valueString => Number.parseInt(valueString, 10));
+  let oddCount = 0;
+  let multipleOfFourCount = 0;
 
-  let oddNumberCount = 0;
-  let divisibleByFourCount = 0;
-
-  for (let elementIndex = 0; elementIndex < numElements; elementIndex++) {
-    const currentElement = numberSequence[elementIndex];
-
-    const isOdd = (currentElement % 2 !== 0);
-    if (isOdd) {
-      oddNumberCount++;
-    }
-
-    const isDivisibleByFour = (currentElement % 4 === 0);
-    if (isDivisibleByFour) {
-      divisibleByFourCount++;
-    }
+  for (let index = 0; index < count; index++) {
+    const current = values[index];
+    oddCount += current & 1;
+    multipleOfFourCount += !(current % 4);
   }
 
-  const totalSpecialCount = oddNumberCount + divisibleByFourCount;
-  const isAllElementsSpecial = (totalSpecialCount === numElements);
+  const coversAll = oddCount + multipleOfFourCount === count;
+  const adjustedOddCount = oddCount - coversAll;
+  const canArrange = adjustedOddCount <= multipleOfFourCount;
 
-  let effectiveOddCount = oddNumberCount;
-  if (isAllElementsSpecial) {
-    effectiveOddCount--;
-  }
-
-  const finalConditionResult = (effectiveOddCount <= divisibleByFourCount);
-
-  if (finalConditionResult) {
+  if (canArrange) {
     return 'Yes';
-  } else {
-    return 'No';
   }
-};
+  return 'No';
+});
 
-console.log(processInputAndSolve(require('fs').readFileSync('/dev/stdin', 'utf8')));
+console.log(solve(require('fs').readFileSync('/dev/stdin', 'utf8')));

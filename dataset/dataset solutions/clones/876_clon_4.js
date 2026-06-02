@@ -1,141 +1,172 @@
-var fileSystem = require('fs');
-var allInputLines = fileSystem.readFileSync(0, 'utf8').split('\n');
+var fs = require('fs'),
+    totalBytes = fs.fstatSync(process.stdin.fd).size,
+    rawBuffer = new Buffer(totalBytes),
+    readBytes = fs.readSync(process.stdin.fd, rawBuffer, 0, totalBytes, 0),
+    rows = rawBuffer.toString('utf8', 0, readBytes).split('\n');
 
-var linePointer = 0;
-function getNextInputLine() {
-    return allInputLines[linePointer++];
+runAll();
+
+function takeLine() {
+  return rows.shift();
 }
 
-function DisjointSetUnion(nodeCount) {
-    var parentArray = new Array(nodeCount);
-    var componentSize = new Array(nodeCount);
+function buildComponents(n, active, openedNow, hadSingleBlock, oldActiveCount) {
+  var comp = [], i, count = 0;
 
-    for (var i = 0; i < nodeCount; i++) {
-        parentArray[i] = i;
-        componentSize[i] = 1;
+  for (i = 0; i < n; i++) {
+    comp[i] = -1;
+  }
+
+  if (hadSingleBlock && oldActiveCount > 0) {
+    for (i = 0; i < n; i++) {
+      if (active[i] && !openedNow[i]) {
+        comp[i] = 0;
+      }
     }
-
-    function findRepresentative(nodeIdentifier) {
-        if (parentArray[nodeIdentifier] === nodeIdentifier) {
-            return nodeIdentifier;
-        }
-        return parentArray[nodeIdentifier] = findRepresentative(parentArray[nodeIdentifier]);
+    count = 1;
+    for (i = 0; i < n; i++) {
+      if (openedNow[i]) {
+        comp[i] = count++;
+      }
     }
-
-    function uniteSets(nodeA, nodeB) {
-        var rootA = findRepresentative(nodeA);
-        var rootB = findRepresentative(nodeB);
-
-        if (rootA !== rootB) {
-            if (componentSize[rootA] < componentSize[rootB]) {
-                var temp = rootA;
-                rootA = rootB;
-                rootB = temp;
-            }
-            parentArray[rootB] = rootA;
-            componentSize[rootA] += componentSize[rootB];
-            return true;
-        }
-        return false;
+  } else {
+    for (i = 0; i < n; i++) {
+      if (active[i]) {
+        comp[i] = count++;
+      }
     }
+  }
 
-    function getComponentCount(activeNodesSet) {
-        var distinctRoots = new Set();
-        activeNodesSet.forEach(function(nodeIdentifier) {
-            distinctRoots.add(findRepresentative(nodeIdentifier));
-        });
-        return distinctRoots.size;
-    }
-
-    function checkConnectivity(nodeA, nodeB) {
-        return findRepresentative(nodeA) === findRepresentative(nodeB);
-    }
-
-    return {
-        uniteSets: uniteSets,
-        findRepresentative: findRepresentative,
-        getComponentCount: getComponentCount,
-        checkConnectivity: checkConnectivity
-    };
+  return { label: comp, size: count };
 }
 
-function processGraphData() {
-    var nodeCount, edgeCount;
-    var lineParts, i, k;
-    var nodeDayValues, graphEdges;
-    var dsuManager;
-    var accumulatedWeight;
-    var activeNodesSet;
+function minimumJoinCost(componentInfo, edges) {
+  var labels = componentInfo.label,
+      amount = componentInfo.size,
+      used = [],
+      best = [],
+      i, step, chosen, e, a, b, w,
+      total = 0;
 
-    while (true) {
-        lineParts = getNextInputLine().split(' ').map(Number);
-        nodeCount = lineParts[0];
-        edgeCount = lineParts[1];
+  if (amount <= 1) {
+    return 0;
+  }
 
-        if (nodeCount === 0 && edgeCount === 0) {
-            break;
-        }
+  for (i = 0; i < amount; i++) {
+    used[i] = false;
+    best[i] = Infinity;
+  }
+  best[0] = 0;
 
-        nodeDayValues = new Array(nodeCount);
-        activeNodesSet = new Set();
-
-        for (i = 0; i < nodeCount; i++) {
-            nodeDayValues[i] = {
-                id: i,
-                dayValue: +getNextInputLine()
-            };
-        }
-
-        graphEdges = new Array(edgeCount);
-        for (i = 0; i < edgeCount; i++) {
-            lineParts = getNextInputLine().split(' ').map(Number);
-            graphEdges[i] = [lineParts[0] - 1, lineParts[1] - 1, lineParts[2]];
-        }
-
-        nodeDayValues.sort(function(a, b) {
-            return a.dayValue - b.dayValue;
-        });
-
-        graphEdges.sort(function(edgeA, edgeB) {
-            return edgeA[2] - edgeB[2];
-        });
-
-        dsuManager = new DisjointSetUnion(nodeCount);
-        accumulatedWeight = 0;
-
-        k = nodeCount - 1;
-        while (k >= 0) {
-            var currentDayValue = nodeDayValues[k].dayValue;
-            var nodesToActivate = [];
-
-            while (k >= 0 && nodeDayValues[k].dayValue === currentDayValue) {
-                nodesToActivate.push(nodeDayValues[k].id);
-                k--;
-            }
-
-            nodesToActivate.forEach(function(nodeId) {
-                activeNodesSet.add(nodeId);
-            });
-
-            for (var j = 0; j < edgeCount; j++) {
-                var currentEdge = graphEdges[j];
-                var u = currentEdge[0];
-                var v = currentEdge[1];
-                var weight = currentEdge[2];
-
-                if (activeNodesSet.has(u) && activeNodesSet.has(v) && !dsuManager.checkConnectivity(u, v)) {
-                    dsuManager.uniteSets(u, v);
-                    accumulatedWeight += weight;
-                }
-            }
-
-            if (dsuManager.getComponentCount(activeNodesSet) > 1) {
-                accumulatedWeight = 0;
-                dsuManager = new DisjointSetUnion(nodeCount);
-            }
-        }
-        console.log(accumulatedWeight);
+  for (step = 0; step < amount; step++) {
+    chosen = -1;
+    for (i = 0; i < amount; i++) {
+      if (!used[i] && (chosen < 0 || best[i] < best[chosen])) {
+        chosen = i;
+      }
     }
+
+    if (chosen < 0 || best[chosen] === Infinity) {
+      return null;
+    }
+
+    used[chosen] = true;
+    total += best[chosen];
+
+    for (i = 0; i < edges.length; i++) {
+      e = edges[i];
+      a = labels[e[0]];
+      b = labels[e[1]];
+      w = e[2];
+      if (a >= 0 && b >= 0 && a !== b) {
+        if (a === chosen && !used[b] && w < best[b]) {
+          best[b] = w;
+        } else if (b === chosen && !used[a] && w < best[a]) {
+          best[a] = w;
+        }
+      }
+    }
+  }
+
+  return total;
 }
 
-processGraphData();
+function runAll() {
+  var temp, n, m,
+      i, currentDay,
+      people, edges,
+      active, opened,
+      cursor,
+      previousActive,
+      activeCount,
+      stateIsOneBlock,
+      added,
+      componentInfo,
+      answer;
+
+  while (true) {
+    temp = takeLine().split(' ');
+    n = +temp[0];
+    m = +temp[1];
+
+    if (n === 0 && m === 0) {
+      break;
+    }
+
+    people = [];
+    active = [];
+    for (i = 0; i < n; i++) {
+      people[i] = {
+        node: i,
+        days: +takeLine()
+      };
+      active[i] = false;
+    }
+
+    edges = [];
+    for (i = 0; i < m; i++) {
+      temp = takeLine().split(' ');
+      edges[i] = [temp[0] - 1, temp[1] - 1, temp[2] - 0];
+    }
+
+    people.sort(function (a, b) {
+      return a.days - b.days;
+    });
+
+    cursor = n - 1;
+    answer = 0;
+    activeCount = 0;
+    stateIsOneBlock = false;
+
+    while (cursor >= 0) {
+      opened = [];
+      for (i = 0; i < n; i++) {
+        opened[i] = false;
+      }
+
+      previousActive = activeCount;
+      currentDay = people[cursor].days;
+      while (cursor >= 0 && people[cursor].days === currentDay) {
+        if (!active[people[cursor].node]) {
+          activeCount++;
+        }
+        active[people[cursor].node] = true;
+        opened[people[cursor].node] = true;
+        cursor--;
+      }
+
+      componentInfo = buildComponents(n, active, opened, stateIsOneBlock, previousActive);
+      added = minimumJoinCost(componentInfo, edges);
+
+      if (added === null) {
+        answer = 0;
+        stateIsOneBlock = false;
+      } else {
+        answer += added;
+        stateIsOneBlock = true;
+      }
+    }
+
+    console.log(answer);
+  }
+}

@@ -1,109 +1,35 @@
-class InputReader {
-    #lineSource;
-    #lineCursor;
+const fs = require("fs");
+const source = fs.readFileSync("/dev/stdin", "utf8");
+const records = source.trim().split("\n");
 
-    constructor(rawContent) {
-        this.#lineSource = rawContent.trim().split('\n');
-        this.#lineCursor = 0;
-    }
+const n = Number(records[0].split(" ").reverse().pop());
+const block = records.slice(1, 1 + n);
 
-    // Replaces g.prototype.a
-    acquireToken(asString) {
-        let currentSegment = this.#lineSource[this.#lineCursor];
-        let extractedValue;
+const groups = [0, 0, 0, 0];
+let base = 0;
 
-        if (typeof currentSegment === "string") {
-            this.#lineSource[this.#lineCursor] = currentSegment.split(' ').reverse();
-            currentSegment = this.#lineSource[this.#lineCursor];
-        }
-
-        extractedValue = currentSegment.pop();
-
-        if (currentSegment.length === 0) {
-            this.#lineCursor++;
-        }
-
-        return asString ? extractedValue : Number(extractedValue);
-    }
-
-    // Replaces g.prototype.l
-    obtainLine(asString) {
-        const lineContent = this.#lineSource[this.#lineCursor++];
-        const parts = String(lineContent).split(' ');
-        return asString ? parts : parts.map(val => Number(val));
-    }
-
-    // Replaces g.prototype.m
-    gatherMatrix(count, asString) {
-        const collectedRows = [];
-        for (let i = 0; i < count; i++) {
-            const lineContent = this.#lineSource[this.#lineCursor++];
-            const parts = String(lineContent).split(' ');
-            collectedRows.push(asString ? parts : parts.map(val => Number(val)));
-        }
-        return collectedRows;
-    }
-
-    // Replaces g.prototype.r
-    collectRaw(count, asString) {
-        const collectedLines = this.#lineSource.slice(this.#lineCursor, this.#lineCursor + count);
-        this.#lineCursor += count;
-        return asString ? collectedLines : collectedLines.map(val => Number(val));
-    }
+function signature(text) {
+  const head = text[0] === "B" ? 2 : 0;
+  const tail = text[text.length - 1] === "A" ? 1 : 0;
+  return head | tail;
 }
 
-const createInputParser = (function() {
-    function parserFactory(sourceText) {
-        return new InputReader(sourceText);
-    }
-    return parserFactory;
-})();
-
-const dataReader = createInputParser(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-function processInput() {
-    const entryCount = dataReader.acquireToken();
-    const stringCollection = dataReader.collectRaw(entryCount, true);
-
-    let totalScore = 0;
-    let endsWithA = 0;
-    let startsWithB = 0;
-    let startsBEndsA = 0;
-
-    stringCollection.forEach(currentString => {
-        totalScore += Array.from(currentString)
-            .slice(1)
-            .filter((char, charIndex) => currentString[charIndex] === 'A' && char === 'B')
-            .length;
-
-        const firstCharacter = currentString[0];
-        const lastCharacter = currentString[currentString.length - 1];
-
-        if (firstCharacter === 'B') {
-            if (lastCharacter === 'A') {
-                startsBEndsA++;
-            } else {
-                startsWithB++;
-            }
-        } else if (lastCharacter === 'A') {
-            endsWithA++;
-        }
-    });
-
-    const minimumCount = Math.min(endsWithA, startsWithB);
-    const maximumCount = Math.max(endsWithA, startsWithB);
-
-    if (maximumCount > 0) {
-        if (startsBEndsA > 0) {
-            totalScore += minimumCount + startsBEndsA;
-        } else {
-            totalScore += minimumCount;
-        }
-    } else {
-        totalScore += startsBEndsA - 1;
-    }
-
-    return totalScore;
+for (let idx = 0; idx < n; idx++) {
+  const item = block[idx];
+  const found = item.match(/AB/g);
+  base += found === null ? 0 : found.length;
+  groups[signature(item)]++;
 }
 
-console.log(processInput());
+const tailA = groups[1];
+const headB = groups[2];
+const both = groups[3];
+
+let bridge;
+if (Math.max(tailA, headB)) {
+  bridge = Math.min(tailA, headB) + (both ? both : 0);
+} else {
+  bridge = both - 1;
+}
+
+console.log(base + bridge);

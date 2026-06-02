@@ -1,14 +1,15 @@
-(function() {
-  const fileReader = require("fs");
-  const inputSource = "/dev/stdin";
-  const textEncoding = "utf8";
+const fs = require("fs");
 
-  const rawContent = fileReader.readFileSync(inputSource, textEncoding);
-  const processedContent = rawContent.trim();
-  const numericalRepresentation = Number(processedContent);
+const data = fs.readFileSync("/dev/stdin", "utf8").trim();
+const parts = new Map();
 
-  const intermediateCalculation = (numericalRepresentation - 24) * -1;
-  const finalOutcome = intermediateCalculation + 24;
+parts.set("first", 24);
+parts.set("second", 24);
+parts.set("input", -data);
 
-  console.log(finalOutcome);
-})();
+let answer = 0;
+for (const value of parts.values()) {
+  answer += value;
+}
+
+console.log(answer);

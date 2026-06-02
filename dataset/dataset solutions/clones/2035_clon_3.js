@@ -1,52 +1,59 @@
 "use strict";
 
-function main(programInput) {
-  // Utility function to parse a string of space-separated numbers into an array of numbers
-  const parseNumericLine = (lineContent) => lineContent.trim().split(" ").map(Number);
-
-  // Utility function to sort an array in descending order and then extract a specified number of top elements
-  const extractTopValuesDescending = (sourceArray, limitCount) => {
-    // Create a shallow copy to avoid modifying the original array if it's passed by reference
-    const sortedArray = [...sourceArray].sort((valueA, valueB) => valueB - valueA);
-    return sortedArray.slice(0, limitCount);
-  };
-
-  // Parse the first line for configuration parameters: required counts for red and green apples
-  // The last three values (a, b, c) from the original input[0] are unused, so they are ignored here.
-  const [redAppleRequirement, greenAppleRequirement, , , ] = parseNumericLine(programInput[0]);
-
-  // Parse the subsequent lines for the available apples of each type
-  let initialRedApples = parseNumericLine(programInput[1]);
-  let initialGreenApples = parseNumericLine(programInput[2]);
-  let initialColorlessApples = parseNumericLine(programInput[3]);
-
-  // Determine the best red apples based on the requirement
-  const chosenRedApples = extractTopValuesDescending(initialRedApples, redAppleRequirement);
-
-  // Determine the best green apples based on the requirement
-  const chosenGreenApples = extractTopValuesDescending(initialGreenApples, greenAppleRequirement);
-
-  // Determine the best colorless apples. The original logic considers up to (x+y) colorless apples.
-  const relevantColorlessApples = extractTopValuesDescending(initialColorlessApples, redAppleRequirement + greenAppleRequirement);
-
-  // Combine all potential apples: the best red, best green, and the relevant colorless apples.
-  // This forms a pool from which the final selection will be made.
-  const allCandidateApples = [...chosenRedApples, ...chosenGreenApples, ...relevantColorlessApples];
-
-  // Sort the entire pool of candidate apples in descending order to easily pick the highest values.
-  allCandidateApples.sort((valueA, valueB) => valueB - valueA);
-
-  // The final selection consists of the top (redAppleRequirement + greenAppleRequirement) apples
-  // from the combined and sorted pool. This step replaces the original nested loop logic,
-  // as it achieves the identical behavioral outcome of maximizing the sum by selecting the best available.
-  const finalSelectionForSum = allCandidateApples.slice(0, redAppleRequirement + greenAppleRequirement);
-
-  // Calculate the total sum of the values of the apples in the final selection.
-  const finalCalculatedSum = finalSelectionForSum.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
-
-  // Output the final sum to the console.
-  console.log(finalCalculatedSum);
+function parseNumbers(line) {
+  return line.trim().split(" ").map(value => parseInt(value, 10));
 }
 
-// Read input from standard input, process it, and pass it to the main function.
-main(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));
+function takeBestValues(values, amount) {
+  values.sort((left, right) => right - left);
+  return values.slice(0, amount);
+}
+
+function replaceLowerValues(selectedValues, replacementValues) {
+  for (let replacementIndex = 0; replacementIndex < replacementValues.length; replacementIndex++) {
+    const candidateValue = replacementValues[replacementIndex];
+
+    for (let selectedIndex = 0; selectedIndex < selectedValues.length; selectedIndex++) {
+      if (candidateValue > selectedValues[selectedIndex]) {
+        selectedValues[selectedIndex] = candidateValue;
+        break;
+      }
+    }
+  }
+
+  return selectedValues;
+}
+
+function sumValues(values) {
+  let total = 0;
+
+  for (let index = 0; index < values.length; index++) {
+    total += values[index];
+  }
+
+  return total;
+}
+
+function main(inputLines) {
+  const config = parseNumbers(inputLines[0]);
+  const requiredRed = config[0];
+  const requiredGreen = config[1];
+
+  const redApples = parseNumbers(inputLines[1]);
+  const greenApples = parseNumbers(inputLines[2]);
+  const colorlessApples = parseNumbers(inputLines[3]);
+
+  const bestRed = takeBestValues(redApples, requiredRed);
+  const bestGreen = takeBestValues(greenApples, requiredGreen);
+  const bestColorless = takeBestValues(colorlessApples, requiredRed + requiredGreen);
+
+  const selectedApples = bestRed.concat(bestGreen);
+
+  selectedApples.sort((left, right) => right - left);
+
+  const improvedSelection = replaceLowerValues(selectedApples, bestColorless);
+
+  console.log(sumValues(improvedSelection));
+}
+
+main(require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n"));

@@ -1,43 +1,108 @@
-var _jsCompilerUtils=_jsCompilerUtils||{};_jsCompilerUtils.scope={};_jsCompilerUtils.ASSUME_ES5=!1;_jsCompilerUtils.ASSUME_NO_NATIVE_MAP=!1;_jsCompilerUtils.ASSUME_NO_NATIVE_SET=!1;_jsCompilerUtils.SIMPLE_FROUND_POLYFILL=!1;_jsCompilerUtils.defineProperty=_jsCompilerUtils.ASSUME_ES5||"function"==typeof Object.defineProperties?Object.defineProperty:function(targetObject,propertyName,descriptor){targetObject!=Array.prototype&&targetObject!=Object.prototype&&(targetObject[propertyName]=descriptor.value)};_jsCompilerUtils.getGlobal=function(candidateGlobal){return"undefined"!=typeof window&&window===candidateGlobal?candidateGlobal:"undefined"!=typeof global&&null!=global?global:candidateGlobal};_jsCompilerUtils.global=_jsCompilerUtils.getGlobal(this);
-_jsCompilerUtils.polyfill=function(featurePath,implementationFn,esVersion,browserVersion){if(implementationFn){var currentGlobal=_jsCompilerUtils.global;featurePath=featurePath.split(".");for(var pathSegmentIndex=0;pathSegmentIndex<featurePath.length-1;pathSegmentIndex++){var segmentName=featurePath[pathSegmentIndex];segmentName in currentGlobal||(currentGlobal[segmentName]={});currentGlobal=currentGlobal[segmentName]}featurePath=featurePath[featurePath.length-1];var existingFeature=currentGlobal[featurePath];implementationFn=implementationFn(existingFeature);implementationFn!=existingFeature&&null!=implementationFn&&_jsCompilerUtils.defineProperty(currentGlobal,featurePath,{configurable:!0,writable:!0,value:implementationFn})}};
-_jsCompilerUtils.polyfill("Array.from",function(nativeFrom){return nativeFrom?nativeFrom:function(arrayLikeObject,mapperFunction,thisContext){mapperFunction=null!=mapperFunction?mapperFunction:function(value){return value};var resultArray=[],iteratorOrValue="undefined"!=typeof Symbol&&Symbol.iterator&&arrayLikeObject[Symbol.iterator];if("function"==typeof iteratorOrValue){arrayLikeObject=iteratorOrValue.call(arrayLikeObject);for(var elementIndex=0;!(iteratorOrValue=arrayLikeObject.next()).done;)resultArray.push(mapperFunction.call(thisContext,iteratorOrValue.value,elementIndex++))}else for(iteratorOrValue=arrayLikeObject.length,elementIndex=0;elementIndex<iteratorOrValue;elementIndex++)resultArray.push(mapperFunction.call(thisContext,arrayLikeObject[elementIndex],elementIndex));return resultArray}},"es6","es3");
-function analyzeNumbers(inputStringData){
-    const inputLines = inputStringData.split("\n");
-    const countOfNumbers = parseInt(inputLines[0], 10);
+var compilerTools = compilerTools || {};
+compilerTools.scope = {};
+compilerTools.ASSUME_ES5 = false;
+compilerTools.ASSUME_NO_NATIVE_MAP = false;
+compilerTools.ASSUME_NO_NATIVE_SET = false;
+compilerTools.SIMPLE_FROUND_POLYFILL = false;
 
-    const rawNumbersLine = inputLines[1];
-    const numberStringParts = rawNumbersLine.split(" ");
-
-    const parseNumberArray = (strParts, numLimit) => {
-        const parsedValues = [];
-        for (let i = 0; i < numLimit; i++) {
-            parsedValues.push(parseInt(strParts[i], 10));
+compilerTools.defineProperty =
+  compilerTools.ASSUME_ES5 || typeof Object.defineProperties == "function"
+    ? Object.defineProperty
+    : function (target, key, descriptor) {
+        if (target != Array.prototype && target != Object.prototype) {
+          target[key] = descriptor.value;
         }
-        return parsedValues;
-    };
+      };
 
-    const originalNumberSequence = parseNumberArray(numberStringParts, countOfNumbers);
+compilerTools.getGlobal = function (value) {
+  return typeof window != "undefined" && window === value
+    ? value
+    : typeof global != "undefined" && global != null
+    ? global
+    : value;
+};
 
-    const sortedNumberSequence = _jsCompilerUtils.global.Array.from(originalNumberSequence);
-    sortedNumberSequence.sort((val1, val2) => val1 - val2);
+compilerTools.global = compilerTools.getGlobal(this);
 
-    console.log(originalNumberSequence, sortedNumberSequence);
+compilerTools.polyfill = function (path, factory, esVersion, browserVersion) {
+  if (factory) {
+    var root = compilerTools.global;
+    path = path.split(".");
 
-    let differenceCount = 0;
-    const allowedMismatches = 2;
-
-    for (let i = 0; i < countOfNumbers; ++i) {
-        if (originalNumberSequence[i] !== sortedNumberSequence[i]) {
-            differenceCount++;
-        }
+    for (var index = 0; index < path.length - 1; index++) {
+      var part = path[index];
+      if (!(part in root)) {
+        root[part] = {};
+      }
+      root = root[part];
     }
 
-    let finalDecisionMessage;
-    if (differenceCount <= allowedMismatches) {
-        finalDecisionMessage = "YES";
-    } else {
-        finalDecisionMessage = "NO";
+    path = path[path.length - 1];
+    var oldValue = root[path];
+    factory = factory(oldValue);
+
+    if (factory != oldValue && factory != null) {
+      compilerTools.defineProperty(root, path, {
+        configurable: true,
+        writable: true,
+        value: factory
+      });
     }
-    console.log(finalDecisionMessage);
+  }
+};
+
+compilerTools.polyfill(
+  "Array.from",
+  function (nativeFrom) {
+    return nativeFrom
+      ? nativeFrom
+      : function (source, mapper, context) {
+          mapper = mapper != null ? mapper : function (item) { return item; };
+          var result = [];
+          var iterator = typeof Symbol != "undefined" && Symbol.iterator && source[Symbol.iterator];
+
+          if (typeof iterator == "function") {
+            source = iterator.call(source);
+            for (var position = 0; !(iterator = source.next()).done;) {
+              result.push(mapper.call(context, iterator.value, position++));
+            }
+          } else {
+            for (iterator = source.length, position = 0; position < iterator; position++) {
+              result.push(mapper.call(context, source[position], position));
+            }
+          }
+
+          return result;
+        };
+  },
+  "es6",
+  "es3"
+);
+
+function main(inputText) {
+  var rows = inputText.split("\n");
+  var totalNumbers = parseInt(rows[0]);
+  var originalValues = [];
+
+  rows[1] = rows[1].split(" ");
+
+  for (var i = 0; i < totalNumbers; ++i) {
+    originalValues.push(parseInt(rows[1][i]));
+  }
+
+  var sortedValues = Array.from(originalValues);
+  sortedValues.sort();
+
+  console.log(originalValues, sortedValues);
+
+  var mismatchCount = 0;
+  for (var j = 0; j < totalNumbers; ++j) {
+    if (originalValues[j] != sortedValues[j]) {
+      mismatchCount += 1;
+    }
+  }
+
+  console.log(2 >= mismatchCount ? "YES" : "NO");
 }
-analyzeNumbers(require("fs").readFileSync("/dev/stdin","utf8"));
+
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

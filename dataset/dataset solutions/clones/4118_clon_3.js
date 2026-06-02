@@ -1,30 +1,25 @@
-function readStandardInput() {
-    return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
-}
+// inputに入力データ全体が入る
+function Main(lines) {
+    var header = lines[0];
+    var data = header.split(" ");
+    var a = data[0]-0;
+    var b = data[1]-0;
+    var s = lines[1];
 
-function buildPattern(lengthA, lengthB) {
-    const digitCharClass = "\\d";
-    const separatorChar = "-";
-    return new RegExp(`^${digitCharClass}{${lengthA}}${separatorChar}${digitCharClass}{${lengthB}}$`);
-}
+    var start = "^\\d{" + a + "}";
+    var center = "-";
+    var end = "\\d{" + b + "}$";
+    var rx = new RegExp(start + center + end);
+    var result = rx.test(s);
 
-function processInputData(inputLines) {
-    const dimensionParts = inputLines[0].split(" ");
-
-    const lenA = Number(dimensionParts[0]);
-    const lenB = Number(dimensionParts[1]);
-
-    const inputString = inputLines[1];
-
-    const patternMatcher = buildPattern(lenA, lenB);
-
-    const isValid = patternMatcher.test(inputString);
-
-    if (isValid) {
+    if (result) {
         console.log("Yes");
     } else {
         console.log("No");
     }
 }
 
-processInputData(readStandardInput());
+var fs = require("fs");
+var rawInput = fs.readFileSync("/dev/stdin", "utf8");
+var input = rawInput.trim().split("\n");
+Main(input);

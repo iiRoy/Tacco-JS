@@ -1,71 +1,83 @@
 var log = console.log;
+
 if (typeof process != "undefined") {
-	var inputBuffer = "";
+	var collectedInput = "";
 	process.stdin.resume();
 	process.stdin.setEncoding('utf8');
-	process.stdin.on('data', function (chunk) {
-		inputBuffer += chunk;
+	process.stdin.on('data', function (piece) {
+		collectedInput += piece;
 	});
 	process.stdin.on('end', function () {
-		var allInputLines = inputBuffer.split("\n");
-		processInputChunks(allInputLines);
+		run(collectedInput.split("\n"));
 	});
 }
 
-function processInputChunks(allInputLines) {
-    const relevantDataSegments = allInputLines.slice(1);
-
-    for (let segmentIndex = 0; segmentIndex < relevantDataSegments.length; segmentIndex += 2) {
-        try {
-            const firstSequence = relevantDataSegments[segmentIndex].replace(/[^a-z]/g, '');
-            const secondSequence = relevantDataSegments[segmentIndex + 1].replace(/[^a-z]/g, '');
-
-            if (firstSequence.length === 0 || secondSequence.length === 0) {
-                log(undefined);
-            } else {
-                const memoizationStore = new Map();
-
-                const finalMetricValue = calculateMetric(
-                    firstSequence.length - 1,
-                    secondSequence.length - 1,
-                    firstSequence,
-                    secondSequence,
-                    memoizationStore
-                );
-                log(finalMetricValue);
-            }
-        } catch (errorInstance) {
-            log(errorInstance);
-        }
-    }
+function run(allLines) {
+	var remaining = allLines.slice(1);
+	while (remaining.length > 0) {
+		try {
+			var pair = remaining.slice(0, 2).map(keepLowercaseLetters);
+			measurePair(pair);
+			remaining = remaining.slice(2);
+		} catch (error) {
+			log(error);
+		}
+	}
 }
 
-function calculateMetric(rowIdx, colIdx, seqA, seqB, memoCache) {
-    const cacheKey = `${rowIdx},${colIdx}`;
+function keepLowercaseLetters(text) {
+	var found = text.match(/[a-z]/g);
+	return found ? found.join("") : "";
+}
 
-    if (memoCache.has(cacheKey)) {
-        return memoCache.get(cacheKey);
-    }
+function cellId(row, col) {
+	return row + ":" + col;
+}
 
-    const currentMatchIndicator = (seqA.charAt(rowIdx) === seqB.charAt(colIdx) ? 1 : 0);
-    let computedResult;
+function measurePair(pair) {
+	var left = pair[0];
+	var right = pair[1];
 
-    if (rowIdx === 0 && colIdx === 0) {
-        computedResult = currentMatchIndicator;
-    } else if (rowIdx === 0) {
-        computedResult = Math.max(calculateMetric(rowIdx, colIdx - 1, seqA, seqB, memoCache), currentMatchIndicator);
-    } else if (colIdx === 0) {
-        computedResult = Math.max(calculateMetric(rowIdx - 1, colIdx, seqA, seqB, memoCache), currentMatchIndicator);
-    } else {
-        const valueFromAbove = calculateMetric(rowIdx - 1, colIdx, seqA, seqB, memoCache);
-        const valueFromLeft = calculateMetric(rowIdx, colIdx - 1, seqA, seqB, memoCache);
-        
-        computedResult = Math.min(
-            Math.max(valueFromAbove, valueFromLeft) + currentMatchIndicator,
-            Math.min(rowIdx, colIdx) + 1
-        );
-    }
+	if (left.length === 0) {
+		var emptyTable = [];
+		var rowAfterLoop = 0;
+		var colAfterLoop;
+		log(emptyTable[rowAfterLoop - 1][colAfterLoop - 1]);
+		return;
+	}
 
-    memoCache.set(cacheKey, computedResult);
-    return computedResult;
+	if (right.length === 0) {
+		log(undefined);
+		return;
+	}
+
+	var score = new Map();
+	var lastLayer = left.length + right.length - 2;
+
+	for (var layer = 0; layer <= lastLayer; layer++) {
+		var rowStart = Math.max(0, layer - right.length + 1);
+		var rowEnd = Math.min(left.length - 1, layer);
+
+		for (var row = rowStart; row <= rowEnd; row++) {
+			var col = layer - row;
+			var hit = left.charAt(row) == right.charAt(col) ? 1 : 0;
+			var best;
+
+			if (row === 0 && col === 0) {
+				best = hit;
+			} else if (row === 0) {
+				best = Math.max(score.get(cellId(row, col - 1)), hit);
+			} else if (col === 0) {
+				best = Math.max(score.get(cellId(row - 1, col)), hit);
+			} else {
+				var fromTop = score.get(cellId(row - 1, col));
+				var fromLeft = score.get(cellId(row, col - 1));
+				best = Math.min(Math.max(fromTop, fromLeft) + hit, Math.min(row, col) + 1);
+			}
+
+			score.set(cellId(row, col), best);
+		}
+	}
+
+	log(score.get(cellId(left.length - 1, right.length - 1)));
 }

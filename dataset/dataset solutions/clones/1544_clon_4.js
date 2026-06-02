@@ -1,81 +1,93 @@
-const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
-const inputTokens = fileContent.split(/ |\n/);
-let tokenIndex = 0;
-
-function getNextNumber() {
-  return +inputTokens[tokenIndex++];
+var input = require("fs").readFileSync("/dev/stdin", "utf8");
+var data = input.split(/ |\n/);
+var at = 0;
+function readNumber() {
+    return +data[at++];
 }
 
-class DisjointSetCollection {
-  constructor(totalElements) {
-    this.parentAndSize = new Array(totalElements);
-    for (let i = 0; i < totalElements; i++) {
-      this.parentAndSize[i] = -1; // Negative value indicates root, and its absolute value is the size of the component
-    }
-    this.componentCount = totalElements;
-  }
+function makeNetwork(limit) {
+    var links = new Map();
+    var regular = new Set();
 
-  findRoot(elementIndex) {
-    const path = [];
-    while (this.parentAndSize[elementIndex] >= 0) { // While not a root (parent is not negative)
-      path.push(elementIndex);
-      elementIndex = this.parentAndSize[elementIndex];
-    }
-    // elementIndex is now the root
-    for (const nodeOnPath of path) {
-      this.parentAndSize[nodeOnPath] = elementIndex; // Path compression
-    }
-    return elementIndex;
-  }
-
-  mergeSets(elementA, elementB) {
-    let rootA = this.findRoot(elementA);
-    let rootB = this.findRoot(elementB);
-
-    if (rootA === rootB) {
-      return;
+    for (var i = 0; i < limit; i++) {
+        var k = "v:" + i;
+        regular.add(k);
+        links.set(k, new Set());
     }
 
-    // Sizes are stored as negative values for roots
-    let sizeA = -this.parentAndSize[rootA];
-    let sizeB = -this.parentAndSize[rootB];
-
-    // Union by size: attach smaller tree to larger tree
-    if (sizeA < sizeB) {
-      [rootA, rootB] = [rootB, rootA]; // Swap roots to ensure rootA is the larger tree
+    function keyOf(value) {
+        var k = "v:" + value;
+        return regular.has(k) ? k : "outside";
     }
 
-    this.parentAndSize[rootB] = rootA; // Attach rootB's tree to rootA
-    this.parentAndSize[rootA] -= sizeB; // Update size of rootA
-    this.componentCount--;
-  }
+    function ensure(k) {
+        if (!links.has(k)) {
+            links.set(k, new Set());
+        }
+        return links.get(k);
+    }
 
-  areConnected(elementA, elementB) {
-    return this.findRoot(elementA) === this.findRoot(elementB);
-  }
+    function join(a, b) {
+        var ka = keyOf(a);
+        var kb = keyOf(b);
+        if (ka === kb) {
+            return;
+        }
+        ensure(ka).add(kb);
+        ensure(kb).add(ka);
+    }
+
+    function connected(a, b) {
+        var start = keyOf(a);
+        var goal = keyOf(b);
+        if (start === goal) {
+            return true;
+        }
+        if (!links.has(start) || !links.has(goal)) {
+            return false;
+        }
+
+        var seen = new Set([start]);
+        var queue = [start];
+        for (var head = 0; head < queue.length; head++) {
+            var cur = queue[head];
+            var adj = links.get(cur);
+            if (!adj) {
+                continue;
+            }
+            for (var nxt of adj) {
+                if (nxt === goal) {
+                    return true;
+                }
+                if (!seen.has(nxt)) {
+                    seen.add(nxt);
+                    queue.push(nxt);
+                }
+            }
+        }
+        return false;
+    }
+
+    return { join: join, connected: connected };
 }
 
-function processQueries() {
-  const elementCount = getNextNumber();
-  let queryCount = getNextNumber();
+function main() {
+    var n = readNumber();
+    var q = readNumber();
+    var network = makeNetwork(n);
 
-  const disjointSets = new DisjointSetCollection(elementCount);
+    while (q--) {
+        var kind = readNumber();
+        var a = readNumber();
+        var b = readNumber();
 
-  while (queryCount--) {
-    const operationType = getNextNumber();
-    const firstElement = getNextNumber();
-    const secondElement = getNextNumber();
-
-    if (operationType === 0) {
-      disjointSets.mergeSets(firstElement, secondElement);
-    } else {
-      if (disjointSets.areConnected(firstElement, secondElement)) {
-        console.log(1);
-      } else {
-        console.log(0);
-      }
+        if (kind === 0) {
+            network.join(a, b);
+        }
+        else {
+            console.log(network.connected(a, b) ? 1 : 0);
+        }
     }
-  }
 }
 
-processQueries();
+main();

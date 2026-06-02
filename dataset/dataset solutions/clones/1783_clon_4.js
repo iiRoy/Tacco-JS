@@ -1,114 +1,124 @@
 "use strict";
-var input = require("fs").readFileSync("/dev/stdin", "utf8");
-var cin = input.split(/ |\n/),
-  cid = 0;
 
-function next() {
-  return +cin[cid++];
+const fs = require("fs");
+const input = fs.readFileSync("/dev/stdin", "utf8");
+const tokens = input.split(/ |\n/);
+let pos = 0;
+
+function takeNumbers(count) {
+  const out = new Array(count);
+  for (let i = 0; i < count; i++) out[i] = +tokens[pos++];
+  return out;
 }
 
-function nextstr() {
-  return cin[cid++];
+function takeString() {
+  return tokens[pos++];
 }
 
-function nextbig() {
-  return BigInt(cin[cid++]);
+const answer = solve();
+if (answer !== undefined) console.log(String(answer));
+
+function solidLine(length) {
+  return new Array(length).fill("@").join("");
 }
 
-function nexts(n, a) {
-  return a ? cin.slice(cid, (cid += n)) : cin.slice(cid, (cid += n)).map((a) => +a);
-}
+function solve() {
+  const INF = 1e9;
+  const [h, w, k] = takeNumbers(3);
+  const [sy, sx, gy, gx] = takeNumbers(4);
 
-function nextm(h, w, a) {
-  var r = [],
-    i = 0;
-  if (a)
-    for (; i < h; i++) r.push(cin.slice(cid, (cid += w)));
-  else
-    for (; i < h; i++) r.push(cin.slice(cid, (cid += w)).map((a) => +a));
-  return r;
-}
-
-// The custom xArray utility function from the original code has been removed.
-// Its functionality for array initialization is replaced directly within the main function
-// using standard JavaScript Array methods.
-
-var myOut = main();
-if (myOut !== undefined) console.log(String(myOut));
-
-function main() {
-  const infinityVal = 1e9;
-  // Direction vectors for (Up, Right, Down, Left)
-  const deltaY = [-1, 0, 1, 0];
-  const deltaX = [0, 1, 0, -1];
-  const directionCount = deltaX.length;
-
-  const [gridHeight, gridWidth, maxSteps] = nexts(3);
-  const [startY, startX, goalY, goalX] = nexts(4);
-
-  const mapGrid = [];
-  // Initialize mapGrid with padding, replacing xArray usage
-  mapGrid.push(Array(gridWidth + 2).fill('@').join('')); // Top border row
-  for (let rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
-    mapGrid.push('@' + nextstr() + '@'); // Padded input row
+  const field = new Array(h + 2);
+  field[0] = solidLine(w + 2);
+  for (let r = 1; r <= h; r++) {
+    field[r] = "@" + takeString() + "@";
   }
-  mapGrid.push(Array(gridWidth + 2).fill('@').join('')); // Bottom border row
+  field[h + 1] = solidLine(w + 2);
 
-  // Initialize minMoves 2D array with infinity, replacing xArray usage
-  const minMoves = Array.from({ length: gridHeight + 2 }, () =>
-    Array(gridWidth + 2).fill(infinityVal)
-  );
+  const leftWall = Array.from({ length: h + 2 }, () => new Array(w + 2));
+  const rightWall = Array.from({ length: h + 2 }, () => new Array(w + 2));
+  const upWall = Array.from({ length: h + 2 }, () => new Array(w + 2));
+  const downWall = Array.from({ length: h + 2 }, () => new Array(w + 2));
 
-  minMoves[startY][startX] = 0;
-  // Using a single queue for BFS, storing objects with coordinates and current move count
-  const bfsQueue = [{ y: startY, x: startX, moves: 0 }];
-  let queuePointer = 0; // Acts as a head pointer for efficient dequeue (simulating shift())
-
-  while (queuePointer < bfsQueue.length) {
-    const { y: currentY, x: currentX, moves: currentMoveCount } = bfsQueue[queuePointer++];
-
-    // If a shorter path to this cell has already been discovered and processed,
-    // skip this entry as it represents a suboptimal path.
-    if (currentMoveCount > minMoves[currentY][currentX]) {
-      continue;
+  for (let y = 0; y <= h + 1; y++) {
+    let last = -1;
+    for (let x = 0; x <= w + 1; x++) {
+      leftWall[y][x] = last;
+      if (field[y][x] === "@") last = x;
     }
+    last = w + 2;
+    for (let x = w + 1; x >= 0; x--) {
+      rightWall[y][x] = last;
+      if (field[y][x] === "@") last = x;
+    }
+  }
 
-    // Explore all four cardinal directions
-    for (let dirIdx = 0; dirIdx < directionCount; dirIdx++) {
-      let traverseY = currentY;
-      let traverseX = currentX;
+  for (let x = 0; x <= w + 1; x++) {
+    let last = -1;
+    for (let y = 0; y <= h + 1; y++) {
+      upWall[y][x] = last;
+      if (field[y][x] === "@") last = y;
+    }
+    last = h + 2;
+    for (let y = h + 1; y >= 0; y--) {
+      downWall[y][x] = last;
+      if (field[y][x] === "@") last = y;
+    }
+  }
 
-      // Attempt to move up to maxSteps in the current direction
-      for (let stepCount = 1; stepCount <= maxSteps; stepCount++) {
-        traverseY += deltaY[dirIdx];
-        traverseX += deltaX[dirIdx];
+  const dist = Array.from({ length: h + 2 }, () => Array(w + 2).fill(INF));
+  const rowUnused = Array.from({ length: h + 2 }, () => new Set());
+  const colUnused = Array.from({ length: w + 2 }, () => new Set());
 
-        // If an obstacle ('@') is encountered, stop moving further in this direction
-        if (mapGrid[traverseY][traverseX] === '@') {
-          break;
-        }
-
-        // If a path to this cell has already been found that is shorter than
-        // or equal to the current path's level (currentMoveCount + 1),
-        // then we cannot improve by extending further through this cell.
-        // This is a critical optimization for multi-step BFS, preventing redundant exploration.
-        if (minMoves[traverseY][traverseX] < currentMoveCount + 1) {
-          break;
-        }
-
-        // If we found a new shortest path to this cell (i.e., minMoves is currently infinityVal or a longer path)
-        if (minMoves[traverseY][traverseX] > currentMoveCount + 1) {
-          minMoves[traverseY][traverseX] = currentMoveCount + 1;
-          bfsQueue.push({ y: traverseY, x: traverseX, moves: currentMoveCount + 1 });
-        }
-        // If minMoves[traverseY][traverseX] === currentMoveCount + 1,
-        // it means this cell is already part of the current frontier (already added to queue
-        // or processed for this level). We do not add it again, but we *continue*
-        // extending *past* it in the same direction, as per the multi-step BFS logic.
+  for (let y = 1; y <= h; y++) {
+    for (let x = 1; x <= w; x++) {
+      if (field[y][x] !== "@") {
+        rowUnused[y].add(x);
+        colUnused[x].add(y);
       }
     }
   }
 
-  // Return the minimum moves to the goal, or -1 if unreachable
-  return minMoves[goalY][goalX] === infinityVal ? -1 : minMoves[goalY][goalX];
+  dist[sy][sx] = 0;
+  rowUnused[sy]?.delete(sx);
+  colUnused[sx]?.delete(sy);
+
+  const qy = [sy];
+  const qx = [sx];
+  let head = 0;
+
+  while (head < qy.length) {
+    const y = qy[head];
+    const x = qx[head++];
+    const nd = dist[y][x] + 1;
+
+    const xl = Math.max(x - k, leftWall[y][x] + 1);
+    const xr = Math.min(x + k, rightWall[y][x] - 1);
+    const horizontal = [];
+    for (const nx of rowUnused[y] || []) {
+      if (nx >= xl && nx <= xr) horizontal.push(nx);
+    }
+    for (const nx of horizontal) {
+      rowUnused[y].delete(nx);
+      colUnused[nx].delete(y);
+      dist[y][nx] = nd;
+      qy.push(y);
+      qx.push(nx);
+    }
+
+    const yu = Math.max(y - k, upWall[y][x] + 1);
+    const yd = Math.min(y + k, downWall[y][x] - 1);
+    const vertical = [];
+    for (const ny of colUnused[x] || []) {
+      if (ny >= yu && ny <= yd) vertical.push(ny);
+    }
+    for (const ny of vertical) {
+      colUnused[x].delete(ny);
+      rowUnused[ny].delete(x);
+      dist[ny][x] = nd;
+      qy.push(ny);
+      qx.push(x);
+    }
+  }
+
+  return dist[gy][gx] === INF ? -1 : dist[gy][gx];
 }

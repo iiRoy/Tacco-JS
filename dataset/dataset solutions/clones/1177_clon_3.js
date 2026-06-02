@@ -1,72 +1,45 @@
-(function(rawInputData) {
-    const inputLines = rawInputData.split('\n');
-
-    function calculateArithmeticMean(dataSet) {
-        if (dataSet.length === 0) {
-            return NaN;
+(function(sourceText) {
+    var rows = sourceText.split('\n');
+    while (true) {
+        var rawCount = rows.shift();
+        var count = Number(rawCount);
+        if (count === 0) {
+            return;
         }
-        let totalSum = 0;
-        for (const dataPoint of dataSet) {
-            totalSum += dataPoint;
-        }
-        return totalSum / dataSet.length;
-    }
-
-    function computePopulationVariance(dataSet) {
-        if (dataSet.length === 0) {
-            return NaN;
-        }
-        const averageValue = calculateArithmeticMean(dataSet);
-        let accumulatedSquaredDifferences = 0;
-        for (const dataPoint of dataSet) {
-            const deviation = dataPoint - averageValue;
-            accumulatedSquaredDifferences += Math.pow(deviation, 2);
-        }
-        return accumulatedSquaredDifferences / dataSet.length;
-    }
-
-    function determineStandardDeviation(dataSet) {
-        const populationVariance = computePopulationVariance(dataSet);
-        return Math.sqrt(populationVariance);
-    }
-
-    function processNextTestCase() {
-        const countString = inputLines.shift();
-        const currentCount = Number(countString);
-
-        if (currentCount === 0) {
-            return false;
-        }
-
-        const numbersLine = inputLines.shift();
-        
-        const parsedParts = [];
-        let remainingString = numbersLine;
-        const splitLimit = currentCount;
-
-        for (let i = 0; i < splitLimit - 1; i++) {
-            const spacePosition = remainingString.indexOf(' ');
-            if (spacePosition === -1) {
-                parsedParts.push(remainingString);
-                remainingString = '';
-                break;
-            }
-            parsedParts.push(remainingString.substring(0, spacePosition));
-            remainingString = remainingString.substring(spacePosition + 1);
-        }
-        
-        if (remainingString.length > 0 || parsedParts.length < splitLimit) {
-             parsedParts.push(remainingString);
-        }
-        
-        const numericData = parsedParts.map(Number);
-
-        console.log(determineStandardDeviation(numericData));
-        return true;
-    }
-
-    while (processNextTestCase()) {
-        // Continue processing test cases until processNextTestCase returns false (currentCount is 0).
+        var rawSequence = rows.shift();
+        var separated = rawSequence.split(' ', count);
+        var numbers = separated.map(function(value) {
+            return Number(value);
+        });
+        var answer = standardDeviation(numbers);
+        console.log(answer);
     }
 
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+function mean(list) {
+    var total = list.reduce(function(left, right) {
+        var added = left + right;
+        return added;
+    });
+    var average = total / list.length;
+    return average;
+}
+
+function variance(list) {
+    var average = mean(list);
+    var totalVariance = 0;
+    list.forEach(function(value) {
+        var difference = value - average;
+        var squaredDifference = Math.pow(difference, 2);
+        var contribution = squaredDifference / list.length;
+        totalVariance += contribution;
+    });
+    return totalVariance;
+}
+
+function standardDeviation(list) {
+    var varianceValue = variance(list);
+    var deviation = Math.sqrt(varianceValue);
+    return deviation;
+}

@@ -1,19 +1,22 @@
-(() => {
-  const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+(function run(data) {
+  const firstRecord = data.trim().match(/^[^\n]*/)[0];
+  const cells = firstRecord.split(' ');
 
-  const processedContent = rawInputContent.trim();
-  const lineSegments = processedContent.split('\n');
-  const targetLine = lineSegments[0];
+  const values = new Map([
+    ['end', Number(cells[0])],
+    ['begin', Number(cells[1])],
+    ['unit', 1]
+  ]);
 
-  const spaceDelimiterPosition = targetLine.indexOf(' ');
+  const signedPieces = [
+    values.get('end'),
+    -values.get('begin'),
+    values.get('unit')
+  ];
 
-  const firstNumericString = targetLine.substring(0, spaceDelimiterPosition);
-  const secondNumericString = targetLine.substring(spaceDelimiterPosition + 1);
+  const result = signedPieces.reduce(function(total, current) {
+    return total + current;
+  }, 0);
 
-  const firstOperand = parseInt(firstNumericString, 10);
-  const secondOperand = parseInt(secondNumericString, 10);
-
-  const finalCalculationResult = (firstOperand + 1) - secondOperand;
-
-  console.log(finalCalculationResult);
-})();
+  console.log(result);
+})(require('fs').readFileSync(0, 'utf8'));

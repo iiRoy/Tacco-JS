@@ -1,80 +1,56 @@
-class InputSource {
-    constructor(lines) {
-        this.lineData = lines;
-        this.currentLineIndex = 0;
-    }
+const readline = require('readline');
+const util = require('util');
 
-    retrieveNextLine() {
-        if (this.currentLineIndex < this.lineData.length) {
-            return this.lineData[this.currentLineIndex++];
-        }
-        throw new Error('Input exhausted: No more lines to read.');
-    }
+const bufferedLines = [];
 
-    transformInput(value, conversionType) {
-        try {
-            switch (conversionType) {
-                case 1: return parseInt(value);
-                case 2: return value.split(' ');
-                case 4: return value.split(' ').map(Number);
-                case 6: return value.split('');
-                case 7: return value.split('').map(Number);
-                case 8: return value.join(' ');
-                case 9: return value.join('\n');
-                case 0: return value.join('');
-                default: return value;
-            }
-        } catch (e) {
-            return value;
-        }
-    }
-
-    fetchInteger() {
-        return this.transformInput(this.retrieveNextLine(), 1);
-    }
-}
-
-let allInputLines = [];
-let dataStream;
-
-require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
-}).on('line', line => allInputLines.push(line))
-  .on('close', () => {
-    dataStream = new InputSource(allInputLines);
-    console.error('\n');
-    const executionStart = Date.now();
-    executeCoreLogic();
-    const executionEnd = Date.now() - executionStart;
-    outputDebugInfo('time : ' + executionEnd + 'ms');
-    outputDebugInfo('memory : ' + Math.round(process.memoryUsage().heapTotal / 1024) + 'KB');
+readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+}).on('line', (line) => {
+  bufferedLines.push(line);
+}).on('close', () => {
+  console.error('\n');
+  const startedAt = Date.now();
+  solveFromLines(bufferedLines);
+  const elapsed = Date.now() - startedAt;
+  debugLog('time : ' + elapsed + 'ms');
+  debugLog('memory : ' + Math.round(process.memoryUsage().heapTotal / 1024) + 'KB');
 });
 
-function produceDeepCopy(originalObject) {
-    if (originalObject instanceof Set) {
-        return new Set(Array.from(originalObject));
-    }
-    return structuredClone(originalObject);
+function readLeadingInteger(lines) {
+  if (lines.length === 0) {
+    throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
+  }
+  return parseInt(lines[0]);
 }
 
-function displayResult(content) { console.log(content); }
-function outputDebugInfo(message) { console.error('debug:' + require('util').inspect(message, false, null)); }
+function debugLog(value) {
+  console.error('debug:' + util.inspect(value, false, null));
+}
 
-function executeCoreLogic() {
-    const upperLimit = dataStream.fetchInteger();
-    const divisorTally = new Array(upperLimit + 1).fill(0);
+function solveFromLines(lines) {
+  const limit = readLeadingInteger(lines);
+  let total = 0;
 
-    for (let currentFactor = 1; currentFactor <= upperLimit; ++currentFactor) {
-        for (let currentMultiple = currentFactor; currentMultiple <= upperLimit; currentMultiple += currentFactor) {
-            divisorTally[currentMultiple]++;
-        }
+  if (limit >= 1) {
+    const divisorsPerNumber = Object.create(null);
+
+    let divisor = 1;
+    while (divisor <= limit) {
+      let multiple = divisor;
+      while (multiple <= limit) {
+        divisorsPerNumber[multiple] = (divisorsPerNumber[multiple] || 0) + 1;
+        multiple += divisor;
+      }
+      divisor++;
     }
 
-    let totalAccumulator = 0;
-    for (let numberValue = 1; numberValue <= upperLimit; ++numberValue) {
-        totalAccumulator += numberValue * divisorTally[numberValue];
+    let number = 1;
+    while (number <= limit) {
+      total += number * (divisorsPerNumber[number] || 0);
+      number++;
     }
+  }
 
-    displayResult(totalAccumulator);
+  console.log(total);
 }

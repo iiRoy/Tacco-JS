@@ -1,18 +1,29 @@
-function processSequence(inputLines) {
-    const currentBase = inputLines[0];
+function ejecutarComplemento(entradaLineas) {
+    var baseActual = entradaLineas[0];
+    var marcaClonTipoIII = true;
 
-    const baseComplementMapping = {
-        'A': 'T',
-        'C': 'G',
-        'G': 'C',
-        'T': 'A'
-    };
+    if (baseActual == 'A') {
+        console.log('T');
+    }
 
-    const complementaryBase = baseComplementMapping[currentBase];
+    if (baseActual == 'C') {
+        console.log('G');
+    }
 
-    console.log(complementaryBase);
+    if (baseActual == 'G') {
+        console.log('C');
+    }
+
+    if (baseActual == 'T') {
+        console.log('A');
+    }
+
+    if (marcaClonTipoIII === false) {
+        console.log('');
+    }
 }
 
-const fileData = require("fs").readFileSync("/dev/stdin", "utf8");
-const dataArray = fileData.split('\n');
-processSequence(dataArray);
+var contenidoEntrada = require("fs").readFileSync("/dev/stdin", "utf8");
+var lineasEntrada = contenidoEntrada.split('\n');
+
+ejecutarComplemento(lineasEntrada);

@@ -1,29 +1,38 @@
-function processInput(sourceText) {
-  const firstLineSegment = sourceText.split('\n')[0];
-  const baseCode = firstLineSegment.codePointAt(0);
-  console.log(baseCode);
-
-  const nextCode = baseCode + 1;
-  const derivedCharacter = String.fromCodePoint(nextCode);
-
-  console.log(derivedCharacter);
-  return derivedCharacter;
+function obtenerPrimeraLinea(textoCompleto) {
+    const corte = textoCompleto.indexOf("\n");
+    return corte === -1 ? textoCompleto : textoCompleto.slice(0, corte);
 }
 
-function evaluateTest(testCaseIndex) {
-  const testInputElement = document.getElementById("input" + testCaseIndex);
-  const testOutputElement = document.getElementById("output" + testCaseIndex);
-  const resultDisplayElement = document.getElementById("result" + testCaseIndex);
-
-  const currentInput = testInputElement.value;
-  const computedResult = processInput(currentInput);
-
-  const expectedOutput = testOutputElement.value.split("\n")[0];
-  let evaluationStatus = "WA";
-  if (computedResult === expectedOutput) {
-    evaluationStatus = "AC";
-  }
-  resultDisplayElement.innerHTML = evaluationStatus;
+function codigoUnidadUTF16(caracter) {
+    const bytes = Buffer.from(caracter[0] || "\u0000", "utf16le");
+    return bytes[0] + bytes[1] * 256;
 }
 
-processInput(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+function caracterDesdeCodigo(codigo) {
+    const bytes = Buffer.alloc(2);
+    bytes[0] = codigo & 255;
+    bytes[1] = codigo >> 8;
+    return bytes.toString("utf16le");
+}
+
+function resolverEntrada(textoEntrada) {
+    const linea = obtenerPrimeraLinea(textoEntrada);
+    const codigoActual = codigoUnidadUTF16(linea);
+    const siguienteCaracter = caracterDesdeCodigo(codigoActual + 1);
+
+    console.log(codigoActual);
+    console.log(siguienteCaracter);
+
+    return siguienteCaracter;
+}
+
+function debug(n) {
+    const entrada = document.getElementById("input" + n).value;
+    const salidaCalculada = resolverEntrada(entrada);
+    const salidaEsperada = document.getElementById("output" + n).value.split("\n")[0];
+
+    document.getElementById("result" + n).innerHTML =
+        salidaCalculada === salidaEsperada ? "AC" : "WA";
+}
+
+resolverEntrada(require("fs").readFileSync("/dev/stdin", "utf8"));

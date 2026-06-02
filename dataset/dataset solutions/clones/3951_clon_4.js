@@ -1,77 +1,66 @@
 "use strict";
-class DataExtractor {
-    constructor(sourceText) {
-        if (typeof sourceText === 'undefined') throw new Error('引数（stdin）を省略できません！');
-        this.position = 0;
-        this.tokens = sourceText.split(/\n|\s/);
-    }
-    fetchInteger() {
-        return parseInt(this.tokens[this.position++], 10);
-    }
-    fetchIntegerArray(count) {
-        if (typeof count === 'undefined') throw new Error('引数（1以上）を省略できません！');
-        let result = new Array(count);
-        for (let i = 0; i < count; i++) {
-            result[i] = this.fetchInteger();
-        }
-        return result;
-    }
-    fetchString() {
-        return this.tokens[this.position++];
-    }
-    fetchStringArray(count) {
-        if (typeof count === 'undefined') throw new Error('引数（1以上）を省略できません！');
-        let result = new Array(count);
-        for (let i = 0; i < count; i++) {
-            result[i] = this.fetchString();
-        }
-        return result;
-    }
-}
 
-function ProcessInput(rawInput) {
-    let parser = new DataExtractor(rawInput);
-    let countA = parser.fetchInteger();
-    let countB = parser.fetchInteger();
+function Main(source) {
+    const pieces = source.split(/\n|\s/);
+    const needWhite = pieces[0] - 0;
+    const needBlack = pieces[1] - 0;
 
-    const GRID_DIMENSION = 100;
-    const HALF_GRID = GRID_DIMENSION / 2;
+    const plannedWhite = countPreDecrementPasses(needWhite);
+    const plannedBlack = countPreDecrementPasses(needBlack);
 
-    // Initialize the grid using a functional approach
-    let canvas = Array.from({ length: GRID_DIMENSION }, (_, rowIndex) =>
-        Array.from({ length: GRID_DIMENSION }, () => (rowIndex < HALF_GRID ? '#' : '.'))
-    );
-
-    // Generator function to produce coordinates for pattern placement
-    function* coordinateGenerator(initialX, initialY, totalPointsToPlace) {
-        let currentX = initialX;
-        let currentY = initialY;
-        for (let i = 0; i < totalPointsToPlace; i++) {
-            yield { x: currentX, y: currentY };
-            currentX += 2;
-            if (currentX >= GRID_DIMENSION) {
-                currentX = 1;
-                currentY += 3;
-            }
-        }
+    if (plannedWhite > 50) {
+        triggerWriteFailure(101);
     }
 
-    // Apply pattern for countA
-    for (const point of coordinateGenerator(1, 1, countA - 1)) {
-        canvas[point.y][point.x] = '.';
+    if (plannedWhite === 50 && plannedBlack > 0) {
+        triggerWriteFailure(1);
     }
 
-    // Apply pattern for countB
-    for (const point of coordinateGenerator(1, 51, countB - 1)) {
-        canvas[point.y][point.x] = '#';
+    if (plannedBlack > 50) {
+        triggerWriteFailure(101);
     }
 
-    console.log(`${GRID_DIMENSION} ${GRID_DIMENSION}`);
-    canvas.forEach(row => {
-        console.log(row.join(''));
+    if (plannedWhite === 50 || plannedBlack === 50) {
+        console.log("100 100");
+        triggerJoinFailure();
+    }
+
+    const topPlain = "#".repeat(100);
+    const bottomPlain = ".".repeat(100);
+    const alteredTop = paintOddColumns("#", ".", plannedWhite);
+    const alteredBottom = paintOddColumns(".", "#", plannedBlack);
+
+    const picture = Array.from({ length: 100 }, (_, row) => {
+        if (row === 1) return alteredTop;
+        if (row === 51) return alteredBottom;
+        return row < 50 ? topPlain : bottomPlain;
     });
+
+    console.log("100 100");
+    console.log(picture.join("\n"));
 }
 
-if (typeof window === "undefined") {
-    ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+function countPreDecrementPasses(value) {
+    if (!(value > 1)) return 0;
+    if (!Number.isFinite(value)) return 51;
+    return Math.ceil(value - 1);
 }
+
+function paintOddColumns(fill, mark, howMany) {
+    const cells = fill.repeat(100).split("");
+    Array.from({ length: howMany }, (_, index) => 1 + index * 2)
+        .forEach(column => { cells[column] = mark; });
+    return cells.join("");
+}
+
+function triggerWriteFailure(key) {
+    let missing;
+    missing[key] = 0;
+}
+
+function triggerJoinFailure() {
+    let row;
+    row.join("");
+}
+
+if (typeof window == "undefined") Main(require("fs").readFileSync("/dev/stdin", "utf8"));

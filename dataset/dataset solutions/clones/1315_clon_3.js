@@ -1,31 +1,31 @@
-const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+(function(sourceText) {
+    var letterTotals = [];
+    var startCode = 'a'.charCodeAt(0);
+    var finishCode = 'z'.charCodeAt(0);
 
-(function(rawData) {
-    const firstCharCode = 'a'.charCodeAt(0);
-    const lastCharCode = 'z'.charCodeAt(0);
-
-    const alphabetCharacters = Array.from({ length: lastCharCode - firstCharCode + 1 }, (_, idx) =>
-        String.fromCharCode(firstCharCode + idx)
-    );
-
-    const charCounts = alphabetCharacters.reduce((accumulator, charKey) => {
-        accumulator[charKey] = 0;
-        return accumulator;
-    }, {});
-
-    for (const inputChar of rawData.split('')) {
-        const lowerCaseChar = inputChar.toLowerCase();
-        if (charCounts.hasOwnProperty(lowerCaseChar)) {
-            charCounts[lowerCaseChar]++;
-        }
+    for (var position = startCode; position <= finishCode; position++) {
+        letterTotals[String.fromCharCode(position)] = 0;
     }
 
-    const resultLines = [];
-    for (const charKey in charCounts) {
-        if (Object.prototype.hasOwnProperty.call(charCounts, charKey)) {
-            resultLines.push(`${charKey}: ${charCounts[charKey]}`);
+    sourceText.split('').forEach(function(currentChar) {
+        currentChar = currentChar.toLowerCase();
+        if (currentChar in letterTotals) {
+            letterTotals[currentChar]++;
         }
-    }
-    console.log(resultLines.join('\n'));
+    });
 
-})(fileContent);
+    console.log(Object.keys(letterTotals).map(function(letterKey) {
+        return letterKey + ': ' + this[letterKey];
+    }, letterTotals).join('\n'));
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+function parse(str, sep, ter) {
+    sep = typeof(sep) !== 'undefined' ? sep : ' ';
+    ter = typeof(ter) !== 'undefined' ? ter : '\n';
+    str = str.replace(/\n$/, '');
+    var parsedRows = str.split(ter);
+    for (var rowIndex = 0; rowIndex < parsedRows.length; rowIndex++) {
+        parsedRows[rowIndex] = parsedRows[rowIndex].split(sep);
+    }
+    return parsedRows;
+}

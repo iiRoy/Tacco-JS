@@ -1,36 +1,47 @@
-function processInputData(rawData) {
-  const dataLines = rawData.trim().split("\n");
-
-  const totalElements = Number.parseInt(dataLines[0].split(' ')[0], 10);
-  const sortedValues = dataLines[1].split(' ').map(Number).sort((valA, valB) => valA - valB);
-
-  const valueFrequencies = new Map();
-  for (const currentItem of sortedValues) {
-    valueFrequencies.set(currentItem, (valueFrequencies.get(currentItem) || 0) + 1);
+function execute(data) {
+  const records = data.split("\n");
+  if (records[records.length - 1] === "") {
+    records.pop();
   }
 
-  const frequencyCounts = Array.from(valueFrequencies.values()).sort((countA, countB) => countA - countB);
+  const total = records[0].split(" ")[0] - 0;
+  const pieces = records[1].split(" ");
 
-  const cumulativeSums = [0];
-  let runningSum = 0;
-  for (const individualCount of frequencyCounts) {
-    runningSum += individualCount;
-    cumulativeSums.push(runningSum);
-  }
+  const bucket = new Map();
+  const singles = [];
+  for (let position = 0; position < pieces.length; position++) {
+    const item = pieces[position] - 0;
 
-  const distinctValueCount = frequencyCounts.length;
-
-  for (let groupSize = 1; groupSize <= totalElements; groupSize++) {
-    const sumRangeEndIndex = distinctValueCount - groupSize + 1;
-    
-    let currentUpperLimitSum = 0;
-    if (sumRangeEndIndex > 0 && sumRangeEndIndex <= distinctValueCount) {
-        currentUpperLimitSum = cumulativeSums[sumRangeEndIndex];
+    if (item === 0) {
+      continue;
     }
 
-    const finalResult = Math.min(Math.floor(totalElements / groupSize), currentUpperLimitSum * groupSize);
-    console.log(finalResult);
+    if (Number.isNaN(item)) {
+      singles.push(1);
+      continue;
+    }
+
+    bucket.set(item, (bucket.get(item) || 0) + 1);
   }
+
+  const sizes = Array.from(bucket.values()).concat(singles);
+  sizes.sort((left, right) => {
+    return left - right;
+  });
+
+  const prefix = [0];
+  for (let index = 0; index < sizes.length; index++) {
+    prefix[index + 1] = prefix[index] + sizes[index];
+  }
+
+  let answers = [];
+  for (let width = 1; width <= total; width++) {
+    const usable = sizes.length - width + 1;
+    const cap = usable > 0 ? prefix[usable] : 0;
+    answers.push(Math.min(Math.floor(total / width), cap * width));
+  }
+
+  console.log(answers.join("\n"));
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+execute(require("fs").readFileSync("/dev/stdin", "utf8"));

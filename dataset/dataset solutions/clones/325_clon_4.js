@@ -1,49 +1,40 @@
-const formatStringPad = (inputString, targetWidth) => {
-    const padding = ' '.repeat(targetWidth);
-    return (padding + inputString).slice(-targetWidth);
+const fs = require("fs");
+
+const rightAlign = (value, width) => {
+    const text = String(value);
+    return (" ".repeat(width) + text).slice(-width);
 };
 
-const formatNumericPad = (inputNumber, targetWidth) => {
-    return formatStringPad(String(inputNumber), targetWidth);
+const sumValues = (values) => {
+    return values.reduce((total, value) => total + Number(value), 0);
 };
 
-const formatArrayElementsPad = (inputArray, targetWidth) => {
-    return inputArray.map(element => formatNumericPad(element, targetWidth));
+const printAlignedRow = (values) => {
+    console.log(values.map(value => rightAlign(value, 5)).join(""));
 };
 
-const calculateArraySum = (numericArray) => {
-    return numericArray.reduce((accumulator, currentValue) => Number(currentValue) + accumulator, 0);
-};
+const inputLines = fs.readFileSync("/dev/stdin", "utf8").trim().split("\n");
+let linePointer = 0;
 
-const fileSystem = require("node:fs");
-let inputDataLines = fileSystem.readFileSync("/dev/stdin", "utf8").trim().split('\n');
-let currentLineIndex = 0;
-
-while (inputDataLines[currentLineIndex] !== '0') {
-    const rowCount = Number(inputDataLines[currentLineIndex++]);
-    const originalDataRows = [];
-    const processedOutputRows = [];
+while (inputLines[linePointer] !== "0") {
+    const rowCount = Number(inputLines[linePointer++]);
+    const completedRows = [];
 
     for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-        const currentInputRowValues = inputDataLines[currentLineIndex++].split(' ');
-        originalDataRows.push(currentInputRowValues);
-        const currentRowSum = calculateArraySum(currentInputRowValues);
-        processedOutputRows.push([...currentInputRowValues, currentRowSum]);
+        const rowValues = inputLines[linePointer++].split(" ");
+        const rowTotal = sumValues(rowValues);
+        const rowWithTotal = [...rowValues, rowTotal];
+
+        completedRows.push(rowWithTotal);
+        printAlignedRow(rowWithTotal);
     }
 
-    for (const rowToDisplay of processedOutputRows) {
-        console.log(formatArrayElementsPad(rowToDisplay, 5).join(''));
+    const totalsRow = [];
+
+    for (let columnIndex = 0; columnIndex < rowCount + 1; columnIndex++) {
+        const columnValues = completedRows.map(row => row[columnIndex]);
+        totalsRow.push(sumValues(columnValues));
     }
 
-    const finalColumnAggregates = [];
-    const numberOfOriginalColumns = originalDataRows[0].length;
-
-    for (let colIdx = 0; colIdx < numberOfOriginalColumns; colIdx++) {
-        const currentColumnTotal = calculateArraySum(originalDataRows.map(row => row[colIdx]));
-        finalColumnAggregates.push(currentColumnTotal);
-    }
-    
-    finalColumnAggregates.push(0);
-
-    console.log(formatArrayElementsPad(finalColumnAggregates, 5).join(''));
+    printAlignedRow(totalsRow);
 }

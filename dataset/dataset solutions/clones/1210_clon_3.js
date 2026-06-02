@@ -1,43 +1,31 @@
-function processTimeInput(rawInputString) {
-    const totalSecondsInput = parseInt(rawInputString, 10);
+function Solve(src) {
+    var parsedValue = parseInt(src); //46979
+    var S = parsedValue;
 
-    const timeComponents = calculateHMSComponents(totalSecondsInput);
+    var hourBase = 3600;
+    var h = Math.floor(S / hourBase); //13
 
-    const hoursResult = timeComponents.hours;
-    const minutesResult = timeComponents.minutes;
-    const secondsResult = timeComponents.seconds;
+    var restAfterHours = S % hourBase;
+    var x = restAfterHours ; //179
 
-    const outputParts = [
-        hoursResult,
-        ":",
-        minutesResult,
-        ":",
-        secondsResult
-    ];
-    console.log(outputParts.join(""));
+    var minuteBase = 60;
+    var m = Math.floor(x / minuteBase); //2
+
+    var restAfterMinutes = x % minuteBase;
+    var z = restAfterMinutes; //59
+
+    var s = z; //59
+    var resultText = h + ":" + m;
+    resultText = resultText + ":" + s;
+    console.log(resultText);
+}
+// デバッグ用
+function debug() {
+    var elem = document.getElementById("input");
+    var input = elem.value;
+    Solve(input);
 }
 
-function calculateHMSComponents(totalSecs) {
-    const SECONDS_PER_HOUR = 3600;
-    const SECONDS_PER_MINUTE = 60;
-
-    let currentSecondsForCalculation = totalSecs;
-
-    const hours = Math.floor(currentSecondsForCalculation / SECONDS_PER_HOUR);
-    currentSecondsForCalculation %= SECONDS_PER_HOUR;
-
-    const minutes = Math.floor(currentSecondsForCalculation / SECONDS_PER_MINUTE);
-    currentSecondsForCalculation %= SECONDS_PER_MINUTE;
-
-    const seconds = currentSecondsForCalculation;
-
-    return { hours: hours, minutes: minutes, seconds: seconds };
-}
-
-function simulateDebugExecution() {
-    const inputElement = document.getElementById("input");
-    const inputElementValue = inputElement.value;
-    processTimeInput(inputElementValue);
-}
-
-processTimeInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+//* この行以降は編集しないでください（標準入出力から一度に読み込み、Mainを呼び出します）
+var stdinText = require("fs").readFileSync("/dev/stdin", "utf8");
+Solve(stdinText);

@@ -1,44 +1,48 @@
-const computeDifference = (valA, valB) => valA === valB ? valA : Math.abs(valA - valB);
+let bufferTokens;
+let readCursor;
 
-let sourceData, dataIndex;
-
-function initializeData(rawInput) {
-    sourceData = rawInput.replace(/\n/g, " ").split(" ");
-    dataIndex = 0;
+function takeNumber() {
+  return parseInt(bufferTokens[readCursor++], 10);
 }
 
-const emitResult = (outputContent) => { console.log(outputContent) };
-const emitResultLine = (outputContent) => { console.log(outputContent + "\n") };
-
-const fetchString = () => { return sourceData[dataIndex++] };
-const fetchInteger = () => { return parseInt(fetchString(), 10) };
-const fetchFloat = () => { return parseFloat(fetchString()) };
-
-function processTournament(inputPayload) {
-    initializeData(inputPayload);
-
-    let initialPower = fetchInteger();
-    let totalInitialElements = Math.pow(2, initialPower);
-    let currentRoundElements = [];
-
-    for (let k = 0; k < totalInitialElements; k++) {
-        currentRoundElements.push(fetchInteger());
-    }
-
-    while (currentRoundElements.length > 1) {
-        let nextRoundElements = [];
-        for (let j = 0; j < currentRoundElements.length; j += 2) {
-            let firstOperand = currentRoundElements[j];
-            let secondOperand = currentRoundElements[j + 1];
-            nextRoundElements.push(computeDifference(firstOperand, secondOperand));
-        }
-        currentRoundElements = nextRoundElements;
-    }
-    emitResultLine(currentRoundElements[0]);
+function sameOddDifference(leftValue, rightValue) {
+  if (leftValue == rightValue) {
+    return leftValue;
+  }
+  return leftValue > rightValue ? leftValue - rightValue : rightValue - leftValue;
 }
 
-function runDebug() {
-    processTournament(document.getElementById("input").value);
+function resolveBracket(values, startAt, span) {
+  if (span === 1) {
+    return values[startAt];
+  }
+
+  const middle = span / 2;
+  const leftWinner = resolveBracket(values, startAt, middle);
+  const rightWinner = resolveBracket(values, startAt + middle, middle);
+  return sameOddDifference(leftWinner, rightWinner);
 }
 
-processTournament(require("fs").readFileSync("/dev/stdin", "utf8"));
+function solve(source) {
+  bufferTokens = source.replace(/\n/g, " ").split(" ");
+  readCursor = 0;
+
+  const exponent = takeNumber();
+  const requiredSize = Math.pow(2, exponent);
+  const storedNumbers = [];
+
+  for (let position = 0; position < requiredSize; position++) {
+    storedNumbers[position] = takeNumber();
+  }
+
+  let answer;
+  if (Number.isInteger(requiredSize) && requiredSize >= 1) {
+    answer = resolveBracket(storedNumbers, 0, requiredSize);
+  } else {
+    answer = undefined;
+  }
+
+  console.log(answer + "\n");
+}
+
+solve(require("fs").readFileSync("/dev/stdin", "utf8"));

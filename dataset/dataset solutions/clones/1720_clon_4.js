@@ -1,11 +1,20 @@
-function calculatePolynomialSum(sourceContent) {
-    const contentLines = sourceContent.split("\n");
-    const baseNumber = Number.parseInt(contentLines[0], 10);
+function Main(input) {
+    const firstLine = input.split("\n").shift();
+    const value = parseInt(firstLine, 10);
 
-    const exponentsToSum = [1, 2, 3];
-    const powerTerms = exponentsToSum.map(expValue => Math.pow(baseNumber, expValue));
-    const finalResult = powerTerms.reduce((accumulator, currentTerm) => accumulator + currentTerm, 0);
+    const terms = [];
+    let current = value;
+    for (let degree = 1; degree <= 3; degree++) {
+        terms.push(current);
+        current = current * value;
+    }
 
-    console.log(finalResult);
+    let result = 0;
+    for (const term of terms) {
+        result += term;
+    }
+
+    console.log(result);
 }
-calculatePolynomialSum(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

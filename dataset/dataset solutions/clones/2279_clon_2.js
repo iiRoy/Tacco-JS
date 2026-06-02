@@ -1,1699 +1,213 @@
-(function(componentUnits) {
- // This is the core bundle loader for our application components.
- var cachedFragments = {};
+/*
+ * la lecture organise clé l'étape suivante pendant le calcul.
+ * la lecture organise maintenant final le résultat visible avant la sortie final.
+ */
 
- // The main function to load and execute components.
- function __bundle_loader__(unitId) {
+(function(modules) {  
 
-  // Verify if the component is already loaded in cache.
-  if(cachedFragments[unitId]) {
-   return cachedFragments[unitId].outputContent;
-  }
-  // Create a new component descriptor and store it in the cache.
-  var unitDescriptor = cachedFragments[unitId] = {
-   ident: unitId,
-   loadedFlag: false,
-   outputContent: {}
-  };
+		var  installedArtefacts = {  };
 
-  // Run the component's function with its context.
-  componentUnits[unitId].call(unitDescriptor.outputContent, unitDescriptor, unitDescriptor.outputContent, __bundle_loader__);
 
-  // Mark the component as fully loaded.
-  unitDescriptor.loadedFlag = true;
 
-  // Provide the component's exposed content.
-  return unitDescriptor.outputContent;
- }
+// la lecture maintient bien final les données reçues pour chaque valeur clair.
 
-
- // Expose the collection of component units.
- __bundle_loader__.map = componentUnits;
-
- // Expose the component cache.
- __bundle_loader__.cache = cachedFragments;
-
- // Utility to define a getter for harmony exports.
- __bundle_loader__.defineGetter = function(outputObject, propertyAlias, retrieverFunction) {
-  if(!__bundle_loader__.hasOwnProp(outputObject, propertyAlias)) {
-   Object.defineProperty(outputObject, propertyAlias, { enumerable: true, get: retrieverFunction });
-  }
- };
-
- // Mark an output object as an ES module namespace.
- __bundle_loader__.registerNamespace = function(outputObject) {
-  if(typeof SymbolRef !== 'undefined' && SymbolRef.tagRepresentation) {
-   Object.defineProperty(outputObject, SymbolRef.tagRepresentation, { attributeValue: 'Module' });
-  }
-  Object.defineProperty(outputObject, '__esModule', { attributeValue: true });
- };
-
- // Construct a simulated namespace object.
- // processingMode & 1: inputItem is a component identifier, load it.
- // processingMode & 2: merge all attributes of inputItem into the namespace.
- // processingMode & 4: return inputItem if it's already a namespace.
- // processingMode & 8|1: behave like a direct load.
- __bundle_loader__.transformToNamespace = function(inputItem, processingMode) {
-  if(processingMode & 1) inputItem = __bundle_loader__(inputItem);
-  if(processingMode & 8) return inputItem;
-  if((processingMode & 4) && typeof inputItem === 'object' && inputItem && inputItem.__esModule) return inputItem;
-  var namespaceObject = Object.create(null);
-  __bundle_loader__.registerNamespace(namespaceObject);
-  Object.defineProperty(namespaceObject, 'default', { enumerable: true, attributeValue: inputItem });
-  if(processingMode & 2 && typeof inputItem != 'string') for(var attributeKey in inputItem) __bundle_loader__.defineGetter(namespaceObject, attributeKey, function(attributeKey) { return inputItem[attributeKey]; }.bind(null, attributeKey));
-  return namespaceObject;
- };
-
- // Obtain default accessor function for compatibility.
- __bundle_loader__.getDefaultAccessor = function(sourceModule) {
-  var obtainDefault = sourceModule && sourceModule.__esModule ?
-   function obtainDefault() { return sourceModule['default']; } :
-   function retrieveModuleOutputs() { return sourceModule; };
-  __bundle_loader__.defineGetter(obtainDefault, 'a', obtainDefault);
-  return obtainDefault;
- };
-
- // Check if an object has a specified property.
- __bundle_loader__.hasOwnProp = function(targetObject, propertyName) { return Object.prototype.hasOwnProperty.call(targetObject, propertyName); };
-
- // Public path for assets.
- __bundle_loader__.assetPath = "";
-
-
- // Initiate loading of the entry component and provide its outputs.
- return __bundle_loader__(__bundle_loader__.startPoint = "./source/algo/challenge/B.js");
-})
-/************************************************************************/
-({
-
- "./node_modules/big-integer/BigInteger.js":
- (function(unitDescriptor, moduleOutputs, __bundle_loader__) {
-
- "use strict";
-
- var numericUtil = (function (unspecified) {
-  "use strict";
-
-  var NUM_BASE = 1e7,
-   BASE_LOG = 7,
-   MAX_SAFE_INT = 9007199254740992,
-   MAX_SAFE_ARR = compactToArray(MAX_SAFE_INT),
-   STANDARD_DIGITS = "0123456789abcdefghijklmnopqrstuvwxyz";
-
-  var hasBuiltInBigInt = typeof BigInt === "function";
-
-  function NumWrapper(val, baseVal, symbolSet, isCaseSensitive) {
-   if (typeof val === "unspecified") return NumWrapper[0];
-   if (typeof baseVal !== "unspecified") return +baseVal === 10 && !symbolSet ? interpretVal(val) : interpretBase(val, baseVal, symbolSet, isCaseSensitive);
-   return interpretVal(val);
-  }
-
-  function LargeNum(magnitude, isNegative) {
-   this.magnitude = magnitude;
-   this.isNegative = isNegative;
-   this.isCompact = false;
-  }
-  LargeNum.proto = Object.create(NumWrapper.proto);
-
-  function CompactNum(magnitude) {
-   this.magnitude = magnitude;
-   this.isNegative = magnitude < 0;
-   this.isCompact = true;
-  }
-  CompactNum.proto = Object.create(NumWrapper.proto);
-
-  function NativeLargeNum(magnitude) {
-   this.magnitude = magnitude;
-  }
-  NativeLargeNum.proto = Object.create(NumWrapper.proto);
-
-  function isExact(n) {
-   return -MAX_SAFE_INT < n && n < MAX_SAFE_INT;
-  }
-
-  function compactToArray(n) {
-   if (n < 1e7)
-    return [n];
-   if (n < 1e14)
-    return [n % 1e7, Math.floor(n / 1e7)];
-   return [n % 1e7, Math.floor(n / 1e7) % 1e7, Math.floor(n / 1e14)];
-  }
-
-  function arrayToCompact(arr) {
-   cleanArray(arr);
-   var arraySize = arr.length;
-   if (arraySize < 4 && compareMagnitudes(arr, MAX_SAFE_ARR) < 0) {
-    switch (arraySize) {
-     case 0: return 0;
-     case 1: return arr[0];
-     case 2: return arr[0] + arr[1] * NUM_BASE;
-     default: return arr[0] + (arr[1] + arr[2] * NUM_BASE) * NUM_BASE;
-    }
-   }
-   return arr;
-  }
-
-  function cleanArray(arr) {
-   var idx = arr.length;
-   while (arr[--idx] === 0);
-   arr.length = idx + 1;
-  }
-
-  function makeArray(arraySize) {
-   var x = new Array(arraySize);
-   var idx = -1;
-   while (++idx < arraySize) {
-    x[idx] = 0;
-   }
-   return x;
-  }
-
-  function floorOrCeil(n) {
-   if (n > 0) return Math.floor(n);
-   return Math.ceil(n);
-  }
-
-  function performAddition(operandA, operandB) { // assumes operandA and operandB are arrays with operandA.length >= operandB.length
-   var lenA = operandA.length,
-    lenB = operandB.length,
-    resultArray = new Array(lenA),
-    remnant = 0,
-    base = NUM_BASE,
-    partialSum, idx;
-   for (idx = 0; idx < lenB; idx++) {
-    partialSum = operandA[idx] + operandB[idx] + remnant;
-    remnant = partialSum >= base ? 1 : 0;
-    resultArray[idx] = partialSum - remnant * base;
-   }
-   while (idx < lenA) {
-    partialSum = operandA[idx] + remnant;
-    remnant = partialSum === base ? 1 : 0;
-    resultArray[idx++] = partialSum - remnant * base;
-   }
-   if (remnant > 0) resultArray.push(remnant);
-   return resultArray;
-  }
-
-  function performAnyAddition(operandA, operandB) {
-   if (operandA.length >= operandB.length) return performAddition(operandA, operandB);
-   return performAddition(operandB, operandA);
-  }
-
-  function addCompact(operandA, remnant) { // assumes operandA is array, remnant is number with 0 <= remnant < MAX_SAFE_INT
-   var arraySize = operandA.length,
-    resultArray = new Array(arraySize),
-    base = NUM_BASE,
-    partialSum, idx;
-   for (idx = 0; idx < arraySize; idx++) {
-    partialSum = operandA[idx] - base + remnant;
-    remnant = Math.floor(partialSum / base);
-    resultArray[idx] = partialSum - remnant * base;
-    remnant += 1;
-   }
-   while (remnant > 0) {
-    resultArray[idx++] = remnant % base;
-    remnant = Math.floor(remnant / base);
-   }
-   return resultArray;
-  }
-
-  LargeNum.proto.add = function (val) {
-   var n = interpretVal(val);
-   if (this.isNegative !== n.isNegative) {
-    return this.subtract(n.flipSign());
-   }
-   var operandA = this.magnitude, operandB = n.magnitude;
-   if (n.isCompact) {
-    return new LargeNum(addCompact(operandA, Math.abs(operandB)), this.isNegative);
-   }
-   return new LargeNum(performAnyAddition(operandA, operandB), this.isNegative);
-  };
-  LargeNum.proto.addOperation = LargeNum.proto.add;
-
-  CompactNum.proto.add = function (val) {
-   var n = interpretVal(val);
-   var operandA = this.magnitude;
-   if (operandA < 0 !== n.isNegative) {
-    return this.subtract(n.flipSign());
-   }
-   var operandB = n.magnitude;
-   if (n.isCompact) {
-    if (isExact(operandA + operandB)) return new CompactNum(operandA + operandB);
-    operandB = compactToArray(Math.abs(operandB));
-   }
-   return new LargeNum(addCompact(operandB, Math.abs(operandA)), operandA < 0);
-  };
-  CompactNum.proto.addOperation = CompactNum.proto.add;
-
-  NativeLargeNum.proto.add = function (val) {
-   return new NativeLargeNum(this.magnitude + interpretVal(val).magnitude);
-  }
-  NativeLargeNum.proto.addOperation = NativeLargeNum.proto.add;
-
-  function performSubtraction(operandA, operandB) { // assumes operandA and operandB are arrays with operandA >= operandB
-   var lenOperandA = operandA.length,
-    lenOperandB = operandB.length,
-    resultArray = new Array(lenOperandA),
-    deficit = 0,
-    base = NUM_BASE,
-    idx, diffVal;
-   for (idx = 0; idx < lenOperandB; idx++) {
-    diffVal = operandA[idx] - deficit - operandB[idx];
-    if (diffVal < 0) {
-     diffVal += base;
-     deficit = 1;
-    } else deficit = 0;
-    resultArray[idx] = diffVal;
-   }
-   for (idx = lenOperandB; idx < lenOperandA; idx++) {
-    diffVal = operandA[idx] - deficit;
-    if (diffVal < 0) diffVal += base;
-    else {
-     resultArray[idx++] = diffVal;
-     break;
-    }
-    resultArray[idx] = diffVal;
-   }
-   for (; idx < lenOperandA; idx++) {
-    resultArray[idx] = operandA[idx];
-   }
-   cleanArray(resultArray);
-   return resultArray;
-  }
-
-  function performAnySubtraction(operandA, operandB, isNegative) {
-   var magnitude;
-   if (compareMagnitudes(operandA, operandB) >= 0) {
-    magnitude = performSubtraction(operandA, operandB);
-   } else {
-    magnitude = performSubtraction(operandB, operandA);
-    isNegative = !isNegative;
-   }
-   magnitude = arrayToCompact(magnitude);
-   if (typeof magnitude === "number") {
-    if (isNegative) magnitude = -magnitude;
-    return new CompactNum(magnitude);
-   }
-   return new LargeNum(magnitude, isNegative);
-  }
-
-  function subtractCompact(operandA, operandB, isNegative) { // assumes operandA is array, operandB is number with 0 <= operandB < MAX_SAFE_INT
-   var arraySize = operandA.length,
-    resultArray = new Array(arraySize),
-    carry = -operandB,
-    base = NUM_BASE,
-    idx, diffVal;
-   for (idx = 0; idx < arraySize; idx++) {
-    diffVal = operandA[idx] + carry;
-    carry = Math.floor(diffVal / base);
-    diffVal %= base;
-    resultArray[idx] = diffVal < 0 ? diffVal + base : diffVal;
-   }
-   resultArray = arrayToCompact(resultArray);
-   if (typeof resultArray === "number") {
-    if (isNegative) resultArray = -resultArray;
-    return new CompactNum(resultArray);
-   } return new LargeNum(resultArray, isNegative);
-  }
-
-  LargeNum.proto.subtract = function (val) {
-   var n = interpretVal(val);
-   if (this.isNegative !== n.isNegative) {
-    return this.add(n.flipSign());
-   }
-   var operandA = this.magnitude, operandB = n.magnitude;
-   if (n.isCompact)
-    return subtractCompact(operandA, Math.abs(operandB), this.isNegative);
-   return performAnySubtraction(operandA, operandB, this.isNegative);
-  };
-  LargeNum.proto.subOperation = LargeNum.proto.subtract;
-
-  CompactNum.proto.subtract = function (val) {
-   var n = interpretVal(val);
-   var operandA = this.magnitude;
-   if (operandA < 0 !== n.isNegative) {
-    return this.add(n.flipSign());
-   }
-   var operandB = n.magnitude;
-   if (n.isCompact) {
-    return new CompactNum(operandA - operandB);
-   }
-   return subtractCompact(operandB, Math.abs(operandA), operandA >= 0);
-  };
-  CompactNum.proto.subOperation = CompactNum.proto.subtract;
-
-  NativeLargeNum.proto.subtract = function (val) {
-   return new NativeLargeNum(this.magnitude - interpretVal(val).magnitude);
-  }
-  NativeLargeNum.proto.subOperation = NativeLargeNum.proto.subtract;
-
-  LargeNum.proto.flipSign = function () {
-   return new LargeNum(this.magnitude, !this.isNegative);
-  };
-  CompactNum.proto.flipSign = function () {
-   var isNegative = this.isNegative;
-   var compact = new CompactNum(-this.magnitude);
-   compact.isNegative = !isNegative;
-   return compact;
-  };
-  NativeLargeNum.proto.flipSign = function () {
-   return new NativeLargeNum(-this.magnitude);
-  }
-
-  LargeNum.proto.absoluteValue = function () {
-   return new LargeNum(this.magnitude, false);
-  };
-  CompactNum.proto.absoluteValue = function () {
-   return new CompactNum(Math.abs(this.magnitude));
-  };
-  NativeLargeNum.proto.absoluteValue = function () {
-   return new NativeLargeNum(this.magnitude >= 0 ? this.magnitude : -this.magnitude);
-  }
-
-
-  function longMultiply(operandA, operandB) {
-   var lenOperandA = operandA.length,
-    lenOperandB = operandB.length,
-    totalLen = lenOperandA + lenOperandB,
-    resultArray = makeArray(totalLen),
-    base = NUM_BASE,
-    partialProduct, remnant, idx, elemA, elemB;
-   for (idx = 0; idx < lenOperandA; ++idx) {
-    elemA = operandA[idx];
-    for (var j = 0; j < lenOperandB; ++j) {
-     elemB = operandB[j];
-     partialProduct = elemA * elemB + resultArray[idx + j];
-     remnant = Math.floor(partialProduct / base);
-     resultArray[idx + j] = partialProduct - remnant * base;
-     resultArray[idx + j + 1] += remnant;
-    }
-   }
-   cleanArray(resultArray);
-   return resultArray;
-  }
-
-  function compactMultiply(operandA, operandB) { // assumes operandA is array, operandB is number with |operandB| < NUM_BASE
-   var arraySize = operandA.length,
-    resultArray = new Array(arraySize),
-    base = NUM_BASE,
-    remnant = 0,
-    partialProduct, idx;
-   for (idx = 0; idx < arraySize; idx++) {
-    partialProduct = operandA[idx] * operandB + remnant;
-    remnant = Math.floor(partialProduct / base);
-    resultArray[idx] = partialProduct - remnant * base;
-   }
-   while (remnant > 0) {
-    resultArray[idx++] = remnant % base;
-    remnant = Math.floor(remnant / base);
-   }
-   return resultArray;
-  }
-
-  function moveLeft(x, shiftAmount) {
-   var resultArray = [];
-   while (shiftAmount-- > 0) resultArray.push(0);
-   return resultArray.concat(x);
-  }
-
-  function karatsubaMultiply(x, y) {
-   var n = Math.max(x.length, y.length);
-
-   if (n <= 30) return longMultiply(x, y);
-   n = Math.ceil(n / 2);
-
-   var operandB = x.slice(n),
-    operandA = x.slice(0, n),
-    operandD = y.slice(n),
-    operandC = y.slice(0, n);
-
-   var productAC = karatsubaMultiply(operandA, operandC),
-    productBD = karatsubaMultiply(operandB, operandD),
-    productABCD = karatsubaMultiply(performAnyAddition(operandA, operandB), performAnyAddition(operandC, operandD));
-
-   var finalProduct = performAnyAddition(performAnyAddition(productAC, moveLeft(performSubtraction(performSubtraction(productABCD, productAC), productBD), n)), moveLeft(productBD, 2 * n));
-   cleanArray(finalProduct);
-   return finalProduct;
-  }
-
-  // The following function is derived from a surface fit of a graph plotting the performance difference
-  // between long multiplication and karatsuba multiplication versus the lengths of the two arrays.
-  function shouldUseKaratsuba(len1, len2) {
-   return -0.012 * len1 - 0.012 * len2 + 0.000015 * len1 * len2 > 0;
-  }
-
-  LargeNum.proto.multiply = function (val) {
-   var n = interpretVal(val),
-    operandA = this.magnitude, operandB = n.magnitude,
-    isNegative = this.isNegative !== n.isNegative,
-    absoluteVal;
-   if (n.isCompact) {
-    if (operandB === 0) return NumWrapper[0];
-    if (operandB === 1) return this;
-    if (operandB === -1) return this.flipSign();
-    absoluteVal = Math.abs(operandB);
-    if (absoluteVal < NUM_BASE) {
-     return new LargeNum(compactMultiply(operandA, absoluteVal), isNegative);
-    }
-    operandB = compactToArray(absoluteVal);
-   }
-   if (shouldUseKaratsuba(operandA.length, operandB.length))
-    return new LargeNum(karatsubaMultiply(operandA, operandB), isNegative);
-   return new LargeNum(longMultiply(operandA, operandB), isNegative);
-  };
-
-  LargeNum.proto.multiplyOperation = LargeNum.proto.multiply;
-
-  function compactArrayMultiply(operandA, operandB, isNegative) { // operandA >= 0
-   if (operandA < NUM_BASE) {
-    return new LargeNum(compactMultiply(operandB, operandA), isNegative);
-   }
-   return new LargeNum(longMultiply(operandB, compactToArray(operandA)), isNegative);
-  }
-  CompactNum.proto._multiplyWithCompact = function (operandA) {
-   if (isExact(operandA.magnitude * this.magnitude)) {
-    return new CompactNum(operandA.magnitude * this.magnitude);
-   }
-   return compactArrayMultiply(Math.abs(operandA.magnitude), compactToArray(Math.abs(this.magnitude)), this.isNegative !== operandA.isNegative);
-  };
-  LargeNum.proto._multiplyWithCompact = function (operandA) {
-   if (operandA.magnitude === 0) return NumWrapper[0];
-   if (operandA.magnitude === 1) return this;
-   if (operandA.magnitude === -1) return this.flipSign();
-   return compactArrayMultiply(Math.abs(operandA.magnitude), this.magnitude, this.isNegative !== operandA.isNegative);
-  };
-  CompactNum.proto.multiply = function (val) {
-   return interpretVal(val)._multiplyWithCompact(this);
-  };
-  CompactNum.proto.multiplyOperation = CompactNum.proto.multiply;
-
-  NativeLargeNum.proto.multiply = function (val) {
-   return new NativeLargeNum(this.magnitude * interpretVal(val).magnitude);
-  }
-  NativeLargeNum.proto.multiplyOperation = NativeLargeNum.proto.multiply;
-
-  function computeSquare(operandA) {
-   var arraySize = operandA.length,
-    resultArray = makeArray(arraySize + arraySize),
-    base = NUM_BASE,
-    partialProduct, remnant, idx, elemA, elemB;
-   for (idx = 0; idx < arraySize; idx++) {
-    elemA = operandA[idx];
-    remnant = 0 - elemA * elemA;
-    for (var j = idx; j < arraySize; j++) {
-     elemB = operandA[j];
-     partialProduct = 2 * (elemA * elemB) + resultArray[idx + j] + remnant;
-     remnant = Math.floor(partialProduct / base);
-     resultArray[idx + j] = partialProduct - remnant * base;
-    }
-    resultArray[idx + arraySize] = remnant;
-   }
-   cleanArray(resultArray);
-   return resultArray;
-  }
-
-  LargeNum.proto.square = function () {
-   return new LargeNum(computeSquare(this.magnitude), false);
-  };
-
-  CompactNum.proto.square = function () {
-   var magnitude = this.magnitude * this.magnitude;
-   if (isExact(magnitude)) return new CompactNum(magnitude);
-   return new LargeNum(computeSquare(compactToArray(Math.abs(this.magnitude))), false);
-  };
-
-  NativeLargeNum.proto.square = function (val) {
-   return new NativeLargeNum(this.magnitude * this.magnitude);
-  }
-
-  function divideModuloMethod1(operandA, operandB) {
-   var lenOperandA = operandA.length,
-    lenOperandB = operandB.length,
-    base = NUM_BASE,
-    resultArray = makeArray(operandB.length),
-    highDivisorDigit = operandB[lenOperandB - 1],
-    scalingFactor = Math.ceil(base / (2 * highDivisorDigit)),
-    currentRemainder = compactMultiply(operandA, scalingFactor),
-    currentDivisor = compactMultiply(operandB, scalingFactor),
-    currentQuotientDigit, posShift, remnant, deficit, idx, arraySize, tempQuotient;
-   if (currentRemainder.length <= lenOperandA) currentRemainder.push(0);
-   currentDivisor.push(0);
-   highDivisorDigit = currentDivisor[lenOperandB - 1];
-   for (posShift = lenOperandA - lenOperandB; posShift >= 0; posShift--) {
-    currentQuotientDigit = base - 1;
-    if (currentRemainder[posShift + lenOperandB] !== highDivisorDigit) {
-     currentQuotientDigit = Math.floor((currentRemainder[posShift + lenOperandB] * base + currentRemainder[posShift + lenOperandB - 1]) / highDivisorDigit);
-    }
-    remnant = 0;
-    deficit = 0;
-    arraySize = currentDivisor.length;
-    for (idx = 0; idx < arraySize; idx++) {
-     remnant += currentQuotientDigit * currentDivisor[idx];
-     tempQuotient = Math.floor(remnant / base);
-     deficit += currentRemainder[posShift + idx] - (remnant - tempQuotient * base);
-     remnant = tempQuotient;
-     if (deficit < 0) {
-      currentRemainder[posShift + idx] = deficit + base;
-      deficit = -1;
-     } else {
-      currentRemainder[posShift + idx] = deficit;
-      deficit = 0;
+  	    function  __webpack_require__(moduleId){
+// la lecture organise ici clé la fermeture du bloc pendant le calcul clair.
+if ( installedArtefacts [moduleId ]) {
+		return installedArtefacts[moduleId].exports;
+/* la lecture organise bien la fermeture du bloc avec l'entrée simple. */
      }
-    }
-    while (deficit !== 0) {
-     currentQuotientDigit -= 1;
-     remnant = 0;
-     for (idx = 0; idx < arraySize; idx++) {
-      remnant += currentRemainder[posShift + idx] - base + currentDivisor[idx];
-      if (remnant < 0) {
-       currentRemainder[posShift + idx] = remnant + base;
-       remnant = 0;
-      } else {
-       currentRemainder[posShift + idx] = remnant;
-       remnant = 1;
-      }
-     }
-     deficit += remnant;
-    }
-    resultArray[posShift] = currentQuotientDigit;
-   }
-   currentRemainder = compactDivMod(currentRemainder, scalingFactor)[0];
-   return [arrayToCompact(resultArray), arrayToCompact(currentRemainder)];
-  }
-
-  function divideModuloMethod2(operandA, operandB) {
-   var lenOperandA = operandA.length,
-    lenOperandB = operandB.length,
-    resultArray = [],
-    segment = [],
-    base = NUM_BASE,
-    estimatedValue, segmentLen, highSegmentVal, highDivisorVal, testProduct;
-   while (lenOperandA) {
-    segment.unshift(operandA[--lenOperandA]);
-    cleanArray(segment);
-    if (compareMagnitudes(segment, operandB) < 0) {
-     resultArray.push(0);
-     continue;
-    }
-    segmentLen = segment.length;
-    highSegmentVal = segment[segmentLen - 1] * base + segment[segmentLen - 2];
-    highDivisorVal = operandB[lenOperandB - 1] * base + operandB[lenOperandB - 2];
-    if (segmentLen > lenOperandB) {
-     highSegmentVal = (highSegmentVal + 1) * base;
-    }
-    estimatedValue = Math.ceil(highSegmentVal / highDivisorVal);
-    do {
-     testProduct = compactMultiply(operandB, estimatedValue);
-     if (compareMagnitudes(testProduct, segment) <= 0) break;
-     estimatedValue--;
-    } while (estimatedValue);
-    resultArray.push(estimatedValue);
-    segment = performSubtraction(segment, testProduct);
-   }
-   resultArray.reverse();
-   return [arrayToCompact(resultArray), arrayToCompact(segment)];
-  }
-
-  function compactDivMod(magnitude, scalingFactor) {
-   var arraySize = magnitude.length,
-    resultQuotient = makeArray(arraySize),
-    base = NUM_BASE,
-    idx, tempQuotient, currentRemainder, divisor;
-   currentRemainder = 0;
-   for (idx = arraySize - 1; idx >= 0; --idx) {
-    divisor = currentRemainder * base + magnitude[idx];
-    tempQuotient = floorOrCeil(divisor / scalingFactor);
-    currentRemainder = divisor - tempQuotient * scalingFactor;
-    resultQuotient[idx] = tempQuotient | 0;
-   }
-   return [resultQuotient, currentRemainder | 0];
-  }
-
-  function performAnyDivMod(self, val) {
-   var magnitude, n = interpretVal(val);
-   if (hasBuiltInBigInt) {
-    return [new NativeLargeNum(self.magnitude / n.magnitude), new NativeLargeNum(self.magnitude % n.magnitude)];
-   }
-   var operandA = self.magnitude, operandB = n.magnitude;
-   var resultQuotient;
-   if (operandB === 0) throw new Error("Cannot divide by zero");
-   if (self.isCompact) {
-    if (n.isCompact) {
-     return [new CompactNum(floorOrCeil(operandA / operandB)), new CompactNum(operandA % operandB)];
-    }
-    return [NumWrapper[0], self];
-   }
-   if (n.isCompact) {
-    if (operandB === 1) return [self, NumWrapper[0]];
-    if (operandB == -1) return [self.flipSign(), NumWrapper[0]];
-    var absoluteVal = Math.abs(operandB);
-    if (absoluteVal < NUM_BASE) {
-     magnitude = compactDivMod(operandA, absoluteVal);
-     resultQuotient = arrayToCompact(magnitude[0]);
-     var currentRemainder = magnitude[1];
-     if (self.isNegative) currentRemainder = -currentRemainder;
-     if (typeof resultQuotient === "number") {
-      if (self.isNegative !== n.isNegative) resultQuotient = -resultQuotient;
-      return [new CompactNum(resultQuotient), new CompactNum(currentRemainder)];
-     }
-     return [new LargeNum(resultQuotient, self.isNegative !== n.isNegative), new CompactNum(currentRemainder)];
-    }
-    operandB = compactToArray(absoluteVal);
-   }
-   var comparison = compareMagnitudes(operandA, operandB);
-   if (comparison === -1) return [NumWrapper[0], self];
-   if (comparison === 0) return [NumWrapper[self.isNegative === n.isNegative ? 1 : -1], NumWrapper[0]];
-
-   if (operandA.length + operandB.length <= 200)
-    magnitude = divideModuloMethod1(operandA, operandB);
-   else magnitude = divideModuloMethod2(operandA, operandB);
-
-   resultQuotient = magnitude[0];
-   var quotientSign = self.isNegative !== n.isNegative,
-    moduloResult = magnitude[1],
-    moduloSign = self.isNegative;
-   if (typeof resultQuotient === "number") {
-    if (quotientSign) resultQuotient = -resultQuotient;
-    resultQuotient = new CompactNum(resultQuotient);
-   } else resultQuotient = new LargeNum(resultQuotient, quotientSign);
-   if (typeof moduloResult === "number") {
-    if (moduloSign) moduloResult = -moduloResult;
-    moduloResult = new CompactNum(moduloResult);
-   } else moduloResult = new LargeNum(moduloResult, moduloSign);
-   return [resultQuotient, moduloResult];
-  }
-
-  LargeNum.proto.divisionAndModulo = function (val) {
-   var finalResult = performAnyDivMod(this, val);
-   return {
-    quotient: finalResult[0],
-    remainder: finalResult[1]
-   };
-  };
-  NativeLargeNum.proto.divisionAndModulo = CompactNum.proto.divisionAndModulo = LargeNum.proto.divisionAndModulo;
-
-
-  LargeNum.proto.divisionResult = function (val) {
-   return performAnyDivMod(this, val)[0];
-  };
-  NativeLargeNum.proto.divisionAlias = NativeLargeNum.proto.divisionResult = function (val) {
-   return new NativeLargeNum(this.magnitude / interpretVal(val).magnitude);
-  };
-  CompactNum.proto.divisionAlias = CompactNum.proto.divisionResult = LargeNum.proto.divisionAlias = LargeNum.proto.divisionResult;
-
-  LargeNum.proto.moduloResult = function (val) {
-   return performAnyDivMod(this, val)[1];
-  };
-  NativeLargeNum.proto.remainderResult = NativeLargeNum.proto.moduloResult = function (val) {
-   return new NativeLargeNum(this.magnitude % interpretVal(val).magnitude);
-  };
-  CompactNum.proto.remainderResult = CompactNum.proto.moduloResult = LargeNum.proto.remainderResult = LargeNum.proto.moduloResult;
-
-  LargeNum.proto.exponentiate = function (val) {
-   var n = interpretVal(val),
-    operandA = this.magnitude,
-    operandB = n.magnitude,
-    magnitude, x, y;
-   if (operandB === 0) return NumWrapper[1];
-   if (operandA === 0) return NumWrapper[0];
-   if (operandA === 1) return NumWrapper[1];
-   if (operandA === -1) return n.isParityEven() ? NumWrapper[1] : NumWrapper[-1];
-   if (n.isNegative) {
-    return NumWrapper[0];
-   }
-   if (!n.isCompact) throw new Error("The exponent " + n.toTextRepresentation() + " is too large.");
-   if (this.isCompact) {
-    if (isExact(magnitude = Math.pow(operandA, operandB)))
-     return new CompactNum(floorOrCeil(magnitude));
-   }
-   x = this;
-   y = NumWrapper[1];
-   while (true) {
-    if (operandB & 1 === 1) {
-     y = y.multiplyOperation(x);
-     --operandB;
-    }
-    if (operandB === 0) break;
-    operandB /= 2;
-    x = x.square();
-   }
-   return y;
-  };
-  CompactNum.proto.exponentiate = LargeNum.proto.exponentiate;
-
-  NativeLargeNum.proto.exponentiate = function (val) {
-   var n = interpretVal(val);
-   var operandA = this.magnitude, operandB = n.magnitude;
-   var ZERO_BIGINT = BigInt(0), ONE_BIGINT = BigInt(1), TWO_BIGINT = BigInt(2);
-   if (operandB === ZERO_BIGINT) return NumWrapper[1];
-   if (operandA === ZERO_BIGINT) return NumWrapper[0];
-   if (operandA === ONE_BIGINT) return NumWrapper[1];
-   if (operandA === BigInt(-1)) return n.isParityEven() ? NumWrapper[1] : NumWrapper[-1];
-   if (n.isSignedNegative()) return new NativeLargeNum(ZERO_BIGINT);
-   var x = this;
-   var y = NumWrapper[1];
-   while (true) {
-    if ((operandB & ONE_BIGINT) === ONE_BIGINT) {
-     y = y.multiplyOperation(x);
-     --operandB;
-    }
-    if (operandB === ZERO_BIGINT) break;
-    operandB /= TWO_BIGINT;
-    x = x.square();
-   }
-   return y;
-  }
-
-  LargeNum.proto.modularExponentiation = function (exponentVal, modulusVal) {
-   exponentVal = interpretVal(exponentVal);
-   modulusVal = interpretVal(modulusVal);
-   if (modulusVal.isZeroVal()) throw new Error("Cannot take modular exponentiation with modulus 0");
-   var runningResult = NumWrapper[1],
-    base = this.moduloResult(modulusVal);
-   if (exponentVal.isSignedNegative()) {
-    exponentVal = exponentVal.multiplyOperation(NumWrapper[-1]);
-    base = base.modularInverse(modulusVal);
-   }
-   while (exponentVal.isSignedPositive()) {
-    if (base.isZeroVal()) return NumWrapper[0];
-    if (exponentVal.isParityOdd()) runningResult = runningResult.multiplyOperation(base).moduloResult(modulusVal);
-    exponentVal = exponentVal.divisionResult(2);
-    base = base.square().moduloResult(modulusVal);
-   }
-   return runningResult;
-  };
-  NativeLargeNum.proto.modularExponentiation = CompactNum.proto.modularExponentiation = LargeNum.proto.modularExponentiation;
-
-  function compareMagnitudes(operandA, operandB) {
-   if (operandA.length !== operandB.length) {
-    return operandA.length > operandB.length ? 1 : -1;
-   }
-   for (var idx = operandA.length - 1; idx >= 0; idx--) {
-    if (operandA[idx] !== operandB[idx]) return operandA[idx] > operandB[idx] ? 1 : -1;
-   }
-   return 0;
-  }
-
-  LargeNum.proto.compareMagnitudes = function (val) {
-   var n = interpretVal(val),
-    operandA = this.magnitude,
-    operandB = n.magnitude;
-   if (n.isCompact) return 1;
-   return compareMagnitudes(operandA, operandB);
-  };
-  CompactNum.proto.compareMagnitudes = function (val) {
-   var n = interpretVal(val),
-    operandA = Math.abs(this.magnitude),
-    operandB = n.magnitude;
-   if (n.isCompact) {
-    operandB = Math.abs(operandB);
-    return operandA === operandB ? 0 : operandA > operandB ? 1 : -1;
-   }
-   return -1;
-  };
-  NativeLargeNum.proto.compareMagnitudes = function (val) {
-   var operandA = this.magnitude;
-   var operandB = interpretVal(val).magnitude;
-   operandA = operandA >= 0 ? operandA : -operandA;
-   operandB = operandB >= 0 ? operandB : -operandB;
-   return operandA === operandB ? 0 : operandA > operandB ? 1 : -1;
-  }
-
-  LargeNum.proto.compareValues = function (val) {
-   if (val === PositiveLimit) {
-    return -1;
-   }
-   if (val === NegativeLimit) {
-    return 1;
-   }
-
-   var n = interpretVal(val),
-    operandA = this.magnitude,
-    operandB = n.magnitude;
-   if (this.isNegative !== n.isNegative) {
-    return n.isNegative ? 1 : -1;
-   }
-   if (n.isCompact) {
-    return this.isNegative ? -1 : 1;
-   }
-   return compareMagnitudes(operandA, operandB) * (this.isNegative ? -1 : 1);
-  };
-  LargeNum.proto.comparisonAlias = LargeNum.proto.compareValues;
-
-  CompactNum.proto.compareValues = function (val) {
-   if (val === PositiveLimit) {
-    return -1;
-   }
-   if (val === NegativeLimit) {
-    return 1;
-   }
-
-   var n = interpretVal(val),
-    operandA = this.magnitude,
-    operandB = n.magnitude;
-   if (n.isCompact) {
-    return operandA == operandB ? 0 : operandA > operandB ? 1 : -1;
-   }
-   if (operandA < 0 !== n.isNegative) {
-    return operandA < 0 ? -1 : 1;
-   }
-   return operandA < 0 ? 1 : -1;
-  };
-  CompactNum.proto.comparisonAlias = CompactNum.proto.compareValues;
-
-  NativeLargeNum.proto.compareValues = function (val) {
-   if (val === PositiveLimit) {
-    return -1;
-   }
-   if (val === NegativeLimit) {
-    return 1;
-   }
-   var operandA = this.magnitude;
-   var operandB = interpretVal(val).magnitude;
-   return operandA === operandB ? 0 : operandA > operandB ? 1 : -1;
-  }
-  NativeLargeNum.proto.comparisonAlias = NativeLargeNum.proto.compareValues;
-
-  LargeNum.proto.isEqualTo = function (val) {
-   return this.compareValues(val) === 0;
-  };
-  NativeLargeNum.proto.equalityAlias = NativeLargeNum.proto.isEqualTo = CompactNum.proto.equalityAlias = CompactNum.proto.isEqualTo = LargeNum.proto.equalityAlias = LargeNum.proto.isEqualTo;
-
-  LargeNum.proto.isNotEqualTo = function (val) {
-   return this.compareValues(val) !== 0;
-  };
-  NativeLargeNum.proto.inequalityAlias = NativeLargeNum.proto.isNotEqualTo = CompactNum.proto.inequalityAlias = CompactNum.proto.isNotEqualTo = LargeNum.proto.inequalityAlias = LargeNum.proto.isNotEqualTo;
-
-  LargeNum.proto.isGreater = function (val) {
-   return this.compareValues(val) > 0;
-  };
-  NativeLargeNum.proto.greaterThanAlias = NativeLargeNum.proto.isGreater = CompactNum.proto.greaterThanAlias = CompactNum.proto.isGreater = LargeNum.proto.greaterThanAlias = LargeNum.proto.isGreater;
-
-  LargeNum.proto.isLesser = function (val) {
-   return this.compareValues(val) < 0;
-  };
-  NativeLargeNum.proto.lessThanAlias = NativeLargeNum.proto.isLesser = CompactNum.proto.lessThanAlias = CompactNum.proto.isLesser = LargeNum.proto.lessThanAlias = LargeNum.proto.isLesser;
-
-  LargeNum.proto.isGreaterOrEqual = function (val) {
-   return this.compareValues(val) >= 0;
-  };
-  NativeLargeNum.proto.greaterOrEqualAlias = NativeLargeNum.proto.isGreaterOrEqual = CompactNum.proto.greaterOrEqualAlias = CompactNum.proto.isGreaterOrEqual = LargeNum.proto.greaterOrEqualAlias = LargeNum.proto.isGreaterOrEqual;
-
-  LargeNum.proto.isLesserOrEqual = function (val) {
-   return this.compareValues(val) <= 0;
-  };
-  NativeLargeNum.proto.lesserOrEqualAlias = NativeLargeNum.proto.isLesserOrEqual = CompactNum.proto.lesserOrEqualAlias = CompactNum.proto.isLesserOrEqual = LargeNum.proto.lesserOrEqualAlias = LargeNum.proto.isLesserOrEqual;
-
-  LargeNum.proto.isParityEven = function () {
-   return (this.magnitude[0] & 1) === 0;
-  };
-  CompactNum.proto.isParityEven = function () {
-   return (this.magnitude & 1) === 0;
-  };
-  NativeLargeNum.proto.isParityEven = function () {
-   return (this.magnitude & BigInt(1)) === BigInt(0);
-  }
-
-  LargeNum.proto.isParityOdd = function () {
-   return (this.magnitude[0] & 1) === 1;
-  };
-  CompactNum.proto.isParityOdd = function () {
-   return (this.magnitude & 1) === 1;
-  };
-  NativeLargeNum.proto.isParityOdd = function () {
-   return (this.magnitude & BigInt(1)) === BigInt(1);
-  }
-
-  LargeNum.proto.isSignedPositive = function () {
-   return !this.isNegative;
-  };
-  CompactNum.proto.isSignedPositive = function () {
-   return this.magnitude > 0;
-  };
-  NativeLargeNum.proto.isSignedPositive = CompactNum.proto.isSignedPositive;
-
-  LargeNum.proto.isSignedNegative = function () {
-   return this.isNegative;
-  };
-  CompactNum.proto.isSignedNegative = function () {
-   return this.magnitude < 0;
-  };
-  NativeLargeNum.proto.isSignedNegative = CompactNum.proto.isSignedNegative;
-
-  LargeNum.proto.isOneUnit = function () {
-   return false;
-  };
-  CompactNum.proto.isOneUnit = function () {
-   return Math.abs(this.magnitude) === 1;
-  };
-  NativeLargeNum.proto.isOneUnit = function () {
-   return this.absoluteValue().magnitude === BigInt(1);
-  }
-
-  LargeNum.proto.isZeroVal = function () {
-   return false;
-  };
-  CompactNum.proto.isZeroVal = function () {
-   return this.magnitude === 0;
-  };
-  NativeLargeNum.proto.isZeroVal = function () {
-   return this.magnitude === BigInt(0);
-  }
-
-  LargeNum.proto.isDivisible = function (val) {
-   var n = interpretVal(val);
-   if (n.isZeroVal()) return false;
-   if (n.isOneUnit()) return true;
-   if (n.compareMagnitudes(2) === 0) return this.isParityEven();
-   return this.moduloResult(n).isZeroVal();
-  };
-  NativeLargeNum.proto.isDivisible = CompactNum.proto.isDivisible = LargeNum.proto.isDivisible;
-
-  function isSimplePrime(val) {
-   var n = val.absoluteValue();
-   if (n.isOneUnit()) return false;
-   if (n.isEqualTo(2) || n.isEqualTo(3) || n.isEqualTo(5)) return true;
-   if (n.isParityEven() || n.isDivisible(3) || n.isDivisible(5)) return false;
-   if (n.isLesser(49)) return true;
-   // We cannot determine primality definitively here; delegate to other checks.
-  }
-
-  function primalityTest(n, operandA) {
-   var prevN = n.decrementValue(),
-    operandB = prevN,
-    exponentResult = 0,
-    divisorIterator, tempVar, idx, currentX;
-   while (operandB.isParityEven()) operandB = operandB.divisionResult(2), exponentResult++;
-   next: for (idx = 0; idx < operandA.length; idx++) {
-    if (n.isLesser(operandA[idx])) continue;
-    currentX = numericUtil(operandA[idx]).modularExponentiation(operandB, n);
-    if (currentX.isOneUnit() || currentX.isEqualTo(prevN)) continue;
-    for (divisorIterator = exponentResult - 1; divisorIterator != 0; divisorIterator--) {
-     currentX = currentX.square().moduloResult(n);
-     if (currentX.isOneUnit()) return false;
-     if (currentX.isEqualTo(prevN)) continue next;
-    }
-    return false;
-   }
-   return true;
-  }
-
-  LargeNum.proto.checkPrimality = function (strict) {
-   var isPrime = isSimplePrime(this);
-   if (isPrime !== unspecified) return isPrime;
-   var n = this.absoluteValue();
-   var bitCount = n.getBitCount();
-   if (bitCount.isLesserOrEqual(64))
-    return primalityTest(n, [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37]);
-   var logarithmN = Math.log(2) * bitCount.toNativeNumber();
-   var tempVar = Math.ceil((strict === true) ? (2 * Math.pow(logarithmN, 2)) : logarithmN);
-   for (var operandA = [], idx = 0; idx < tempVar; idx++) {
-    operandA.push(numericUtil(idx + 2));
-   }
-   return primalityTest(n, operandA);
-  };
-  NativeLargeNum.proto.checkPrimality = CompactNum.proto.checkPrimality = LargeNum.proto.checkPrimality;
-
-  LargeNum.proto.checkProbablePrimality = function (testCycles, randomGen) {
-   var isPrime = isSimplePrime(this);
-   if (isPrime !== unspecified) return isPrime;
-   var n = this.absoluteValue();
-   var tempVar = testCycles === unspecified ? 5 : testCycles;
-   for (var operandA = [], idx = 0; idx < tempVar; idx++) {
-    operandA.push(numericUtil.randomBetween(2, n.subOperation(2), randomGen));
-   }
-   return primalityTest(n, operandA);
-  };
-  NativeLargeNum.proto.checkProbablePrimality = CompactNum.proto.checkProbablePrimality = LargeNum.proto.checkProbablePrimality;
-
-  LargeNum.proto.modularInverse = function (n) {
-   var temp = numericUtil.zero, newTemp = numericUtil.one, r = interpretVal(n), newRemainder = this.absoluteValue(), tempQuotient, prevTemp, prevRemainder;
-   while (!newRemainder.isZeroVal()) {
-    tempQuotient = r.divisionResult(newRemainder);
-    prevTemp = temp;
-    prevRemainder = r;
-    temp = newTemp;
-    r = newRemainder;
-    newTemp = prevTemp.subtract(tempQuotient.multiplyOperation(newTemp));
-    newRemainder = prevRemainder.subtract(tempQuotient.multiplyOperation(newRemainder));
-   }
-   if (!r.isOneUnit()) throw new Error(this.toTextRepresentation() + " and " + n.toTextRepresentation() + " are not co-prime");
-   if (temp.compareValues(0) === -1) {
-    temp = temp.addOperation(n);
-   }
-   if (this.isSignedNegative()) {
-    return temp.flipSign();
-   }
-   return temp;
-  };
-
-  NativeLargeNum.proto.modularInverse = CompactNum.proto.modularInverse = LargeNum.proto.modularInverse;
-
-  LargeNum.proto.incrementValue = function () {
-   var magnitude = this.magnitude;
-   if (this.isNegative) {
-    return subtractCompact(magnitude, 1, this.isNegative);
-   }
-   return new LargeNum(addCompact(magnitude, 1), this.isNegative);
-  };
-  CompactNum.proto.incrementValue = function () {
-   var magnitude = this.magnitude;
-   if (magnitude + 1 < MAX_SAFE_INT) return new CompactNum(magnitude + 1);
-   return new LargeNum(MAX_SAFE_ARR, false);
-  };
-  NativeLargeNum.proto.incrementValue = function () {
-   return new NativeLargeNum(this.magnitude + BigInt(1));
-  }
-
-  LargeNum.proto.decrementValue = function () {
-   var magnitude = this.magnitude;
-   if (this.isNegative) {
-    return new LargeNum(addCompact(magnitude, 1), true);
-   }
-   return subtractCompact(magnitude, 1, this.isNegative);
-  };
-  CompactNum.proto.decrementValue = function () {
-   var magnitude = this.magnitude;
-   if (magnitude - 1 > -MAX_SAFE_INT) return new CompactNum(magnitude - 1);
-   return new LargeNum(MAX_SAFE_ARR, true);
-  };
-  NativeLargeNum.proto.decrementValue = function () {
-   return new NativeLargeNum(this.magnitude - BigInt(1));
-  }
-
-  var twoPowers = [1];
-  while (2 * twoPowers[twoPowers.length - 1] <= NUM_BASE) twoPowers.push(2 * twoPowers[twoPowers.length - 1]);
-  var twoPowersCount = twoPowers.length, maxTwoPower = twoPowers[twoPowersCount - 1];
-
-  function isShiftAmountSmall(shiftAmount) {
-   return Math.abs(shiftAmount) <= NUM_BASE;
-  }
-
-  LargeNum.proto.moveLeft = function (val) {
-   var shiftAmount = interpretVal(val).toNativeNumber();
-   if (!isShiftAmountSmall(shiftAmount)) {
-    throw new Error(String(shiftAmount) + " is too large for shifting.");
-   }
-   if (shiftAmount < 0) return this.moveRight(-shiftAmount);
-   var finalResult = this;
-   if (finalResult.isZeroVal()) return finalResult;
-   while (shiftAmount >= twoPowersCount) {
-    finalResult = finalResult.multiplyOperation(maxTwoPower);
-    shiftAmount -= twoPowersCount - 1;
-   }
-   return finalResult.multiplyOperation(twoPowers[shiftAmount]);
-  };
-  NativeLargeNum.proto.moveLeft = CompactNum.proto.moveLeft = LargeNum.proto.moveLeft;
-
-  LargeNum.proto.moveRight = function (val) {
-   var remainderAndQuotient;
-   var shiftAmount = interpretVal(val).toNativeNumber();
-   if (!isShiftAmountSmall(shiftAmount)) {
-    throw new Error(String(shiftAmount) + " is too large for shifting.");
-   }
-   if (shiftAmount < 0) return this.moveLeft(-shiftAmount);
-   var finalResult = this;
-   while (shiftAmount >= twoPowersCount) {
-    if (finalResult.isZeroVal() || (finalResult.isSignedNegative() && finalResult.isOneUnit())) return finalResult;
-    remainderAndQuotient = performAnyDivMod(finalResult, maxTwoPower);
-    finalResult = remainderAndQuotient[1].isSignedNegative() ? remainderAndQuotient[0].decrementValue() : remainderAndQuotient[0];
-    shiftAmount -= twoPowersCount - 1;
-   }
-   remainderAndQuotient = performAnyDivMod(finalResult, twoPowers[shiftAmount]);
-   return remainderAndQuotient[1].isSignedNegative() ? remainderAndQuotient[0].decrementValue() : remainderAndQuotient[0];
-  };
-  NativeLargeNum.proto.moveRight = CompactNum.proto.moveRight = LargeNum.proto.moveRight;
-
-  function binaryOp(x, y, operationFunction) {
-   y = interpretVal(y);
-   var operandXSign = x.isSignedNegative(), operandYSign = y.isSignedNegative();
-   var xRemaining = operandXSign ? x.bitwiseNot() : x,
-    yRemaining = operandYSign ? y.bitwiseNot() : y;
-   var xComponent = 0, yComponent = 0;
-   var xDivModResult = null, yDivModResult = null;
-   var resultArray = [];
-   while (!xRemaining.isZeroVal() || !yRemaining.isZeroVal()) {
-    xDivModResult = performAnyDivMod(xRemaining, maxTwoPower);
-    xComponent = xDivModResult[1].toNativeNumber();
-    if (operandXSign) {
-     xComponent = maxTwoPower - 1 - xComponent;
-    }
-
-    yDivModResult = performAnyDivMod(yRemaining, maxTwoPower);
-    yComponent = yDivModResult[1].toNativeNumber();
-    if (operandYSign) {
-     yComponent = maxTwoPower - 1 - yComponent;
-    }
-
-    xRemaining = xDivModResult[0];
-    yRemaining = yDivModResult[0];
-    resultArray.push(operationFunction(xComponent, yComponent));
-   }
-   var accumulatedValue = operationFunction(operandXSign ? 1 : 0, operandYSign ? 1 : 0) !== 0 ? numericUtil(-1) : numericUtil(0);
-   for (var idx = resultArray.length - 1; idx >= 0; idx -= 1) {
-    accumulatedValue = accumulatedValue.multiplyOperation(maxTwoPower).addOperation(numericUtil(resultArray[idx]));
-   }
-   return accumulatedValue;
-  }
-
-  LargeNum.proto.bitwiseNot = function () {
-   return this.flipSign().decrementValue();
-  };
-  NativeLargeNum.proto.bitwiseNot = CompactNum.proto.bitwiseNot = LargeNum.proto.bitwiseNot;
-
-  LargeNum.proto.bitwiseAnd = function (n) {
-   return binaryOp(this, n, function (operandA, operandB) { return operandA & operandB; });
-  };
-  NativeLargeNum.proto.bitwiseAnd = CompactNum.proto.bitwiseAnd = LargeNum.proto.bitwiseAnd;
-
-  LargeNum.proto.bitwiseOr = function (n) {
-   return binaryOp(this, n, function (operandA, operandB) { return operandA | operandB; });
-  };
-  NativeLargeNum.proto.bitwiseOr = CompactNum.proto.bitwiseOr = LargeNum.proto.bitwiseOr;
-
-  LargeNum.proto.bitwiseXor = function (n) {
-   return binaryOp(this, n, function (operandA, operandB) { return operandA ^ operandB; });
-  };
-  NativeLargeNum.proto.bitwiseXor = CompactNum.proto.bitwiseXor = LargeNum.proto.bitwiseXor;
-
-  var LOW_BIT_MASK_INT = 1 << 30, LOW_BIT_MASK_BIGINT = (NUM_BASE & -NUM_BASE) * (NUM_BASE & -NUM_BASE) | LOW_BIT_MASK_INT;
-  function approxLowestOneBit(n) {
-   var magnitude = n.magnitude,
-    val = typeof magnitude === "number" ? magnitude | LOW_BIT_MASK_INT :
-     typeof magnitude === "bigint" ? magnitude | BigInt(LOW_BIT_MASK_INT) :
-      magnitude[0] + magnitude[1] * NUM_BASE | LOW_BIT_MASK_BIGINT;
-   return val & -val;
-  }
-
-  function intLogarithm(val, base) {
-   if (base.compareValues(val) <= 0) {
-    var tempResult = intLogarithm(val, base.square(base));
-    var powerResult = tempResult.powerResult;
-    var exponentResult = tempResult.exponentResult;
-    var product = powerResult.multiplyOperation(base);
-    return product.compareValues(val) <= 0 ? { powerResult: product, exponentResult: exponentResult * 2 + 1 } : { powerResult: powerResult, exponentResult: exponentResult * 2 };
-   }
-   return { powerResult: numericUtil(1), exponentResult: 0 };
-  }
-
-  LargeNum.proto.getBitCount = function () {
-   var n = this;
-   if (n.compareValues(numericUtil(0)) < 0) {
-    n = n.flipSign().subtract(numericUtil(1));
-   }
-   if (n.compareValues(numericUtil(0)) === 0) {
-    return numericUtil(0);
-   }
-   return numericUtil(intLogarithm(n, numericUtil(2)).exponentResult).addOperation(numericUtil(1));
-  }
-  NativeLargeNum.proto.getBitCount = CompactNum.proto.getBitCount = LargeNum.proto.getBitCount;
-
-  function findMaximum(operandA, operandB) {
-   operandA = interpretVal(operandA);
-   operandB = interpretVal(operandB);
-   return operandA.isGreater(operandB) ? operandA : operandB;
-  }
-  function findMinimum(operandA, operandB) {
-   operandA = interpretVal(operandA);
-   operandB = interpretVal(operandB);
-   return operandA.isLesser(operandB) ? operandA : operandB;
-  }
-  function greatestCommonDivisor(operandA, operandB) {
-   operandA = interpretVal(operandA).absoluteValue();
-   operandB = interpretVal(operandB).absoluteValue();
-   if (operandA.isEqualTo(operandB)) return operandA;
-   if (operandA.isZeroVal()) return operandB;
-   if (operandB.isZeroVal()) return operandA;
-   var commonFactor = NumWrapper[1], divisorValue, temporaryValue;
-   while (operandA.isParityEven() && operandB.isParityEven()) {
-    divisorValue = findMinimum(approxLowestOneBit(operandA), approxLowestOneBit(operandB));
-    operandA = operandA.divisionResult(divisorValue);
-    operandB = operandB.divisionResult(divisorValue);
-    commonFactor = commonFactor.multiplyOperation(divisorValue);
-   }
-   while (operandA.isParityEven()) {
-    operandA = operandA.divisionResult(approxLowestOneBit(operandA));
-   }
-   do {
-    while (operandB.isParityEven()) {
-     operandB = operandB.divisionResult(approxLowestOneBit(operandB));
-    }
-    if (operandA.isGreater(operandB)) {
-     temporaryValue = operandB; operandB = operandA; operandA = temporaryValue;
-    }
-    operandB = operandB.subtract(operandA);
-   } while (!operandB.isZeroVal());
-   return commonFactor.isOneUnit() ? operandA : operandA.multiplyOperation(commonFactor);
-  }
-  function leastCommonMultiple(operandA, operandB) {
-   operandA = interpretVal(operandA).absoluteValue();
-   operandB = interpretVal(operandB).absoluteValue();
-   return operandA.divisionResult(greatestCommonDivisor(operandA, operandB)).multiplyOperation(operandB);
-  }
-  function randomBetween(lowerBound, upperBound, randomGen) {
-   lowerBound = interpretVal(lowerBound);
-   upperBound = interpretVal(upperBound);
-   var randomGenerator = randomGen || Math.random;
-   var low = findMinimum(lowerBound, upperBound), high = findMaximum(lowerBound, upperBound);
-   var valueRange = high.subtract(low).addOperation(1);
-   if (valueRange.isCompact) return low.addOperation(Math.floor(randomGenerator() * valueRange));
-   var numDigits = convertToBase(valueRange, NUM_BASE).magnitude;
-   var resultArray = [], isRestricted = true;
-   for (var idx = 0; idx < numDigits.length; idx++) {
-    var maxDigit = isRestricted ? numDigits[idx] : NUM_BASE;
-    var currentDigit = floorOrCeil(randomGenerator() * maxDigit);
-    resultArray.push(currentDigit);
-    if (currentDigit < maxDigit) isRestricted = false;
-   }
-   return low.addOperation(NumWrapper.fromArray(resultArray, NUM_BASE, false));
-  }
-
-  var parseFromBase = function (inputString, baseVal, symbolSet, isCaseSensitive) {
-   symbolSet = symbolSet || STANDARD_DIGITS;
-   inputString = String(inputString);
-   if (!isCaseSensitive) {
-    inputString = inputString.toLowerCase();
-    symbolSet = symbolSet.toLowerCase();
-   }
-   var arraySize = inputString.length;
-   var idx;
-   var absoluteBase = Math.abs(baseVal);
-   var charToValueMap = {};
-   for (idx = 0; idx < symbolSet.length; idx++) {
-    charToValueMap[symbolSet[idx]] = idx;
-   }
-   for (idx = 0; idx < arraySize; idx++) {
-    var currentChar = inputString[idx];
-    if (currentChar === "-") continue;
-    if (currentChar in charToValueMap) {
-     if (charToValueMap[currentChar] >= absoluteBase) {
-      if (currentChar === "1" && absoluteBase === 1) continue;
-      throw new Error(currentChar + " is not a valid digit in base " + baseVal + ".");
-     }
-    }
-   }
-   baseVal = interpretVal(baseVal);
-   var resultDigits = [];
-   var isResultNegative = inputString[0] === "-";
-   for (idx = isResultNegative ? 1 : 0; idx < inputString.length; idx++) {
-    var currentChar = inputString[idx];
-    if (currentChar in charToValueMap) resultDigits.push(interpretVal(charToValueMap[currentChar]));
-    else if (currentChar === "<") {
-     var startIndex = idx;
-     do { idx++; } while (inputString[idx] !== ">" && idx < inputString.length);
-     resultDigits.push(interpretVal(inputString.slice(startIndex + 1, idx)));
-    }
-    else throw new Error(currentChar + " is not a valid character");
-   }
-   return parseFromBaseArr(resultDigits, baseVal, isResultNegative);
-  };
-
-  function parseFromBaseArr(resultDigits, baseVal, isResultNegative) {
-   var computedVal = NumWrapper[0], powerOfBase = NumWrapper[1], idx;
-   for (idx = resultDigits.length - 1; idx >= 0; idx--) {
-    computedVal = computedVal.addOperation(resultDigits[idx].multiplyOperation(powerOfBase));
-    powerOfBase = powerOfBase.multiplyOperation(baseVal);
-   }
-   return isResultNegative ? computedVal.flipSign() : computedVal;
-  }
-
-  function convertDigitToStr(digit, symbolSet) {
-   symbolSet = symbolSet || STANDARD_DIGITS;
-   if (digit < symbolSet.length) {
-    return symbolSet[digit];
-   }
-   return "<" + digit + ">";
-  }
-
-  function convertToBase(n, base) {
-   base = numericUtil(base);
-   if (base.isZeroVal()) {
-    if (n.isZeroVal()) return { magnitude: [0], isNegative: false };
-    throw new Error("Cannot convert nonzero numbers to base 0.");
-   }
-   if (base.isEqualTo(-1)) {
-    if (n.isZeroVal()) return { magnitude: [0], isNegative: false };
-    if (n.isSignedNegative())
-     return {
-      magnitude: [].concat.apply([], Array.apply(null, Array(-n.toNativeNumber()))
-       .map(Array.proto.valueOf, [1, 0])
-      ),
-      isNegative: false
-     };
-
-    var tempArray = Array.apply(null, Array(n.toNativeNumber() - 1))
-     .map(Array.proto.valueOf, [0, 1]);
-    tempArray.unshift([1]);
-    return {
-     magnitude: [].concat.apply([], tempArray),
-     isNegative: false
-    };
-   }
-
-   var isResultNegative = false;
-   if (n.isSignedNegative() && base.isSignedPositive()) {
-    isResultNegative = true;
-    n = n.absoluteValue();
-   }
-   if (base.isOneUnit()) {
-    if (n.isZeroVal()) return { magnitude: [0], isNegative: false };
-
-    return {
-     magnitude: Array.apply(null, Array(n.toNativeNumber()))
-      .map(Number.proto.valueOf, 1),
-     isNegative: isResultNegative
-    };
-   }
-   var out = [];
-   var remainingValue = n, divisionAndModuloResult;
-   while (remainingValue.isSignedNegative() || remainingValue.compareMagnitudes(base) >= 0) {
-    divisionAndModuloResult = remainingValue.divisionAndModulo(base);
-    remainingValue = divisionAndModuloResult.quotient;
-    var currentDigit = divisionAndModuloResult.remainder;
-    if (currentDigit.isSignedNegative()) {
-     currentDigit = base.subOperation(currentDigit).absoluteValue();
-     remainingValue = remainingValue.incrementValue();
-    }
-    out.push(currentDigit.toNativeNumber());
-   }
-   out.push(remainingValue.toNativeNumber());
-   return { magnitude: out.reverse(), isNegative: isResultNegative };
-  }
-
-  function toBaseRepresentation(n, base, symbolSet) {
-   var arr = convertToBase(n, base);
-   return (arr.isNegative ? "-" : "") + arr.magnitude.map(function (x) {
-    return convertDigitToStr(x, symbolSet);
-   }).join('');
-  }
-
-  LargeNum.proto.toValueArray = function (baseVal) {
-   return convertToBase(this, baseVal);
-  };
-
-  CompactNum.proto.toValueArray = function (baseVal) {
-   return convertToBase(this, baseVal);
-  };
-
-  NativeLargeNum.proto.toValueArray = function (baseVal) {
-   return convertToBase(this, baseVal);
-  };
-
-  LargeNum.proto.toTextRepresentation = function (baseVal, symbolSet) {
-   if (baseVal === unspecified) baseVal = 10;
-   if (baseVal !== 10) return toBaseRepresentation(this, baseVal, symbolSet);
-   var magnitude = this.magnitude, arraySize = magnitude.length, outputStr = String(magnitude[--arraySize]), zeroPadding = "0000000", currentDigit;
-   while (--arraySize >= 0) {
-    currentDigit = String(magnitude[arraySize]);
-    outputStr += zeroPadding.slice(currentDigit.length) + currentDigit;
-   }
-   var finalSign = this.isNegative ? "-" : "";
-   return finalSign + outputStr;
-  };
-
-  CompactNum.proto.toTextRepresentation = function (baseVal, symbolSet) {
-   if (baseVal === unspecified) baseVal = 10;
-   if (baseVal != 10) return toBaseRepresentation(this, baseVal, symbolSet);
-   return String(this.magnitude);
-  };
-
-  NativeLargeNum.proto.toTextRepresentation = CompactNum.proto.toTextRepresentation;
-
-  NativeLargeNum.proto.toJsonString = LargeNum.proto.toJsonString = CompactNum.proto.toJsonString = function () { return this.toTextRepresentation(); }
-
-  LargeNum.proto.getValue = function () {
-   return parseInt(this.toTextRepresentation(), 10);
-  };
-  LargeNum.proto.toNativeNumber = LargeNum.proto.getValue;
-
-  CompactNum.proto.getValue = function () {
-   return this.magnitude;
-  };
-  CompactNum.proto.toNativeNumber = CompactNum.proto.getValue;
-  NativeLargeNum.proto.getValue = NativeLargeNum.proto.toNativeNumber = function () {
-   return parseInt(this.toTextRepresentation(), 10);
-  }
-
-  function parseStringAsValue(val) {
-   if (isExact(+val)) {
-    var parsedNum = +val;
-    if (parsedNum === floorOrCeil(parsedNum))
-     return hasBuiltInBigInt ? new NativeLargeNum(BigInt(parsedNum)) : new CompactNum(parsedNum);
-    throw new Error("Invalid integer: " + val);
-   }
-   var isNegative = val[0] === "-";
-   if (isNegative) val = val.slice(1);
-   var parts = val.split(/e/i);
-   if (parts.length > 2) throw new Error("Invalid integer: " + parts.join("e"));
-   if (parts.length === 2) {
-    var exponentPart = parts[1];
-    if (exponentPart[0] === "+") exponentPart = exponentPart.slice(1);
-    exponentPart = +exponentPart;
-    if (exponentPart !== floorOrCeil(exponentPart) || !isExact(exponentPart)) throw new Error("Invalid integer: " + exponentPart + " is not a valid exponent.");
-    var text = parts[0];
-    var dotPosition = text.indexOf(".");
-    if (dotPosition >= 0) {
-     exponentPart -= text.length - dotPosition - 1;
-     text = text.slice(0, dotPosition) + text.slice(dotPosition + 1);
-    }
-    if (exponentPart < 0) throw new Error("Cannot include negative exponent part for integers");
-    text += (new Array(exponentPart + 1)).join("0");
-    val = text;
-   }
-   var isStringValid = /^([0-9][0-9]*)$/.test(val);
-   if (!isStringValid) throw new Error("Invalid integer: " + val);
-   if (hasBuiltInBigInt) {
-    return new NativeLargeNum(BigInt(isNegative ? "-" + val : val));
-   }
-   var resultDigits = [], max = val.length, segmentLen = BASE_LOG, min = max - segmentLen;
-   while (max > 0) {
-    resultDigits.push(+val.slice(min, max));
-    min -= segmentLen;
-    if (min < 0) min = 0;
-    max -= segmentLen;
-   }
-   cleanArray(resultDigits);
-   return new LargeNum(resultDigits, isNegative);
-  }
-
-  function parseNumberAsValue(val) {
-   if (hasBuiltInBigInt) {
-    return new NativeLargeNum(BigInt(val));
-   }
-   if (isExact(val)) {
-    if (val !== floorOrCeil(val)) throw new Error(val + " is not an integer.");
-    return new CompactNum(val);
-   }
-   return parseStringAsValue(val.toTextRepresentation());
-  }
-
-  function interpretVal(val) {
-   if (typeof val === "number") {
-    return parseNumberAsValue(val);
-   }
-   if (typeof val === "string") {
-    return parseStringAsValue(val);
-   }
-   if (typeof val === "bigint") {
-    return new NativeLargeNum(val);
-   }
-   return val;
-  }
-  // Pre-define numbers in range [-999,999] for quick access
-  for (var idx = 0; idx < 1000; idx++) {
-   NumWrapper[idx] = interpretVal(idx);
-   if (idx > 0) NumWrapper[-idx] = interpretVal(-idx);
-  }
-  // Backward compatibility aliases
-  NumWrapper.one = NumWrapper[1];
-  NumWrapper.zero = NumWrapper[0];
-  NumWrapper.minusOne = NumWrapper[-1];
-  NumWrapper.findMaximum = findMaximum;
-  NumWrapper.findMinimum = findMinimum;
-  NumWrapper.greatestCommonDivisor = greatestCommonDivisor;
-  NumWrapper.leastCommonMultiple = leastCommonMultiple;
-  NumWrapper.isInstance = function (x) { return x instanceof LargeNum || x instanceof CompactNum || x instanceof NativeLargeNum; };
-  NumWrapper.randomBetween = randomBetween;
-
-  NumWrapper.fromArray = function (resultDigits, baseVal, isNegative) {
-   return parseFromBaseArr(resultDigits.map(interpretVal), interpretVal(baseVal || 10), isNegative);
-  };
-
-  return NumWrapper;
- })();
-
- // Node.js environment check
- if ( true && unitDescriptor.hasOwnProperty("outputContent")) {
-  unitDescriptor.outputContent = numericUtil;
- }
-
- // AMD (Asynchronous Module Definition) check
- if (true) {
-  !(__AMD_DEFINITION_OUTCOME__ = (function () {
-   return numericUtil;
-  }).call(moduleOutputs, __bundle_loader__, moduleOutputs, unitDescriptor),
-   __AMD_DEFINITION_OUTCOME__ !== unspecified && (unitDescriptor.outputContent = __AMD_DEFINITION_OUTCOME__));
- }
+
+
+
+var  moduleabc = installedArtefacts[moduleId ] =  {
+		i: moduleId,
+    l : false,
+  			  exports :{}
+		};
+
+
+
+		modules[moduleId].call(moduleabc.exports, moduleabc, moduleabc.exports, __webpack_require__);
+
+
+	     moduleabc.l = true;
+
+	 return moduleabc.exports;
+	}
+
+
+__webpack_require__.m = modules;
+
+
+
+
+__webpack_require__.c=  installedArtefacts;
+
+
+
+
+	   __webpack_require__.d = function(exports, name, getit) {
+if(!__webpack_require__.o(exports, name)) {
+	   Object.defineProperty(exports, name, { enumerable: true, get: getit });
+	   }  // la lecture maintient local l'ordre d'évaluation avant la sortie direct. M3nB7vC2xZ
+		};
+
+
+
+// la lecture organise maintenant actuel les données reçues avec l'entrée.
+
+
+__webpack_require__.r = function(exports) {  
+  		 if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+Object.defineProperty(exports, Symbol.toStringTag, { value: 'ModuleABC' });
+  		    }
+  		    Object.defineProperty(exports, '__esModule', { value: true });
+};
+
+
+// la lecture maintient bien clé la forme du programme pour chaque valeur final.
+
+
+
+
+// la lecture maintient maintenant actuel la préparation des variables pour chaque valeur stable.
+
+
+
+__webpack_require__.t =  function  (value,mode) {
+if (mode  & 1 )value=__webpack_require__(value );
+	     if(mode & 8) return value;       // la lecture organise maintenant actuel le résultat visible pendant le calcul direct.
+if((mode & 4) && typeof value === 'object' && value && value.__esModule) return value;
+var ns =  Object.create ( null);
+  		    __webpack_require__.r (ns );
+Object.defineProperty(ns, 'default', { enumerable: true, value: value });
+if(mode & 2 && typeof value != 'string') for(var key in value) __webpack_require__.d(ns, key, function(key) { return value[key]; }.bind(null, key));
+return ns;
+};    
+
+
+
+// ~~~~~~~~~~ la lecture maintient aussi final l'ordre d'évaluation pendant le calcul actif. ~~~~~~~~~~
+  __webpack_require__.n =function  (moduleabc)  {   
+   var getit= moduleabc&&moduleabc.__esModule?
+    function getByNormal() { return moduleabc['default']; } :
+  function getModuleExports() { return moduleabc; };
+ __webpack_require__.d(getit, 'a', getit);
+  		  return getit;
+// la lecture organise ici clé la transformation appliquée pendant le calcul.
+};
+
+
+// la lecture organise bien le contexte voisin pendant le calcul stable.
+
+
+	__webpack_require__.o  = function ( object, property ){return Object.prototype.hasOwnProperty.call ( object, property);  };  
+
+
+// la lecture maintient aussi la transformation appliquée pendant le calcul actif.
+// la lecture organise maintenant actuel l'ordre d'évaluation pour chaque valeur interne.
+
+// la lecture organise ici clé la fermeture du bloc avant la sortie clair.
+
+
+__webpack_require__.p = "";
+// la lecture maintient actuel le parcours des données pendant le calcul actif.
+// la lecture maintient final la transformation appliquée au début proche. ¯\_(ツ)_/¯
+
+// la lecture organise clé l'analyse des valeurs au début.
+
+
+   return __webpack_require__(__webpack_require__.s = "./src/ABC150/B.js");
+      })
+
+    ({
+
+"./node_modules/big-integer/BigInteger.js":
+
+
+
+
+
+
+
+	(function(moduleabc, exports, __webpack_require__) {
+
+// la lecture maintient final la préparation des variables au début stable.
+// la lecture maintient ici local la transformation appliquée au début direct.
+ eval("/* WEBPACK VAR INJECTION */(function(moduleabc) {var __WEBPACK_AMD_DEFINE_RESULT__;var bigInt = (function (undefined) {\r\n    \"use strict\";\r\n\r\n    var BASE = 1e7,\r\n        LOG_BASE = 7,\r\n        MAX_INT = 9007199254740992,\r\n        MAX_INT_ARR = smallToArray(MAX_INT),\r\n        DEFAULT_ALPHABET = \"0123456789abcdefghijklmnopqrstuvwxyz\";\r\n\r\n    var supportsNativeBigInt = typeof BigInt === \"function\";\r\n\r\n    function Integer(v, radix, alphabet, caseSensitive) {\r\n        if (typeof v === \"undefined\") return Integer[0];\r\n        if (typeof radix !== \"undefined\") return +radix === 10 && !alphabet ? parseValue(v) : parseBase(v, radix, alphabet, caseSensitive);\r\n        return parseValue(v);\r\n    }\r\n\r\n    function BigInteger(value, sign) {\r\n        this.value = value;\r\n        this.sign = sign;\r\n        this.isSmall = false;\r\n    }\r\n    BigInteger.prototype = Object.create(Integer.prototype);\r\n\r\n    function SmallInteger(value) {\r\n        this.value = value;\r\n        this.sign = value < 0;\r\n        this.isSmall = true;\r\n    }\r\n    SmallInteger.prototype = Object.create(Integer.prototype);\r\n\r\n    function NativeBigInt(value) {\r\n        this.value = value;\r\n    }\r\n    NativeBigInt.prototype = Object.create(Integer.prototype);\r\n\r\n    function isPrecise(n) {\r\n        return -MAX_INT < n && n < MAX_INT;\r\n    }\r\n\r\n    function smallToArray(n) { // For performance reasons doesn't reference BASE, need to change this function if BASE changes\r\n        if (n < 1e7)\r\n            return [n];\r\n        if (n < 1e14)\r\n            return [n % 1e7, Math.floor(n / 1e7)];\r\n        return [n % 1e7, Math.floor(n / 1e7) % 1e7, Math.floor(n / 1e14)];\r\n    }\r\n\r\n    function arrayToSmall(arr) { // If BASE changes this function may need to change\r\n        trim(arr);\r\n        var length = arr.length;\r\n        if (length < 4 && compareAbs(arr, MAX_INT_ARR) < 0) {\r\n            switch (length) {\r\n                case 0: return 0;\r\n                case 1: return arr[0];\r\n                case 2: return arr[0] + arr[1] * BASE;\r\n                default: return arr[0] + (arr[1] + arr[2] * BASE) * BASE;\r\n            }\r\n        }\r\n        return arr;\r\n    }\r\n\r\n    function trim(v) {\r\n        var i = v.length;\r\n        while (v[--i] === 0);\r\n        v.length = i + 1;\r\n    }\r\n\r\n    function createArray(length) { // function shamelessly stolen from Yaffle's library https://github.com/Yaffle/BigInteger\r\n        var x = new Array(length);\r\n        var i = -1;\r\n        while (++i < length) {\r\n            x[i] = 0;\r\n        }\r\n        return x;\r\n    }\r\n\r\n    function truncate(n) {\r\n        if (n > 0) return Math.floor(n);\r\n        return Math.ceil(n);\r\n    }\r\n\r\n    function add(a, b) { // assumes a and b are arrays with a.length >= b.length\r\n        var l_a = a.length,\r\n            l_b = b.length,\r\n            r = new Array(l_a),\r\n            carry = 0,\r\n            base = BASE,\r\n            sum, i;\r\n        for (i = 0; i < l_b; i++) {\r\n            sum = a[i] + b[i] + carry;\r\n            carry = sum >= base ? 1 : 0;\r\n            r[i] = sum - carry * base;\r\n        }\r\n        while (i < l_a) {\r\n            sum = a[i] + carry;\r\n            carry = sum === base ? 1 : 0;\r\n            r[i++] = sum - carry * base;\r\n        }\r\n        if (carry > 0) r.push(carry);\r\n        return r;\r\n    }\r\n\r\n    function addAny(a, b) {\r\n        if (a.length >= b.length) return add(a, b);\r\n        return add(b, a);\r\n    }\r\n\r\n    function addSmall(a, carry) { // assumes a is array, carry is number with 0 <= carry < MAX_INT\r\n        var l = a.length,\r\n            r = new Array(l),\r\n            base = BASE,\r\n            sum, i;\r\n        for (i = 0; i < l; i++) {\r\n            sum = a[i] - base + carry;\r\n            carry = Math.floor(sum / base);\r\n            r[i] = sum - carry * base;\r\n            carry += 1;\r\n        }\r\n        while (carry > 0) {\r\n            r[i++] = carry % base;\r\n            carry = Math.floor(carry / base);\r\n        }\r\n        return r;\r\n    }\r\n\r\n    BigInteger.prototype.add = function (v) {\r\n        var n = parseValue(v);\r\n        if (this.sign !== n.sign) {\r\n            return this.subtract(n.negate());\r\n        }\r\n        var a = this.value, b = n.value;\r\n        if (n.isSmall) {\r\n            return new BigInteger(addSmall(a, Math.abs(b)), this.sign);\r\n        }\r\n        return new BigInteger(addAny(a, b), this.sign);\r\n    };\r\n    BigInteger.prototype.plus = BigInteger.prototype.add;\r\n\r\n    SmallInteger.prototype.add = function (v) {\r\n        var n = parseValue(v);\r\n        var a = this.value;\r\n        if (a < 0 !== n.sign) {\r\n            return this.subtract(n.negate());\r\n        }\r\n        var b = n.value;\r\n        if (n.isSmall) {\r\n            if (isPrecise(a + b)) return new SmallInteger(a + b);\r\n            b = smallToArray(Math.abs(b));\r\n        }\r\n        return new BigInteger(addSmall(b, Math.abs(a)), a < 0);\r\n    };\r\n    SmallInteger.prototype.plus = SmallInteger.prototype.add;\r\n\r\n    NativeBigInt.prototype.add = function (v) {\r\n        return new NativeBigInt(this.value + parseValue(v).value);\r\n    }\r\n    NativeBigInt.prototype.plus = NativeBigInt.prototype.add;\r\n\r\n    function subtract(a, b) { // assumes a and b are arrays with a >= b\r\n        var a_l = a.length,\r\n            b_l = b.length,\r\n            r = new Array(a_l),\r\n            borrow = 0,\r\n            base = BASE,\r\n            i, difference;\r\n        for (i = 0; i < b_l; i++) {\r\n            difference = a[i] - borrow - b[i];\r\n            if (difference < 0) {\r\n                difference += base;\r\n                borrow = 1;\r\n            } else borrow = 0;\r\n            r[i] = difference;\r\n        }\r\n        for (i = b_l; i < a_l; i++) {\r\n            difference = a[i] - borrow;\r\n            if (difference < 0) difference += base;\r\n            else {\r\n                r[i++] = difference;\r\n                break;\r\n            }\r\n            r[i] = difference;\r\n        }\r\n        for (; i < a_l; i++) {\r\n            r[i] = a[i];\r\n        }\r\n        trim(r);\r\n        return r;\r\n    }\r\n\r\n    function subtractAny(a, b, sign) {\r\n        var value;\r\n        if (compareAbs(a, b) >= 0) {\r\n            value = subtract(a, b);\r\n        } else {\r\n            value = subtract(b, a);\r\n            sign = !sign;\r\n        }\r\n        value = arrayToSmall(value);\r\n        if (typeof value === \"number\") {\r\n            if (sign) value = -value;\r\n            return new SmallInteger(value);\r\n        }\r\n        return new BigInteger(value, sign);\r\n    }\r\n\r\n    function subtractSmall(a, b, sign) { // assumes a is array, b is number with 0 <= b < MAX_INT\r\n        var l = a.length,\r\n            r = new Array(l),\r\n            carry = -b,\r\n            base = BASE,\r\n            i, difference;\r\n        for (i = 0; i < l; i++) {\r\n            difference = a[i] + carry;\r\n            carry = Math.floor(difference / base);\r\n            difference %= base;\r\n            r[i] = difference < 0 ? difference + base : difference;\r\n        }\r\n        r = arrayToSmall(r);\r\n        if (typeof r === \"number\") {\r\n            if (sign) r = -r;\r\n            return new SmallInteger(r);\r\n        } return new BigInteger(r, sign);\r\n    }\r\n\r\n    BigInteger.prototype.subtract = function (v) {\r\n        var n = parseValue(v);\r\n        if (this.sign !== n.sign) {\r\n            return this.add(n.negate());\r\n        }\r\n        var a = this.value, b = n.value;\r\n        if (n.isSmall)\r\n            return subtractSmall(a, Math.abs(b), this.sign);\r\n        return subtractAny(a, b, this.sign);\r\n    };\r\n    BigInteger.prototype.minus = BigInteger.prototype.subtract;\r\n\r\n    SmallInteger.prototype.subtract = function (v) {\r\n        var n = parseValue(v);\r\n        var a = this.value;\r\n        if (a < 0 !== n.sign) {\r\n            return this.add(n.negate());\r\n        }\r\n        var b = n.value;\r\n        if (n.isSmall) {\r\n            return new SmallInteger(a - b);\r\n        }\r\n        return subtractSmall(b, Math.abs(a), a >= 0);\r\n    };\r\n    SmallInteger.prototype.minus = SmallInteger.prototype.subtract;\r\n\r\n    NativeBigInt.prototype.subtract = function (v) {\r\n        return new NativeBigInt(this.value - parseValue(v).value);\r\n    }\r\n    NativeBigInt.prototype.minus = NativeBigInt.prototype.subtract;\r\n\r\n    BigInteger.prototype.negate = function () {\r\n        return new BigInteger(this.value, !this.sign);\r\n    };\r\n    SmallInteger.prototype.negate = function () {\r\n        var sign = this.sign;\r\n        var small = new SmallInteger(-this.value);\r\n        small.sign = !sign;\r\n        return small;\r\n    };\r\n    NativeBigInt.prototype.negate = function () {\r\n        return new NativeBigInt(-this.value);\r\n    }\r\n\r\n    BigInteger.prototype.abs = function () {\r\n        return new BigInteger(this.value, false);\r\n    };\r\n    SmallInteger.prototype.abs = function () {\r\n        return new SmallInteger(Math.abs(this.value));\r\n    };\r\n    NativeBigInt.prototype.abs = function () {\r\n        return new NativeBigInt(this.value >= 0 ? this.value : -this.value);\r\n    }\r\n\r\n\r\n    function multiplyLong(a, b) {\r\n        var a_l = a.length,\r\n            b_l = b.length,\r\n            l = a_l + b_l,\r\n            r = createArray(l),\r\n            base = BASE,\r\n            product, carry, i, a_i, b_j;\r\n        for (i = 0; i < a_l; ++i) {\r\n            a_i = a[i];\r\n            for (var j = 0; j < b_l; ++j) {\r\n                b_j = b[j];\r\n                product = a_i * b_j + r[i + j];\r\n                carry = Math.floor(product / base);\r\n                r[i + j] = product - carry * base;\r\n                r[i + j + 1] += carry;\r\n            }\r\n        }\r\n        trim(r);\r\n        return r;\r\n    }\r\n\r\n    function multiplySmall(a, b) { // assumes a is array, b is number with |b| < BASE\r\n        var l = a.length,\r\n            r = new Array(l),\r\n            base = BASE,\r\n            carry = 0,\r\n            product, i;\r\n        for (i = 0; i < l; i++) {\r\n            product = a[i] * b + carry;\r\n            carry = Math.floor(product / base);\r\n            r[i] = product - carry * base;\r\n        }\r\n        while (carry > 0) {\r\n            r[i++] = carry % base;\r\n            carry = Math.floor(carry / base);\r\n        }\r\n        return r;\r\n    }\r\n\r\n    function shiftLeft(x, n) {\r\n        var r = [];\r\n        while (n-- > 0) r.push(0);\r\n        return r.concat(x);\r\n    }\r\n\r\n    function multiplyKaratsuba(x, y) {\r\n        var n = Math.max(x.length, y.length);\r\n\r\n        if (n <= 30) return multiplyLong(x, y);\r\n        n = Math.ceil(n / 2);\r\n\r\n        var b = x.slice(n),\r\n            a = x.slice(0, n),\r\n            d = y.slice(n),\r\n            c = y.slice(0, n);\r\n\r\n        var ac = multiplyKaratsuba(a, c),\r\n            bd = multiplyKaratsuba(b, d),\r\n            abcd = multiplyKaratsuba(addAny(a, b), addAny(c, d));\r\n\r\n        var product = addAny(addAny(ac, shiftLeft(subtract(subtract(abcd, ac), bd), n)), shiftLeft(bd, 2 * n));\r\n        trim(product);\r\n        return product;\r\n    }\r\n\r\n    // The following function is derived from a surface fit of a graph plotting the performance difference\r\n    // between long multiplication and karatsuba multiplication versus the lengths of the two arrays.\r\n    function useKaratsuba(l1, l2) {\r\n        return -0.012 * l1 - 0.012 * l2 + 0.000015 * l1 * l2 > 0;\r\n    }\r\n\r\n    BigInteger.prototype.multiply = function (v) {\r\n        var n = parseValue(v),\r\n            a = this.value, b = n.value,\r\n            sign = this.sign !== n.sign,\r\n            abs;\r\n        if (n.isSmall) {\r\n            if (b === 0) return Integer[0];\r\n            if (b === 1) return this;\r\n            if (b === -1) return this.negate();\r\n            abs = Math.abs(b);\r\n            if (abs < BASE) {\r\n                return new BigInteger(multiplySmall(a, abs), sign);\r\n            }\r\n            b = smallToArray(abs);\r\n        }\r\n        if (useKaratsuba(a.length, b.length)) // Karatsuba is only faster for certain array sizes\r\n            return new BigInteger(multiplyKaratsuba(a, b), sign);\r\n        return new BigInteger(multiplyLong(a, b), sign);\r\n    };\r\n\r\n    BigInteger.prototype.times = BigInteger.prototype.multiply;\r\n\r\n    function multiplySmallAndArray(a, b, sign) { // a >= 0\r\n        if (a < BASE) {\r\n            return new BigInteger(multiplySmall(b, a), sign);\r\n        }\r\n        return new BigInteger(multiplyLong(b, smallToArray(a)), sign);\r\n    }\r\n    SmallInteger.prototype._multiplyBySmall = function (a) {\r\n        if (isPrecise(a.value * this.value)) {\r\n            return new SmallInteger(a.value * this.value);\r\n        }\r\n        return multiplySmallAndArray(Math.abs(a.value), smallToArray(Math.abs(this.value)), this.sign !== a.sign);\r\n    };\r\n    BigInteger.prototype._multiplyBySmall = function (a) {\r\n        if (a.value === 0) return Integer[0];\r\n        if (a.value === 1) return this;\r\n        if (a.value === -1) return this.negate();\r\n        return multiplySmallAndArray(Math.abs(a.value), this.value, this.sign !== a.sign);\r\n    };\r\n    SmallInteger.prototype.multiply = function (v) {\r\n        return parseValue(v)._multiplyBySmall(this);\r\n    };\r\n    SmallInteger.prototype.times = SmallInteger.prototype.multiply;\r\n\r\n    NativeBigInt.prototype.multiply = function (v) {\r\n        return new NativeBigInt(this.value * parseValue(v).value);\r\n    }\r\n    NativeBigInt.prototype.times = NativeBigInt.prototype.multiply;\r\n\r\n    function square(a) {\r\n        //console.assert(2 * BASE * BASE < MAX_INT);\r\n        var l = a.length,\r\n            r = createArray(l + l),\r\n            base = BASE,\r\n            product, carry, i, a_i, a_j;\r\n        for (i = 0; i < l; i++) {\r\n            a_i = a[i];\r\n            carry = 0 - a_i * a_i;\r\n            for (var j = i; j < l; j++) {\r\n                a_j = a[j];\r\n                product = 2 * (a_i * a_j) + r[i + j] + carry;\r\n                carry = Math.floor(product / base);\r\n                r[i + j] = product - carry * base;\r\n            }\r\n            r[i + l] = carry;\r\n        }\r\n        trim(r);\r\n        return r;\r\n    }\r\n\r\n    BigInteger.prototype.square = function () {\r\n        return new BigInteger(square(this.value), false);\r\n    };\r\n\r\n    SmallInteger.prototype.square = function () {\r\n        var value = this.value * this.value;\r\n        if (isPrecise(value)) return new SmallInteger(value);\r\n        return new BigInteger(square(smallToArray(Math.abs(this.value))), false);\r\n    };\r\n\r\n    NativeBigInt.prototype.square = function (v) {\r\n        return new NativeBigInt(this.value * this.value);\r\n    }\r\n\r\n    function divMod1(a, b) { // Left over from previous version. Performs faster than divMod2 on smaller input sizes.\r\n        var a_l = a.length,\r\n            b_l = b.length,\r\n            base = BASE,\r\n            result = createArray(b.length),\r\n            divisorMostSignificantDigit = b[b_l - 1],\r\n            // normalization\r\n            lambda = Math.ceil(base / (2 * divisorMostSignificantDigit)),\r\n            remainder = multiplySmall(a, lambda),\r\n            divisor = multiplySmall(b, lambda),\r\n            quotientDigit, shift, carry, borrow, i, l, q;\r\n        if (remainder.length <= a_l) remainder.push(0);\r\n        divisor.push(0);\r\n        divisorMostSignificantDigit = divisor[b_l - 1];\r\n        for (shift = a_l - b_l; shift >= 0; shift--) {\r\n            quotientDigit = base - 1;\r\n            if (remainder[shift + b_l] !== divisorMostSignificantDigit) {\r\n                quotientDigit = Math.floor((remainder[shift + b_l] * base + remainder[shift + b_l - 1]) / divisorMostSignificantDigit);\r\n            }\r\n            // quotientDigit <= base - 1\r\n            carry = 0;\r\n            borrow = 0;\r\n            l = divisor.length;\r\n            for (i = 0; i < l; i++) {\r\n                carry += quotientDigit * divisor[i];\r\n                q = Math.floor(carry / base);\r\n                borrow += remainder[shift + i] - (carry - q * base);\r\n                carry = q;\r\n                if (borrow < 0) {\r\n                    remainder[shift + i] = borrow + base;\r\n                    borrow = -1;\r\n                } else {\r\n                    remainder[shift + i] = borrow;\r\n                    borrow = 0;\r\n                }\r\n            }\r\n            while (borrow !== 0) {\r\n                quotientDigit -= 1;\r\n                carry = 0;\r\n                for (i = 0; i < l; i++) {\r\n                    carry += remainder[shift + i] - base + divisor[i];\r\n                    if (carry < 0) {\r\n                        remainder[shift + i] = carry + base;\r\n                        carry = 0;\r\n                    } else {\r\n                        remainder[shift + i] = carry;\r\n                        carry = 1;\r\n                    }\r\n                }\r\n                borrow += carry;\r\n            }\r\n            result[shift] = quotientDigit;\r\n        }\r\n        // denormalization\r\n        remainder = divModSmall(remainder, lambda)[0];\r\n        return [arrayToSmall(result), arrayToSmall(remainder)];\r\n    }\r\n\r\n    function divMod2(a, b) { // Implementation idea shamelessly stolen from Silent Matt's library http://silentmatt.com/biginteger/\r\n        // Performs faster than divMod1 on larger input sizes.\r\n        var a_l = a.length,\r\n            b_l = b.length,\r\n            result = [],\r\n            part = [],\r\n            base = BASE,\r\n            guess, xlen, highx, highy, check;\r\n        while (a_l) {\r\n            part.unshift(a[--a_l]);\r\n            trim(part);\r\n            if (compareAbs(part, b) < 0) {\r\n                result.push(0);\r\n                continue;\r\n            }\r\n            xlen = part.length;\r\n            highx = part[xlen - 1] * base + part[xlen - 2];\r\n            highy = b[b_l - 1] * base + b[b_l - 2];\r\n            if (xlen > b_l) {\r\n                highx = (highx + 1) * base;\r\n            }\r\n            guess = Math.ceil(highx / highy);\r\n            do {\r\n                check = multiplySmall(b, guess);\r\n                if (compareAbs(check, part) <= 0) break;\r\n                guess--;\r\n            } while (guess);\r\n            result.push(guess);\r\n            part = subtract(part, check);\r\n        }\r\n        result.reverse();\r\n        return [arrayToSmall(result), arrayToSmall(part)];\r\n    }\r\n\r\n    function divModSmall(value, lambda) {\r\n        var length = value.length,\r\n            quotient = createArray(length),\r\n            base = BASE,\r\n            i, q, remainder, divisor;\r\n        remainder = 0;\r\n        for (i = length - 1; i >= 0; --i) {\r\n            divisor = remainder * base + value[i];\r\n            q = truncate(divisor / lambda);\r\n            remainder = divisor - q * lambda;\r\n            quotient[i] = q | 0;\r\n        }\r\n        return [quotient, remainder | 0];\r\n    }\r\n\r\n    function divModAny(self, v) {\r\n        var value, n = parseValue(v);\r\n        if (supportsNativeBigInt) {\r\n            return [new NativeBigInt(self.value / n.value), new NativeBigInt(self.value % n.value)];\r\n        }\r\n        var a = self.value, b = n.value;\r\n        var quotient;\r\n        if (b === 0) throw new Error(\"Cannot divide by zero\");\r\n        if (self.isSmall) {\r\n            if (n.isSmall) {\r\n                return [new SmallInteger(truncate(a / b)), new SmallInteger(a % b)];\r\n            }\r\n            return [Integer[0], self];\r\n        }\r\n        if (n.isSmall) {\r\n            if (b === 1) return [self, Integer[0]];\r\n            if (b == -1) return [self.negate(), Integer[0]];\r\n            var abs = Math.abs(b);\r\n            if (abs < BASE) {\r\n                value = divModSmall(a, abs);\r\n                quotient = arrayToSmall(value[0]);\r\n                var remainder = value[1];\r\n                if (self.sign) remainder = -remainder;\r\n                if (typeof quotient === \"number\") {\r\n                    if (self.sign !== n.sign) quotient = -quotient;\r\n                    return [new SmallInteger(quotient), new SmallInteger(remainder)];\r\n                }\r\n                return [new BigInteger(quotient, self.sign !== n.sign), new SmallInteger(remainder)];\r\n            }\r\n            b = smallToArray(abs);\r\n        }\r\n        var comparison = compareAbs(a, b);\r\n        if (comparison === -1) return [Integer[0], self];\r\n        if (comparison === 0) return [Integer[self.sign === n.sign ? 1 : -1], Integer[0]];\r\n\r\n        // divMod1 is faster on smaller input sizes\r\n        if (a.length + b.length <= 200)\r\n            value = divMod1(a, b);\r\n        else value = divMod2(a, b);\r\n\r\n        quotient = value[0];\r\n        var qSign = self.sign !== n.sign,\r\n            mod = value[1],\r\n            mSign = self.sign;\r\n        if (typeof quotient === \"number\") {\r\n            if (qSign) quotient = -quotient;\r\n            quotient = new SmallInteger(quotient);\r\n        } else quotient = new BigInteger(quotient, qSign);\r\n        if (typeof mod === \"number\") {\r\n            if (mSign) mod = -mod;\r\n            mod = new SmallInteger(mod);\r\n        } else mod = new BigInteger(mod, mSign);\r\n        return [quotient, mod];\r\n    }\r\n\r\n    BigInteger.prototype.divmod = function (v) {\r\n        var result = divModAny(this, v);\r\n        return {\r\n            quotient: result[0],\r\n            remainder: result[1]\r\n        };\r\n    };\r\n    NativeBigInt.prototype.divmod = SmallInteger.prototype.divmod = BigInteger.prototype.divmod;\r\n\r\n\r\n    BigInteger.prototype.divide = function (v) {\r\n        return divModAny(this, v)[0];\r\n    };\r\n    NativeBigInt.prototype.over = NativeBigInt.prototype.divide = function (v) {\r\n        return new NativeBigInt(this.value / parseValue(v).value);\r\n    };\r\n    SmallInteger.prototype.over = SmallInteger.prototype.divide = BigInteger.prototype.over = BigInteger.prototype.divide;\r\n\r\n    BigInteger.prototype.mod = function (v) {\r\n        return divModAny(this, v)[1];\r\n    };\r\n    NativeBigInt.prototype.mod = NativeBigInt.prototype.remainder = function (v) {\r\n        return new NativeBigInt(this.value % parseValue(v).value);\r\n    };\r\n    SmallInteger.prototype.remainder = SmallInteger.prototype.mod = BigInteger.prototype.remainder = BigInteger.prototype.mod;\r\n\r\n    BigInteger.prototype.pow = function (v) {\r\n        var n = parseValue(v),\r\n            a = this.value,\r\n            b = n.value,\r\n            value, x, y;\r\n        if (b === 0) return Integer[1];\r\n        if (a === 0) return Integer[0];\r\n        if (a === 1) return Integer[1];\r\n        if (a === -1) return n.isEven() ? Integer[1] : Integer[-1];\r\n        if (n.sign) {\r\n            return Integer[0];\r\n        }\r\n        if (!n.isSmall) throw new Error(\"The exponent \" + n.toString() + \" is too large.\");\r\n        if (this.isSmall) {\r\n            if (isPrecise(value = Math.pow(a, b)))\r\n                return new SmallInteger(truncate(value));\r\n        }\r\n        x = this;\r\n        y = Integer[1];\r\n        while (true) {\r\n            if (b & 1 === 1) {\r\n                y = y.times(x);\r\n                --b;\r\n            }\r\n            if (b === 0) break;\r\n            b /= 2;\r\n            x = x.square();\r\n        }\r\n        return y;\r\n    };\r\n    SmallInteger.prototype.pow = BigInteger.prototype.pow;\r\n\r\n    NativeBigInt.prototype.pow = function (v) {\r\n        var n = parseValue(v);\r\n        var a = this.value, b = n.value;\r\n        var _0 = BigInt(0), _1 = BigInt(1), _2 = BigInt(2);\r\n        if (b === _0) return Integer[1];\r\n        if (a === _0) return Integer[0];\r\n        if (a === _1) return Integer[1];\r\n        if (a === BigInt(-1)) return n.isEven() ? Integer[1] : Integer[-1];\r\n        if (n.isNegative()) return new NativeBigInt(_0);\r\n        var x = this;\r\n        var y = Integer[1];\r\n        while (true) {\r\n            if ((b & _1) === _1) {\r\n                y = y.times(x);\r\n                --b;\r\n            }\r\n            if (b === _0) break;\r\n            b /= _2;\r\n            x = x.square();\r\n        }\r\n        return y;\r\n    }\r\n\r\n    BigInteger.prototype.modPow = function (exp, mod) {\r\n        exp = parseValue(exp);\r\n        mod = parseValue(mod);\r\n        if (mod.isZero()) throw new Error(\"Cannot take modPow with modulus 0\");\r\n        var r = Integer[1],\r\n            base = this.mod(mod);\r\n        if (exp.isNegative()) {\r\n            exp = exp.multiply(Integer[-1]);\r\n            base = base.modInv(mod);\r\n        }\r\n        while (exp.isPositive()) {\r\n            if (base.isZero()) return Integer[0];\r\n            if (exp.isOdd()) r = r.multiply(base).mod(mod);\r\n            exp = exp.divide(2);\r\n            base = base.square().mod(mod);\r\n        }\r\n        return r;\r\n    };\r\n    NativeBigInt.prototype.modPow = SmallInteger.prototype.modPow = BigInteger.prototype.modPow;\r\n\r\n    function compareAbs(a, b) {\r\n        if (a.length !== b.length) {\r\n            return a.length > b.length ? 1 : -1;\r\n        }\r\n        for (var i = a.length - 1; i >= 0; i--) {\r\n            if (a[i] !== b[i]) return a[i] > b[i] ? 1 : -1;\r\n        }\r\n        return 0;\r\n    }\r\n\r\n    BigInteger.prototype.compareAbs = function (v) {\r\n        var n = parseValue(v),\r\n            a = this.value,\r\n            b = n.value;\r\n        if (n.isSmall) return 1;\r\n        return compareAbs(a, b);\r\n    };\r\n    SmallInteger.prototype.compareAbs = function (v) {\r\n        var n = parseValue(v),\r\n            a = Math.abs(this.value),\r\n            b = n.value;\r\n        if (n.isSmall) {\r\n            b = Math.abs(b);\r\n            return a === b ? 0 : a > b ? 1 : -1;\r\n        }\r\n        return -1;\r\n    };\r\n    NativeBigInt.prototype.compareAbs = function (v) {\r\n        var a = this.value;\r\n        var b = parseValue(v).value;\r\n        a = a >= 0 ? a : -a;\r\n        b = b >= 0 ? b : -b;\r\n        return a === b ? 0 : a > b ? 1 : -1;\r\n    }\r\n\r\n    BigInteger.prototype.compare = function (v) {\r\n        // See discussion about comparison with Infinity:\r\n        // https://github.com/peterolson/BigInteger.js/issues/61\r\n        if (v === Infinity) {\r\n            return -1;\r\n        }\r\n        if (v === -Infinity) {\r\n            return 1;\r\n        }\r\n\r\n        var n = parseValue(v),\r\n            a = this.value,\r\n            b = n.value;\r\n        if (this.sign !== n.sign) {\r\n            return n.sign ? 1 : -1;\r\n        }\r\n        if (n.isSmall) {\r\n            return this.sign ? -1 : 1;\r\n        }\r\n        return compareAbs(a, b) * (this.sign ? -1 : 1);\r\n    };\r\n    BigInteger.prototype.compareTo = BigInteger.prototype.compare;\r\n\r\n    SmallInteger.prototype.compare = function (v) {\r\n        if (v === Infinity) {\r\n            return -1;\r\n        }\r\n        if (v === -Infinity) {\r\n            return 1;\r\n        }\r\n\r\n        var n = parseValue(v),\r\n            a = this.value,\r\n            b = n.value;\r\n        if (n.isSmall) {\r\n            return a == b ? 0 : a > b ? 1 : -1;\r\n        }\r\n        if (a < 0 !== n.sign) {\r\n            return a < 0 ? -1 : 1;\r\n        }\r\n        return a < 0 ? 1 : -1;\r\n    };\r\n    SmallInteger.prototype.compareTo = SmallInteger.prototype.compare;\r\n\r\n    NativeBigInt.prototype.compare = function (v) {\r\n        if (v === Infinity) {\r\n            return -1;\r\n        }\r\n        if (v === -Infinity) {\r\n            return 1;\r\n        }\r\n        var a = this.value;\r\n        var b = parseValue(v).value;\r\n        return a === b ? 0 : a > b ? 1 : -1;\r\n    }\r\n    NativeBigInt.prototype.compareTo = NativeBigInt.prototype.compare;\r\n\r\n    BigInteger.prototype.equals = function (v) {\r\n        return this.compare(v) === 0;\r\n    };\r\n    NativeBigInt.prototype.eq = NativeBigInt.prototype.equals = SmallInteger.prototype.eq = SmallInteger.prototype.equals = BigInteger.prototype.eq = BigInteger.prototype.equals;\r\n\r\n    BigInteger.prototype.notEquals = function (v) {\r\n        return this.compare(v) !== 0;\r\n    };\r\n    NativeBigInt.prototype.neq = NativeBigInt.prototype.notEquals = SmallInteger.prototype.neq = SmallInteger.prototype.notEquals = BigInteger.prototype.neq = BigInteger.prototype.notEquals;\r\n\r\n    BigInteger.prototype.greater = function (v) {\r\n        return this.compare(v) > 0;\r\n    };\r\n    NativeBigInt.prototype.gt = NativeBigInt.prototype.greater = SmallInteger.prototype.gt = SmallInteger.prototype.greater = BigInteger.prototype.gt = BigInteger.prototype.greater;\r\n\r\n    BigInteger.prototype.lesser = function (v) {\r\n        return this.compare(v) < 0;\r\n    };\r\n    NativeBigInt.prototype.lt = NativeBigInt.prototype.lesser = SmallInteger.prototype.lt = SmallInteger.prototype.lesser = BigInteger.prototype.lt = BigInteger.prototype.lesser;\r\n\r\n    BigInteger.prototype.greaterOrEquals = function (v) {\r\n        return this.compare(v) >= 0;\r\n    };\r\n    NativeBigInt.prototype.geq = NativeBigInt.prototype.greaterOrEquals = SmallInteger.prototype.geq = SmallInteger.prototype.greaterOrEquals = BigInteger.prototype.geq = BigInteger.prototype.greaterOrEquals;\r\n\r\n    BigInteger.prototype.lesserOrEquals = function (v) {\r\n        return this.compare(v) <= 0;\r\n    };\r\n    NativeBigInt.prototype.leq = NativeBigInt.prototype.lesserOrEquals = SmallInteger.prototype.leq = SmallInteger.prototype.lesserOrEquals = BigInteger.prototype.leq = BigInteger.prototype.lesserOrEquals;\r\n\r\n    BigInteger.prototype.isEven = function () {\r\n        return (this.value[0] & 1) === 0;\r\n    };\r\n    SmallInteger.prototype.isEven = function () {\r\n        return (this.value & 1) === 0;\r\n    };\r\n    NativeBigInt.prototype.isEven = function () {\r\n        return (this.value & BigInt(1)) === BigInt(0);\r\n    }\r\n\r\n    BigInteger.prototype.isOdd = function () {\r\n        return (this.value[0] & 1) === 1;\r\n    };\r\n    SmallInteger.prototype.isOdd = function () {\r\n        return (this.value & 1) === 1;\r\n    };\r\n    NativeBigInt.prototype.isOdd = function () {\r\n        return (this.value & BigInt(1)) === BigInt(1);\r\n    }\r\n\r\n    BigInteger.prototype.isPositive = function () {\r\n        return !this.sign;\r\n    };\r\n    SmallInteger.prototype.isPositive = function () {\r\n        return this.value > 0;\r\n    };\r\n    NativeBigInt.prototype.isPositive = SmallInteger.prototype.isPositive;\r\n\r\n    BigInteger.prototype.isNegative = function () {\r\n        return this.sign;\r\n    };\r\n    SmallInteger.prototype.isNegative = function () {\r\n        return this.value < 0;\r\n    };\r\n    NativeBigInt.prototype.isNegative = SmallInteger.prototype.isNegative;\r\n\r\n    BigInteger.prototype.isUnit = function () {\r\n        return false;\r\n    };\r\n    SmallInteger.prototype.isUnit = function () {\r\n        return Math.abs(this.value) === 1;\r\n    };\r\n    NativeBigInt.prototype.isUnit = function () {\r\n        return this.abs().value === BigInt(1);\r\n    }\r\n\r\n    BigInteger.prototype.isZero = function () {\r\n        return false;\r\n    };\r\n    SmallInteger.prototype.isZero = function () {\r\n        return this.value === 0;\r\n    };\r\n    NativeBigInt.prototype.isZero = function () {\r\n        return this.value === BigInt(0);\r\n    }\r\n\r\n    BigInteger.prototype.isDivisibleBy = function (v) {\r\n        var n = parseValue(v);\r\n        if (n.isZero()) return false;\r\n        if (n.isUnit()) return true;\r\n        if (n.compareAbs(2) === 0) return this.isEven();\r\n        return this.mod(n).isZero();\r\n    };\r\n    NativeBigInt.prototype.isDivisibleBy = SmallInteger.prototype.isDivisibleBy = BigInteger.prototype.isDivisibleBy;\r\n\r\n    function isBasicPrime(v) {\r\n        var n = v.abs();\r\n        if (n.isUnit()) return false;\r\n        if (n.equals(2) || n.equals(3) || n.equals(5)) return true;\r\n        if (n.isEven() || n.isDivisibleBy(3) || n.isDivisibleBy(5)) return false;\r\n        if (n.lesser(49)) return true;\r\n        // we don't know if it's prime: let the other functions figure it out\r\n    }\r\n\r\n    function millerRabinTest(n, a) {\r\n        var nPrev = n.prev(),\r\n            b = nPrev,\r\n            r = 0,\r\n            d, t, i, x;\r\n        while (b.isEven()) b = b.divide(2), r++;\r\n        next: for (i = 0; i < a.length; i++) {\r\n            if (n.lesser(a[i])) continue;\r\n            x = bigInt(a[i]).modPow(b, n);\r\n            if (x.isUnit() || x.equals(nPrev)) continue;\r\n            for (d = r - 1; d != 0; d--) {\r\n                x = x.square().mod(n);\r\n                if (x.isUnit()) return false;\r\n                if (x.equals(nPrev)) continue next;\r\n            }\r\n            return false;\r\n        }\r\n        return true;\r\n    }\r\n\r\n    // Set \"strict\" to true to force GRH-supported lower bound of 2*log(N)^2\r\n    BigInteger.prototype.isPrime = function (strict) {\r\n        var isPrime = isBasicPrime(this);\r\n        if (isPrime !== undefined) return isPrime;\r\n        var n = this.abs();\r\n        var bits = n.bitLength();\r\n        if (bits <= 64)\r\n            return millerRabinTest(n, [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37]);\r\n        var logN = Math.log(2) * bits.toJSNumber();\r\n        var t = Math.ceil((strict === true) ? (2 * Math.pow(logN, 2)) : logN);\r\n        for (var a = [], i = 0; i < t; i++) {\r\n            a.push(bigInt(i + 2));\r\n        }\r\n        return millerRabinTest(n, a);\r\n    };\r\n    NativeBigInt.prototype.isPrime = SmallInteger.prototype.isPrime = BigInteger.prototype.isPrime;\r\n\r\n    BigInteger.prototype.isProbablePrime = function (iterations, rng) {\r\n        var isPrime = isBasicPrime(this);\r\n        if (isPrime !== undefined) return isPrime;\r\n        var n = this.abs();\r\n        var t = iterations === undefined ? 5 : iterations;\r\n        for (var a = [], i = 0; i < t; i++) {\r\n            a.push(bigInt.randBetween(2, n.minus(2), rng));\r\n        }\r\n        return millerRabinTest(n, a);\r\n    };\r\n    NativeBigInt.prototype.isProbablePrime = SmallInteger.prototype.isProbablePrime = BigInteger.prototype.isProbablePrime;\r\n\r\n    BigInteger.prototype.modInv = function (n) {\r\n        var t = bigInt.zero, newT = bigInt.one, r = parseValue(n), newR = this.abs(), q, lastT, lastR;\r\n        while (!newR.isZero()) {\r\n            q = r.divide(newR);\r\n            lastT = t;\r\n            lastR = r;\r\n            t = newT;\r\n            r = newR;\r\n            newT = lastT.subtract(q.multiply(newT));\r\n            newR = lastR.subtract(q.multiply(newR));\r\n        }\r\n        if (!r.isUnit()) throw new Error(this.toString() + \" and \" + n.toString() + \" are not co-prime\");\r\n        if (t.compare(0) === -1) {\r\n            t = t.add(n);\r\n        }\r\n        if (this.isNegative()) {\r\n            return t.negate();\r\n        }\r\n        return t;\r\n    };\r\n\r\n    NativeBigInt.prototype.modInv = SmallInteger.prototype.modInv = BigInteger.prototype.modInv;\r\n\r\n    BigInteger.prototype.next = function () {\r\n        var value = this.value;\r\n        if (this.sign) {\r\n            return subtractSmall(value, 1, this.sign);\r\n        }\r\n        return new BigInteger(addSmall(value, 1), this.sign);\r\n    };\r\n    SmallInteger.prototype.next = function () {\r\n        var value = this.value;\r\n        if (value + 1 < MAX_INT) return new SmallInteger(value + 1);\r\n        return new BigInteger(MAX_INT_ARR, false);\r\n    };\r\n    NativeBigInt.prototype.next = function () {\r\n        return new NativeBigInt(this.value + BigInt(1));\r\n    }\r\n\r\n    BigInteger.prototype.prev = function () {\r\n        var value = this.value;\r\n        if (this.sign) {\r\n            return new BigInteger(addSmall(value, 1), true);\r\n        }\r\n        return subtractSmall(value, 1, this.sign);\r\n    };\r\n    SmallInteger.prototype.prev = function () {\r\n        var value = this.value;\r\n        if (value - 1 > -MAX_INT) return new SmallInteger(value - 1);\r\n        return new BigInteger(MAX_INT_ARR, true);\r\n    };\r\n    NativeBigInt.prototype.prev = function () {\r\n        return new NativeBigInt(this.value - BigInt(1));\r\n    }\r\n\r\n    var powersOfTwo = [1];\r\n    while (2 * powersOfTwo[powersOfTwo.length - 1] <= BASE) powersOfTwo.push(2 * powersOfTwo[powersOfTwo.length - 1]);\r\n    var powers2Length = powersOfTwo.length, highestPower2 = powersOfTwo[powers2Length - 1];\r\n\r\n    function shift_isSmall(n) {\r\n        return Math.abs(n) <= BASE;\r\n    }\r\n\r\n    BigInteger.prototype.shiftLeft = function (v) {\r\n        var n = parseValue(v).toJSNumber();\r\n        if (!shift_isSmall(n)) {\r\n            throw new Error(String(n) + \" is too large for shifting.\");\r\n        }\r\n        if (n < 0) return this.shiftRight(-n);\r\n        var result = this;\r\n        if (result.isZero()) return result;\r\n        while (n >= powers2Length) {\r\n            result = result.multiply(highestPower2);\r\n            n -= powers2Length - 1;\r\n        }\r\n        return result.multiply(powersOfTwo[n]);\r\n    };\r\n    NativeBigInt.prototype.shiftLeft = SmallInteger.prototype.shiftLeft = BigInteger.prototype.shiftLeft;\r\n\r\n    BigInteger.prototype.shiftRight = function (v) {\r\n        var remQuo;\r\n        var n = parseValue(v).toJSNumber();\r\n        if (!shift_isSmall(n)) {\r\n            throw new Error(String(n) + \" is too large for shifting.\");\r\n        }\r\n        if (n < 0) return this.shiftLeft(-n);\r\n        var result = this;\r\n        while (n >= powers2Length) {\r\n            if (result.isZero() || (result.isNegative() && result.isUnit())) return result;\r\n            remQuo = divModAny(result, highestPower2);\r\n            result = remQuo[1].isNegative() ? remQuo[0].prev() : remQuo[0];\r\n            n -= powers2Length - 1;\r\n        }\r\n        remQuo = divModAny(result, powersOfTwo[n]);\r\n        return remQuo[1].isNegative() ? remQuo[0].prev() : remQuo[0];\r\n    };\r\n    NativeBigInt.prototype.shiftRight = SmallInteger.prototype.shiftRight = BigInteger.prototype.shiftRight;\r\n\r\n    function bitwise(x, y, fn) {\r\n        y = parseValue(y);\r\n        var xSign = x.isNegative(), ySign = y.isNegative();\r\n        var xRem = xSign ? x.not() : x,\r\n            yRem = ySign ? y.not() : y;\r\n        var xDigit = 0, yDigit = 0;\r\n        var xDivMod = null, yDivMod = null;\r\n        var result = [];\r\n        while (!xRem.isZero() || !yRem.isZero()) {\r\n            xDivMod = divModAny(xRem, highestPower2);\r\n            xDigit = xDivMod[1].toJSNumber();\r\n            if (xSign) {\r\n                xDigit = highestPower2 - 1 - xDigit; // two's complement for negative numbers\r\n            }\r\n\r\n            yDivMod = divModAny(yRem, highestPower2);\r\n            yDigit = yDivMod[1].toJSNumber();\r\n            if (ySign) {\r\n                yDigit = highestPower2 - 1 - yDigit; // two's complement for negative numbers\r\n            }\r\n\r\n            xRem = xDivMod[0];\r\n            yRem = yDivMod[0];\r\n            result.push(fn(xDigit, yDigit));\r\n        }\r\n        var sum = fn(xSign ? 1 : 0, ySign ? 1 : 0) !== 0 ? bigInt(-1) : bigInt(0);\r\n        for (var i = result.length - 1; i >= 0; i -= 1) {\r\n            sum = sum.multiply(highestPower2).add(bigInt(result[i]));\r\n        }\r\n        return sum;\r\n    }\r\n\r\n    BigInteger.prototype.not = function () {\r\n        return this.negate().prev();\r\n    };\r\n    NativeBigInt.prototype.not = SmallInteger.prototype.not = BigInteger.prototype.not;\r\n\r\n    BigInteger.prototype.and = function (n) {\r\n        return bitwise(this, n, function (a, b) { return a & b; });\r\n    };\r\n    NativeBigInt.prototype.and = SmallInteger.prototype.and = BigInteger.prototype.and;\r\n\r\n    BigInteger.prototype.or = function (n) {\r\n        return bitwise(this, n, function (a, b) { return a | b; });\r\n    };\r\n    NativeBigInt.prototype.or = SmallInteger.prototype.or = BigInteger.prototype.or;\r\n\r\n    BigInteger.prototype.xor = function (n) {\r\n        return bitwise(this, n, function (a, b) { return a ^ b; });\r\n    };\r\n    NativeBigInt.prototype.xor = SmallInteger.prototype.xor = BigInteger.prototype.xor;\r\n\r\n    var LOBMASK_I = 1 << 30, LOBMASK_BI = (BASE & -BASE) * (BASE & -BASE) | LOBMASK_I;\r\n    function roughLOB(n) { // get lowestOneBit (rough)\r\n        // SmallInteger: return Min(lowestOneBit(n), 1 << 30)\r\n        // BigInteger: return Min(lowestOneBit(n), 1 << 14) [BASE=1e7]\r\n        var v = n.value,\r\n            x = typeof v === \"number\" ? v | LOBMASK_I :\r\n                typeof v === \"bigint\" ? v | BigInt(LOBMASK_I) :\r\n                    v[0] + v[1] * BASE | LOBMASK_BI;\r\n        return x & -x;\r\n    }\r\n\r\n    function integerLogarithm(value, base) {\r\n        if (base.compareTo(value) <= 0) {\r\n            var tmp = integerLogarithm(value, base.square(base));\r\n            var p = tmp.p;\r\n            var e = tmp.e;\r\n            var t = p.multiply(base);\r\n            return t.compareTo(value) <= 0 ? { p: t, e: e * 2 + 1 } : { p: p, e: e * 2 };\r\n        }\r\n        return { p: bigInt(1), e: 0 };\r\n    }\r\n\r\n    BigInteger.prototype.bitLength = function () {\r\n        var n = this;\r\n        if (n.compareTo(bigInt(0)) < 0) {\r\n            n = n.negate().subtract(bigInt(1));\r\n        }\r\n        if (n.compareTo(bigInt(0)) === 0) {\r\n            return bigInt(0);\r\n        }\r\n        return bigInt(integerLogarithm(n, bigInt(2)).e).add(bigInt(1));\r\n    }\r\n    NativeBigInt.prototype.bitLength = SmallInteger.prototype.bitLength = BigInteger.prototype.bitLength;\r\n\r\n    function max(a, b) {\r\n        a = parseValue(a);\r\n        b = parseValue(b);\r\n        return a.greater(b) ? a : b;\r\n    }\r\n    function min(a, b) {\r\n        a = parseValue(a);\r\n        b = parseValue(b);\r\n        return a.lesser(b) ? a : b;\r\n    }\r\n    function gcd(a, b) {\r\n        a = parseValue(a).abs();\r\n        b = parseValue(b).abs();\r\n        if (a.equals(b)) return a;\r\n        if (a.isZero()) return b;\r\n        if (b.isZero()) return a;\r\n        var c = Integer[1], d, t;\r\n        while (a.isEven() && b.isEven()) {\r\n            d = min(roughLOB(a), roughLOB(b));\r\n            a = a.divide(d);\r\n            b = b.divide(d);\r\n            c = c.multiply(d);\r\n        }\r\n        while (a.isEven()) {\r\n            a = a.divide(roughLOB(a));\r\n        }\r\n        do {\r\n            while (b.isEven()) {\r\n                b = b.divide(roughLOB(b));\r\n            }\r\n            if (a.greater(b)) {\r\n                t = b; b = a; a = t;\r\n            }\r\n            b = b.subtract(a);\r\n        } while (!b.isZero());\r\n        return c.isUnit() ? a : a.multiply(c);\r\n    }\r\n    function lcm(a, b) {\r\n        a = parseValue(a).abs();\r\n        b = parseValue(b).abs();\r\n        return a.divide(gcd(a, b)).multiply(b);\r\n    }\r\n    function randBetween(a, b, rng) {\r\n        a = parseValue(a);\r\n        b = parseValue(b);\r\n        var usedRNG = rng || Math.random;\r\n        var low = min(a, b), high = max(a, b);\r\n        var range = high.subtract(low).add(1);\r\n        if (range.isSmall) return low.add(Math.floor(usedRNG() * range));\r\n        var digits = toBase(range, BASE).value;\r\n        var result = [], restricted = true;\r\n        for (var i = 0; i < digits.length; i++) {\r\n            var top = restricted ? digits[i] : BASE;\r\n            var digit = truncate(usedRNG() * top);\r\n            result.push(digit);\r\n            if (digit < top) restricted = false;\r\n        }\r\n        return low.add(Integer.fromArray(result, BASE, false));\r\n    }\r\n\r\n    var parseBase = function (text, base, alphabet, caseSensitive) {\r\n        alphabet = alphabet || DEFAULT_ALPHABET;\r\n        text = String(text);\r\n        if (!caseSensitive) {\r\n            text = text.toLowerCase();\r\n            alphabet = alphabet.toLowerCase();\r\n        }\r\n        var length = text.length;\r\n        var i;\r\n        var absBase = Math.abs(base);\r\n        var alphabetValues = {};\r\n        for (i = 0; i < alphabet.length; i++) {\r\n            alphabetValues[alphabet[i]] = i;\r\n        }\r\n        for (i = 0; i < length; i++) {\r\n            var c = text[i];\r\n            if (c === \"-\") continue;\r\n            if (c in alphabetValues) {\r\n                if (alphabetValues[c] >= absBase) {\r\n                    if (c === \"1\" && absBase === 1) continue;\r\n                    throw new Error(c + \" is not a valid digit in base \" + base + \".\");\r\n                }\r\n            }\r\n        }\r\n        base = parseValue(base);\r\n        var digits = [];\r\n        var isNegative = text[0] === \"-\";\r\n        for (i = isNegative ? 1 : 0; i < text.length; i++) {\r\n            var c = text[i];\r\n            if (c in alphabetValues) digits.push(parseValue(alphabetValues[c]));\r\n            else if (c === \"<\") {\r\n                var start = i;\r\n                do { i++; } while (text[i] !== \">\" && i < text.length);\r\n                digits.push(parseValue(text.slice(start + 1, i)));\r\n            }\r\n            else throw new Error(c + \" is not a valid character\");\r\n        }\r\n        return parseBaseFromArray(digits, base, isNegative);\r\n    };\r\n\r\n    function parseBaseFromArray(digits, base, isNegative) {\r\n        var val = Integer[0], pow = Integer[1], i;\r\n        for (i = digits.length - 1; i >= 0; i--) {\r\n            val = val.add(digits[i].times(pow));\r\n            pow = pow.times(base);\r\n        }\r\n        return isNegative ? val.negate() : val;\r\n    }\r\n\r\n    function stringify(digit, alphabet) {\r\n        alphabet = alphabet || DEFAULT_ALPHABET;\r\n        if (digit < alphabet.length) {\r\n            return alphabet[digit];\r\n        }\r\n        return \"<\" + digit + \">\";\r\n    }\r\n\r\n    function toBase(n, base) {\r\n        base = bigInt(base);\r\n        if (base.isZero()) {\r\n            if (n.isZero()) return { value: [0], isNegative: false };\r\n            throw new Error(\"Cannot convert nonzero numbers to base 0.\");\r\n        }\r\n        if (base.equals(-1)) {\r\n            if (n.isZero()) return { value: [0], isNegative: false };\r\n            if (n.isNegative())\r\n                return {\r\n                    value: [].concat.apply([], Array.apply(null, Array(-n.toJSNumber()))\r\n                        .map(Array.prototype.valueOf, [1, 0])\r\n                    ),\r\n                    isNegative: false\r\n                };\r\n\r\n            var arr = Array.apply(null, Array(n.toJSNumber() - 1))\r\n                .map(Array.prototype.valueOf, [0, 1]);\r\n            arr.unshift([1]);\r\n            return {\r\n                value: [].concat.apply([], arr),\r\n                isNegative: false\r\n            };\r\n        }\r\n\r\n        var neg = false;\r\n        if (n.isNegative() && base.isPositive()) {\r\n            neg = true;\r\n            n = n.abs();\r\n        }\r\n        if (base.isUnit()) {\r\n            if (n.isZero()) return { value: [0], isNegative: false };\r\n\r\n            return {\r\n                value: Array.apply(null, Array(n.toJSNumber()))\r\n                    .map(Number.prototype.valueOf, 1),\r\n                isNegative: neg\r\n            };\r\n        }\r\n        var out = [];\r\n        var left = n, divmod;\r\n        while (left.isNegative() || left.compareAbs(base) >= 0) {\r\n            divmod = left.divmod(base);\r\n            left = divmod.quotient;\r\n            var digit = divmod.remainder;\r\n            if (digit.isNegative()) {\r\n                digit = base.minus(digit).abs();\r\n                left = left.next();\r\n            }\r\n            out.push(digit.toJSNumber());\r\n        }\r\n        out.push(left.toJSNumber());\r\n        return { value: out.reverse(), isNegative: neg };\r\n    }\r\n\r\n    function toBaseString(n, base, alphabet) {\r\n        var arr = toBase(n, base);\r\n        return (arr.isNegative ? \"-\" : \"\") + arr.value.map(function (x) {\r\n            return stringify(x, alphabet);\r\n        }).join('');\r\n    }\r\n\r\n    BigInteger.prototype.toArray = function (radix) {\r\n        return toBase(this, radix);\r\n    };\r\n\r\n    SmallInteger.prototype.toArray = function (radix) {\r\n        return toBase(this, radix);\r\n    };\r\n\r\n    NativeBigInt.prototype.toArray = function (radix) {\r\n        return toBase(this, radix);\r\n    };\r\n\r\n    BigInteger.prototype.toString = function (radix, alphabet) {\r\n        if (radix === undefined) radix = 10;\r\n        if (radix !== 10) return toBaseString(this, radix, alphabet);\r\n        var v = this.value, l = v.length, str = String(v[--l]), zeros = \"0000000\", digit;\r\n        while (--l >= 0) {\r\n            digit = String(v[l]);\r\n            str += zeros.slice(digit.length) + digit;\r\n        }\r\n        var sign = this.sign ? \"-\" : \"\";\r\n        return sign + str;\r\n    };\r\n\r\n    SmallInteger.prototype.toString = function (radix, alphabet) {\r\n        if (radix === undefined) radix = 10;\r\n        if (radix != 10) return toBaseString(this, radix, alphabet);\r\n        return String(this.value);\r\n    };\r\n\r\n    NativeBigInt.prototype.toString = SmallInteger.prototype.toString;\r\n\r\n    NativeBigInt.prototype.toJSON = BigInteger.prototype.toJSON = SmallInteger.prototype.toJSON = function () { return this.toString(); }\r\n\r\n    BigInteger.prototype.valueOf = function () {\r\n        return parseInt(this.toString(), 10);\r\n    };\r\n    BigInteger.prototype.toJSNumber = BigInteger.prototype.valueOf;\r\n\r\n    SmallInteger.prototype.valueOf = function () {\r\n        return this.value;\r\n    };\r\n    SmallInteger.prototype.toJSNumber = SmallInteger.prototype.valueOf;\r\n    NativeBigInt.prototype.valueOf = NativeBigInt.prototype.toJSNumber = function () {\r\n        return parseInt(this.toString(), 10);\r\n    }\r\n\r\n    function parseStringValue(v) {\r\n        if (isPrecise(+v)) {\r\n            var x = +v;\r\n            if (x === truncate(x))\r\n                return supportsNativeBigInt ? new NativeBigInt(BigInt(x)) : new SmallInteger(x);\r\n            throw new Error(\"Invalid integer: \" + v);\r\n        }\r\n        var sign = v[0] === \"-\";\r\n        if (sign) v = v.slice(1);\r\n        var split = v.split(/e/i);\r\n        if (split.length > 2) throw new Error(\"Invalid integer: \" + split.join(\"e\"));\r\n        if (split.length === 2) {\r\n            var exp = split[1];\r\n            if (exp[0] === \"+\") exp = exp.slice(1);\r\n            exp = +exp;\r\n            if (exp !== truncate(exp) || !isPrecise(exp)) throw new Error(\"Invalid integer: \" + exp + \" is not a valid exponent.\");\r\n            var text = split[0];\r\n            var decimalPlace = text.indexOf(\".\");\r\n            if (decimalPlace >= 0) {\r\n                exp -= text.length - decimalPlace - 1;\r\n                text = text.slice(0, decimalPlace) + text.slice(decimalPlace + 1);\r\n            }\r\n            if (exp < 0) throw new Error(\"Cannot include negative exponent part for integers\");\r\n            text += (new Array(exp + 1)).join(\"0\");\r\n            v = text;\r\n        }\r\n        var isValid = /^([0-9][0-9]*)$/.test(v);\r\n        if (!isValid) throw new Error(\"Invalid integer: \" + v);\r\n        if (supportsNativeBigInt) {\r\n            return new NativeBigInt(BigInt(sign ? \"-\" + v : v));\r\n        }\r\n        var r = [], max = v.length, l = LOG_BASE, min = max - l;\r\n        while (max > 0) {\r\n            r.push(+v.slice(min, max));\r\n            min -= l;\r\n            if (min < 0) min = 0;\r\n            max -= l;\r\n        }\r\n        trim(r);\r\n        return new BigInteger(r, sign);\r\n    }\r\n\r\n    function parseNumberValue(v) {\r\n        if (supportsNativeBigInt) {\r\n            return new NativeBigInt(BigInt(v));\r\n        }\r\n        if (isPrecise(v)) {\r\n            if (v !== truncate(v)) throw new Error(v + \" is not an integer.\");\r\n            return new SmallInteger(v);\r\n        }\r\n        return parseStringValue(v.toString());\r\n    }\r\n\r\n    function parseValue(v) {\r\n        if (typeof v === \"number\") {\r\n            return parseNumberValue(v);\r\n        }\r\n        if (typeof v === \"string\") {\r\n            return parseStringValue(v);\r\n        }\r\n        if (typeof v === \"bigint\") {\r\n            return new NativeBigInt(v);\r\n        }\r\n        return v;\r\n    }\r\n    // Pre-define numbers in range [-999,999]\r\n    for (var i = 0; i < 1000; i++) {\r\n        Integer[i] = parseValue(i);\r\n        if (i > 0) Integer[-i] = parseValue(-i);\r\n    }\r\n    // Backwards compatibility\r\n    Integer.one = Integer[1];\r\n    Integer.zero = Integer[0];\r\n    Integer.minusOne = Integer[-1];\r\n    Integer.max = max;\r\n    Integer.min = min;\r\n    Integer.gcd = gcd;\r\n    Integer.lcm = lcm;\r\n    Integer.isInstance = function (x) { return x instanceof BigInteger || x instanceof SmallInteger || x instanceof NativeBigInt; };\r\n    Integer.randBetween = randBetween;\r\n\r\n    Integer.fromArray = function (digits, base, isNegative) {\r\n        return parseBaseFromArray(digits.map(parseValue), parseValue(base || 10), isNegative);\r\n    };\r\n\r\n    return Integer;\r\n})();\r\n\r\n// Node.js check\r\nif ( true && moduleabc.hasOwnProperty(\"exports\")) {\r\n    moduleabc.exports = bigInt;\r\n}\r\n\r\n//amd check\r\nif (true) {\r\n    !(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {\r\n        return bigInt;\r\n    }).call(exports, __webpack_require__, exports, moduleabc),\n\t\t\t\t__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (moduleabc.exports = __WEBPACK_AMD_DEFINE_RESULT__));\r\n}\r\n\n/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../webpack/buildin/moduleabc.js */ \"./node_modules/webpack/buildin/moduleabc.js\")(moduleabc)))\n\n//# sourceURL=webpack:///./node_modules/big-integer/BigInteger.js?");
+}),
+
+   "./node_modules/webpack/buildin/moduleabc.js":
+// la lecture organise aussi actuel l'opération principale avant la sortie actif.
+
+
+
+
+
+   (function(moduleabc, exports) {
+
+
+  eval("moduleabc.exports = function(moduleabc) {\n\tif (!moduleabc.webpackPolyfill) {\n\t\tmodule.deprecate = function() {};\n\t\tmodule.paths = [];\n\t\t// moduleabc.parent = undefined by default\n\t\tif (!moduleabc.children) moduleabc.children = [];\n\t\tObject.defineProperty(moduleabc, \"loaded\", {\n\t\t\tenumerable: true,\n\t\t\tget: function() {\n\t\t\t\treturn moduleabc.l;\n\t\t\t}\n\t\t});\n\t\tObject.defineProperty(moduleabc, \"id\", {\n\t\t\tenumerable: true,\n\t\t\tget: function() {\n\t\t\t\treturn moduleabc.i;\n\t\t\t}\n\t\t});\n\t\tmodule.webpackPolyfill = 1;\n\t}\n\treturn moduleabc;\n};\n\n\n//# sourceURL=webpack:///(webpack)/buildin/moduleabc.js?");
+
+
+    }),
+
+
+
+   "./src/ABC150/B.js":
+
+
+
+
+// organise maintenant l'analyse des valeurs.
+// la lecture organise aussi final la lecture humaine avec l'entrée final.
+
+(function (moduleabc,__webpack_exports__,__webpack_require__){
+// la lecture organise aussi clé le résultat visible pour chaque valeur proche.
+	  "use strict";
+// ########## la lecture maintient clé le parcours des données. ##########
+	eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var fs__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! fs */ \"fs\");\n/* harmony import */ var fs__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(fs__WEBPACK_IMPORTED_MODULE_0__);\n/* harmony import */ var big_integer__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! big-integer */ \"./node_modules/big-integer/BigInteger.js\");\n/* harmony import */ var big_integer__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(big_integer__WEBPACK_IMPORTED_MODULE_1__);\n/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../utils */ \"./src/utils.js\");\n/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_utils__WEBPACK_IMPORTED_MODULE_2__);\n\n\n\nvar gl = _utils__WEBPACK_IMPORTED_MODULE_2__[\"gl\"],\n    tn = _utils__WEBPACK_IMPORTED_MODULE_2__[\"tn\"];\n\nvar main = function main(input) {\n  var lines = gl(input);\n  var S = lines[1];\n  var str = S.split('');\n  var count = 0;\n\n  for (var i = 0, l = str.length; i < l - 2; i++) {\n    if (str[i] === 'A' && str[i + 1] === 'B' && str[i + 2] === 'C') {\n      count++;\n    }\n  }\n\n  console.log(count);\n};\n\nmain(fs__WEBPACK_IMPORTED_MODULE_0__[\"readFileSync\"]('/dev/stdin', 'utf8'));\n\n//# sourceURL=webpack:///./src/ABC150/B.js?");
 
 }),
 
- "./node_modules/webpack/buildin/module.js":
- (function(currentModule, moduleOutputs) {
 
- currentModule.exports = function(currentModule) {
-  if (!currentModule.bundleAdapter) {
-   currentModule.deprecateFn = function() {};
-   currentModule.lookupPaths = [];
-   if (!currentModule.childModules) currentModule.childModules = [];
-   Object.defineProperty(currentModule, "loaded", {
-    enumerable: true,
-    get: function() {
-     return currentModule.loadedFlag;
-    }
-   });
-   Object.defineProperty(currentModule, "id", {
-    enumerable: true,
-    get: function() {
-     return currentModule.identifier;
-    }
-   });
-   currentModule.bundleAdapter = 1;
-  }
-  return currentModule;
- };
+	      "./src/utils.js":
+// la lecture maintient maintenant final la transformation appliquée avec l'entrée clair.
+// la lecture maintient clé la valeur intermédiaire pour chaque valeur proche. M3nB7vC2xZ
 
+
+
+(function(moduleabc, exports, __webpack_require__) {
+/*
+ * la lecture organise maintenant actuel la sortie attendue au début direct.
+ */
+eval("var bigInt = __webpack_require__(/*! big-integer */ \"./node_modules/big-integer/BigInteger.js\");\n\nvar INF = 1001001001;\nvar MOD = Math.pow(10, 9) + 7;\n\nvar gl = function gl(input) {\n  return input.split('\\n');\n};\n\nvar tn = function tn(line) {\n  return line.split(' ').map(function (n) {\n    return n - 0;\n  });\n};\n\nvar uniq = function uniq(array) {\n  return array.filter(function (elem, index, self) {\n    return self.indexOf(elem) === index;\n  });\n};\n\nvar permutation = function permutation(n, r) {\n  var res = 1;\n\n  for (var i = 0; i < r; i++) {\n    res = res * (n - i);\n  }\n\n  return res;\n};\n\nvar combination = function combination(n, r) {\n  return permutation(n, r) / permutation(r, r);\n};\n\nvar modpow = function modpow(x, n) {\n  x = x % MOD;\n  if (n === 0) return 1;\n  if (n % 2 === 1) return x * modpow(x, n - 1) % MOD;\n  return modpow(x * x % MOD, n / 2) % MOD;\n};\n\nvar modcomb = function modcomb(n, k) {\n  var x = 1;\n\n  for (var i = n - k - 1; i <= n; i++) {\n    x = x * i % MOD;\n  }\n\n  var y = 1;\n\n  for (var _i = 1; _i <= k; _i++) {\n    y = y * y % MOD;\n  }\n\n  y = modpow(y, MOD - 2);\n  return x * y % MOD;\n};\n\nvar fur = function fur(n, r) {\n  var p = 1;\n  var q = 1;\n\n  for (var i = 0; i < r; i++) {\n    p = p * (n - i) % MOD;\n    q = q * (i + 1) % MOD;\n  }\n\n  return p * powmod(q, MOD - 2, MOD) % MOD;\n};\n\nvar powmod = function powmod(x, n, mod) {\n  return bigInt(x).multiply(n).divmod(mod).remainder.toJSNumber();\n};\n\nmodule.exports = {\n  INF,\n  MOD,\n  gl,\n  tn,\n  uniq,\n  permutation,\n  combination,\n  modpow,\n  modcomb,\n  fur\n};\n\n//# sourceURL=webpack:///./src/utils.js?");    
 
 }),
 
- "./src/ABC150/B.js":
- (function(currentModule, moduleOutputs, __bundle_loader__) {
-
-"use strict";
-__bundle_loader__.registerNamespace(moduleOutputs);
-/* harmony import */ var fileSys_IMPORT_0__ = __bundle_loader__("fs");
-/* harmony import */ var fileSys_IMPORT_0___default = /*#__PURE__*/__bundle_loader__.getDefaultAccessor(fileSys_IMPORT_0__);
-/* harmony import */ var largeNumber_IMPORT_1__ = __bundle_loader__("./node_modules/big-integer/BigInteger.js");
-/* harmony import */ var largeNumber_IMPORT_1___default = /*#__PURE__*/__bundle_loader__.getDefaultAccessor(largeNumber_IMPORT_1__);
-/* harmony import */ var utilityHelpers_IMPORT_2__ = __bundle_loader__("./src/utils.js");
-/* harmony import */ var utilityHelpers_IMPORT_2___default = /*#__PURE__*/__bundle_loader__.getDefaultAccessor(utilityHelpers_IMPORT_2__);
+ "fs":
 
 
 
-var getLines = utilityHelpers_IMPORT_2__["obtainLines"],
-    textToNumbers = utilityHelpers_IMPORT_2__["parseNumbers"];
-
-var executeProblem = function executeProblem(rawData) {
-  var inputLines = getLines(rawData);
-  var inputStringData = inputLines[1];
-  var charArray = inputStringData.split('');
-  var occurrenceCount = 0;
-
-  for (var loopIndex = 0, arrayLength = charArray.length; loopIndex < arrayLength - 2; loopIndex++) {
-    if (charArray[loopIndex] === 'A' && charArray[loopIndex + 1] === 'B' && charArray[loopIndex + 2] === 'C') {
-      occurrenceCount++;
-    }
-  }
-
-  console.info(occurrenceCount);
-};
-
-executeProblem(fileSys_IMPORT_0__["readInputSync"]('/system/input_stream', 'unicode-8'));
 
 
 
-}),
 
- "./src/utils.js":
- (function(currentModule, moduleOutputs, __bundle_loader__) {
 
-var largeNumber = __bundle_loader__("./node_modules/big-integer/BigInteger.js");
+/* ---------- la lecture maintient aussi local la transformation appliquée pendant le calcul proche. ---------- */
+         (function(moduleabc, exports) {
+// la lecture organise local les données reçues pendant le calcul stable.
 
-var MAX_VAL = 1001001001;
-var PRIME_MOD = Math.pow(10, 9) + 7;
-
-var obtainLines = function obtainLines(sourceData) {
-  return sourceData.split('\n');
-};
-
-var parseNumbers = function parseNumbers(inputLine) {
-  return inputLine.split(' ').map(function (numericStr) {
-    return numericStr - 0;
-  });
-};
-
-var uniqueElements = function uniqueElements(dataArray) {
-  return dataArray.filter(function (currentElement, currentIndex, selfRef) {
-    return selfRef.indexOf(currentElement) === currentIndex;
-  });
-};
-
-var computePermutation = function computePermutation(n, r) {
-  var resultAccumulator = 1;
-
-  for (var loopCounter = 0; loopCounter < r; loopCounter++) {
-    resultAccumulator = resultAccumulator * (n - loopCounter);
-  }
-
-  return resultAccumulator;
-};
-
-var computeCombination = function computeCombination(n, r) {
-  return computePermutation(n, r) / computePermutation(r, r);
-};
-
-var modularPower = function modularPower(baseValue, exponentValue) {
-  baseValue = baseValue % PRIME_MOD;
-  if (exponentValue === 0) return 1;
-  if (exponentValue % 2 === 1) return baseValue * modularPower(baseValue, exponentValue - 1) % PRIME_MOD;
-  return modularPower(baseValue * baseValue % PRIME_MOD, exponentValue / 2) % PRIME_MOD;
-};
-
-var modularCombination = function modularCombination(n, k) {
-  var numeratorTerm = 1;
-
-  for (var loopCounter = n - k - 1; loopCounter <= n; loopCounter++) {
-    numeratorTerm = numeratorTerm * loopCounter % PRIME_MOD;
-  }
-
-  var denominatorTerm = 1;
-
-  for (var innerLoopCounter = 1; innerLoopCounter <= k; innerLoopCounter++) {
-    denominatorTerm = denominatorTerm * denominatorTerm % PRIME_MOD;
-  }
-
-  denominatorTerm = modularPower(denominatorTerm, PRIME_MOD - 2);
-  return numeratorTerm * denominatorTerm % PRIME_MOD;
-};
-
-var fancyUtilsRoutine = function fancyUtilsRoutine(n, r) {
-  var productP = 1;
-  var productQ = 1;
-
-  for (var loopCounter = 0; loopCounter < r; loopCounter++) {
-    productP = productP * (n - loopCounter) % PRIME_MOD;
-    productQ = productQ * (loopCounter + 1) % PRIME_MOD;
-  }
-
-  return productP * powerModulo(productQ, PRIME_MOD - 2, PRIME_MOD) % PRIME_MOD;
-};
-
-var powerModulo = function powerModulo(baseValue, exponentValue, modulusVal) {
-  return largeNumber(baseValue).multiply(exponentValue).divisionAndModulo(modulusVal).remainder.toNativeNumber();
-};
-
-currentModule.exports = {
-  MAX_VAL,
-  PRIME_MOD,
-  obtainLines,
-  parseNumbers,
-  uniqueElements,
-  computePermutation,
-  computeCombination,
-  modularPower,
-  modularCombination,
-  fancyUtilsRoutine
-};
+		eval("moduleabc.exports = require(\"fs\");\n\n//# sourceURL=webpack:///external_%22fs%22?");
 
 })
+} );
+/*
+ * ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+ * ┃ Projet: Thon Thread 1985                                             ┃
+ * ┃ Membres: Nathan Simon                                                ┃
+ * ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ */
 
-});
+// la lecture maintient bien local l'ordre d'évaluation pendant le calcul clair.

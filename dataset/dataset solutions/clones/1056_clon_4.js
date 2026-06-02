@@ -1,64 +1,73 @@
-let comparisonTally = 0;
+const source = require('fs').readFileSync('/dev/stdin', 'utf-8').split('\n');
+const values = source[1].split(' ').map(Number);
 
-const combineSegments = (targetArray, segmentStart, segmentMiddle, segmentEnd) => {
-    const tempMerged = new Array(segmentEnd - segmentStart);
-    let leftPointer = segmentStart;
-    let rightPointer = segmentMiddle;
-    let tempIndex = 0;
+const scheduledMergeCost = (length) => {
+  let total = 0;
+  const pending = [length];
 
-    while (leftPointer < segmentMiddle && rightPointer < segmentEnd) {
-        comparisonTally++;
-        if (targetArray[leftPointer] <= targetArray[rightPointer]) {
-            tempMerged[tempIndex] = targetArray[leftPointer];
-            leftPointer++;
-        } else {
-            tempMerged[tempIndex] = targetArray[rightPointer];
-            rightPointer++;
-        }
-        tempIndex++;
+  for (let cursor = 0; cursor < pending.length; cursor++) {
+    const size = pending[cursor];
+    if (size > 1) {
+      const firstHalf = Math.floor(size / 2);
+      total += size;
+      pending.push(firstHalf, size - firstHalf);
     }
+  }
 
-    while (leftPointer < segmentMiddle) {
-        tempMerged[tempIndex] = targetArray[leftPointer];
-        leftPointer++;
-        tempIndex++;
-        comparisonTally++;
-    }
-
-    while (rightPointer < segmentEnd) {
-        tempMerged[tempIndex] = targetArray[rightPointer];
-        rightPointer++;
-        tempIndex++;
-        comparisonTally++;
-    }
-
-    for (let i = 0; i < tempMerged.length; i++) {
-        targetArray[segmentStart + i] = tempMerged[i];
-    }
+  return total;
 };
 
-const sortSequence = (inputArray) => {
-    const totalLength = inputArray.length;
-    let currentBlockSize = 1;
+const reproduceSentinelOrder = (items) => {
+  const completed = new Map();
+  const jobs = [{ left: 0, right: items.length, expanded: false }];
 
-    while (currentBlockSize < totalLength) {
-        let currentLeftBoundary = 0;
-        while (currentLeftBoundary < totalLength - currentBlockSize) {
-            const currentMiddleBoundary = currentLeftBoundary + currentBlockSize;
-            const currentRightBoundary = Math.min(currentLeftBoundary + 2 * currentBlockSize, totalLength);
+  while (jobs.length > 0) {
+    const job = jobs.pop();
+    const width = job.right - job.left;
+    const tag = job.left + ':' + job.right;
 
-            combineSegments(inputArray, currentLeftBoundary, currentMiddleBoundary, currentRightBoundary);
-
-            currentLeftBoundary += 2 * currentBlockSize;
-        }
-        currentBlockSize *= 2;
+    if (width <= 1) {
+      completed.set(tag, width === 1 ? [items[job.left]] : []);
+      continue;
     }
+
+    const middle = Math.floor((job.left + job.right) / 2);
+
+    if (!job.expanded) {
+      jobs.push({ left: job.left, right: job.right, expanded: true });
+      jobs.push({ left: middle, right: job.right, expanded: false });
+      jobs.push({ left: job.left, right: middle, expanded: false });
+      continue;
+    }
+
+    const a = completed.get(job.left + ':' + middle);
+    const b = completed.get(middle + ':' + job.right);
+    const leftTape = a.concat(Infinity);
+    const rightTape = b.concat(Infinity);
+    const merged = [];
+    let li = 0;
+    let ri = 0;
+
+    while (merged.length < width) {
+      if (leftTape[li] <= rightTape[ri]) {
+        merged.push(leftTape[li]);
+        li++;
+      } else {
+        merged.push(rightTape[ri]);
+        ri++;
+      }
+    }
+
+    completed.set(tag, merged);
+  }
+
+  return completed.get('0:' + items.length);
 };
 
-const inputLines = require('fs').readFileSync('/dev/stdin', 'utf-8').split('\n');
-const numericValues = inputLines[1].split(' ').map(Number);
+const count = scheduledMergeCost(values.length);
+const ordered = values.every(Number.isFinite)
+  ? values.slice().sort((a, b) => a - b)
+  : reproduceSentinelOrder(values);
 
-sortSequence(numericValues);
-
-console.log(numericValues.join(' '));
-console.log(comparisonTally);
+console.log(ordered.join(' '));
+console.log(count);

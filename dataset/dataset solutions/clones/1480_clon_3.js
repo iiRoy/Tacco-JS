@@ -1,12 +1,13 @@
-function processInputData(rawInputData) {
-    const iterationCount = Number(rawInputData);
-    const baseSegment = "ACL";
-    
-    const finalOutput = iterationCount > 0 
-        ? Array(iterationCount).fill(baseSegment).join('') 
-        : '';
+function runProgram(rawInput) {
+    const repetitions = Number(rawInput);
+    const textPiece = "ACL";
+    let output = "";
 
-    console.log(finalOutput);
+    for (let index = 0; index < repetitions; index++) {
+        output += textPiece;
+    }
+
+    console.log(output);
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+runProgram(require("fs").readFileSync("/dev/stdin", "utf8").trim());

@@ -1,32 +1,21 @@
-"use strict";
+'use strict';
 
-function processInput(data) {
-  const inputLines = data.split('\n');
-  const targetString = inputLines[0];
-  const keyword = 'keyence';
-  const keywordLength = keyword.length;
+const fs = require('fs');
+const source = fs.readFileSync('/dev/stdin', 'utf8');
+const firstLine = source.split('\n')[0];
+const goal = 'keyence';
 
-  let matchFound = false;
-
-  for (let i = 0; i <= keywordLength; i++) {
-    const prefixSegment = keyword.substring(0, i);
-    const suffixSegment = keyword.substring(i);
-
-    if (targetString.startsWith(prefixSegment) && targetString.endsWith(suffixSegment)) {
-      matchFound = true;
-      break;
-    }
-  }
-
-  if (matchFound) {
-    console.log('YES');
-  } else {
-    console.log('NO');
-  }
+let left = 0;
+while (left < goal.length && firstLine[left] === goal[left]) {
+  left++;
 }
 
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
-
-function parseNumbers(lineContent) {
-  return lineContent.split(/\s+/).map(numStr => parseInt(numStr, 10));
+let right = 0;
+while (
+  right < goal.length &&
+  firstLine[firstLine.length - 1 - right] === goal[goal.length - 1 - right]
+) {
+  right++;
 }
+
+console.log(left + right >= goal.length ? 'YES' : 'NO');

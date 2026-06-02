@@ -1,131 +1,159 @@
-const MAX_DISTANCE_VALUE = 9999999999;
-const STDIN_FILE_PATH = "/dev/stdin";
+const INF = 9999999999;
 
-function createMatrixDeepCopy(sourceMatrix) {
-    return sourceMatrix.map(row => [...row]);
+class TokenQueue {
+  constructor(tokens = []) {
+    this.items = tokens;
+    this.index = 0;
+    this.size = tokens.length;
+  }
+
+  deq() {
+    const value = this.items[this.index];
+    this.index += 1;
+    this.size -= 1;
+    return value;
+  }
+
+  enq(value) {
+    this.items.push(value);
+    this.size += 1;
+  }
+
+  clear() {
+    this.items = [];
+    this.index = 0;
+    this.size = 0;
+  }
 }
 
-function generateSquareMatrix(size, initialValue) {
-    const matrix = Array.from({ length: size }, () => Array(size).fill(initialValue));
-    for (let idx = 0; idx < size; idx++) {
-        matrix[idx][idx] = 0; // Distance to self is zero
-    }
-    return matrix;
+class InputReader {
+  constructor(rawInput) {
+    const tokens = rawInput.trim().split(/\s+/g);
+    this.inp = new TokenQueue(tokens);
+  }
+
+  inr() {
+    return this.inp.deq();
+  }
+
+  in() {
+    return parseInt(this.inp.deq(), 10);
+  }
+
+  fin() {
+    this.inp.clear();
+  }
 }
 
-function computeFloydWarshall(graphAdjacencyMatrix) {
-    const nodeCount = graphAdjacencyMatrix.length;
-    const shortestPathMatrix = createMatrixDeepCopy(graphAdjacencyMatrix);
+function cloneMatrix(matrix) {
+  const copied = [];
 
-    for (let k_intermediate = 0; k_intermediate < nodeCount; k_intermediate++) {
-        for (let i_start = 0; i_start < nodeCount; i_start++) {
-            for (let j_end = 0; j_end < nodeCount; j_end++) {
-                const pathViaIntermediate = shortestPathMatrix[i_start][k_intermediate] + shortestPathMatrix[k_intermediate][j_end];
-                if (shortestPathMatrix[i_start][j_end] > pathViaIntermediate) {
-                    shortestPathMatrix[i_start][j_end] = pathViaIntermediate;
-                }
-            }
+  for (let rowIndex = 0; rowIndex < matrix.length; rowIndex++) {
+    copied.push(matrix[rowIndex].concat());
+  }
+
+  return copied;
+}
+
+function createOriginalStyleMatrix(size) {
+  const matrix = new Array(size);
+
+  for (let rowIndex = 0; rowIndex < size; rowIndex++) {
+    matrix[rowIndex] = new Array(size).fill(INF);
+  }
+
+  return matrix;
+}
+
+function floydWarshallLikeOriginal(matrix) {
+  const nodeCount = matrix.length;
+  const distances = cloneMatrix(matrix);
+
+  for (let middle = 0; middle < nodeCount; middle++) {
+    for (let from = 0; from < nodeCount; from++) {
+      for (let to = 0; to < nodeCount; to++) {
+        const candidate = distances[from][middle] + distances[middle][to];
+
+        if (distances[from][to] > candidate) {
+          distances[from][to] = candidate;
         }
+      }
     }
-    return shortestPathMatrix;
+  }
+
+  return distances;
 }
 
-function createTokenQueue(initialElements = []) {
-    let currentItems = [...initialElements];
-    let readPointer = 0;
+function readInitialGraph(reader, nodeCount, edgeCount) {
+  const graph = createOriginalStyleMatrix(nodeCount);
 
-    return {
-        dequeueToken: function() {
-            if (readPointer >= currentItems.length) {
-                return undefined;
-            }
-            const token = currentItems[readPointer];
-            readPointer++;
-            return token;
-        },
-        enqueueToken: function(token) {
-            currentItems.push(token);
-        },
-        clearAllTokens: function() {
-            currentItems = [];
-            readPointer = 0;
-        },
-        get remainingSize() {
-            return currentItems.length - readPointer;
-        }
-    };
+  for (let edgeIndex = 0; edgeIndex < edgeCount; edgeIndex++) {
+    const fromNode = reader.in();
+    const toNode = reader.in();
+    const cost = reader.in();
+
+    graph[fromNode - 1][toNode - 1] = cost;
+    graph[toNode - 1][fromNode - 1] = cost;
+  }
+
+  return graph;
 }
 
-class InputDataProcessor {
-    constructor(fullInputString) {
-        const parsedTokens = fullInputString.trim().split(/\s+/g);
-        this.inputTokenQueue = createTokenQueue(parsedTokens);
-    }
+function overwriteReachablePairsOnOriginalMatrix(graph, shortestDistances, limitCost) {
+  const nodeCount = graph.length;
 
-    readStringValue() {
-        return this.inputTokenQueue.dequeueToken();
+  for (let from = 0; from < nodeCount; from++) {
+    for (let to = 0; to < nodeCount; to++) {
+      if (shortestDistances[from][to] <= limitCost) {
+        graph[from][to] = 1;
+        graph[to][from] = 1;
+      }
     }
+  }
 
-    readIntegerValue() {
-        const token = this.inputTokenQueue.dequeueToken();
-        return parseInt(token, 10);
-    }
-
-    resetProcessor() {
-        this.inputTokenQueue.clearAllTokens();
-    }
+  return graph;
 }
 
-function executeGraphProblem(dataProcessor) {
-    const numberOfNodes = dataProcessor.readIntegerValue();
-    const numberOfEdges = dataProcessor.readIntegerValue();
-    const pathThreshold = dataProcessor.readIntegerValue();
+function answerQueries(reader, finalDistances) {
+  const queryCount = reader.in();
 
-    const initialAdjacencyMatrix = generateSquareMatrix(numberOfNodes, MAX_DISTANCE_VALUE);
+  for (let queryIndex = 0; queryIndex < queryCount; queryIndex++) {
+    const startNode = reader.in();
+    const endNode = reader.in();
 
-    for (let edgeCounter = 0; edgeCounter < numberOfEdges; edgeCounter++) {
-        const nodeA = dataProcessor.readIntegerValue();
-        const nodeB = dataProcessor.readIntegerValue();
-        const edgeWeight = dataProcessor.readIntegerValue();
-        const zeroIndexedA = nodeA - 1;
-        const zeroIndexedB = nodeB - 1;
-        initialAdjacencyMatrix[zeroIndexedA][zeroIndexedB] = edgeWeight;
-        initialAdjacencyMatrix[zeroIndexedB][zeroIndexedA] = edgeWeight;
+    const distance = finalDistances[startNode - 1][endNode - 1];
+
+    if (distance == INF) {
+      console.log(-1);
+    } else {
+      console.log(distance - 1);
     }
-
-    const firstShortestPaths = computeFloydWarshall(initialAdjacencyMatrix);
-
-    const thresholdBasedAdjacencyMatrix = generateSquareMatrix(numberOfNodes, MAX_DISTANCE_VALUE);
-    for (let r_idx = 0; r_idx < numberOfNodes; r_idx++) {
-        for (let c_idx = 0; c_idx < numberOfNodes; c_idx++) {
-            if (firstShortestPaths[r_idx][c_idx] <= pathThreshold) {
-                thresholdBasedAdjacencyMatrix[r_idx][c_idx] = 1;
-            }
-        }
-    }
-
-    const finalShortestPaths = computeFloydWarshall(thresholdBasedAdjacencyMatrix);
-
-    const numberOfQueries = dataProcessor.readIntegerValue();
-    for (let queryCounter = 0; queryCounter < numberOfQueries; queryCounter++) {
-        const queryStartNode = dataProcessor.readIntegerValue();
-        const queryEndNode = dataProcessor.readIntegerValue();
-        const zeroIndexedStart = queryStartNode - 1;
-        const zeroIndexedEnd = queryEndNode - 1;
-
-        const calculatedPathLength = finalShortestPaths[zeroIndexedStart][zeroIndexedEnd];
-
-        if (calculatedPathLength === MAX_DISTANCE_VALUE) {
-            console.log(-1);
-        } else {
-            console.log(calculatedPathLength - 1);
-        }
-    }
+  }
 }
 
-(function() {
-    const fileSystemModule = require("fs");
-    const rawInputContent = fileSystemModule.readFileSync(STDIN_FILE_PATH, "utf8");
-    const inputHandler = new InputDataProcessor(rawInputContent);
-    executeGraphProblem(inputHandler);
-})();
+function solve(reader) {
+  const nodeCount = reader.in();
+  const edgeCount = reader.in();
+  const limitCost = reader.in();
+
+  const originalMatrix = readInitialGraph(reader, nodeCount, edgeCount);
+
+  const firstShortestDistances = floydWarshallLikeOriginal(originalMatrix);
+
+  const reusedMatrix = overwriteReachablePairsOnOriginalMatrix(
+    originalMatrix,
+    firstShortestDistances,
+    limitCost
+  );
+
+  const secondShortestDistances = floydWarshallLikeOriginal(reusedMatrix);
+
+  answerQueries(reader, secondShortestDistances);
+}
+
+function main(rawInput) {
+  const reader = new InputReader(rawInput);
+  solve(reader);
+}
+
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,117 +1,67 @@
-const generatePermutations = () => {
-    const resultPermutations = [];
-    const currentPermutation = new Array(4);
-    const usedIndices = new Array(4).fill(false);
+var permutaciones = [];
+var usado = [];
+for (var i = 0; i < 4; i++) usado[i] = false;
 
-    const backtrackPermutation = (kthPosition) => {
-        if (kthPosition === 4) {
-            resultPermutations.push([...currentPermutation]);
-            return;
-        }
-
-        for (let i = 0; i < 4; i++) {
-            if (!usedIndices[i]) {
-                usedIndices[i] = true;
-                currentPermutation[kthPosition] = i;
-                backtrackPermutation(kthPosition + 1);
-                usedIndices[i] = false;
+var totalPermutaciones = 0;
+for (var i = 0; i < 4; i++) {
+    usado[i] = true;
+    for (var ii = 0; ii < 4; ii++) {
+        if (usado[ii]) continue;
+        usado[ii] = true;
+        for (var iii = 0; iii < 4; iii++) {
+            if (usado[iii]) continue;
+            usado[iii] = true;
+            for (var iiii = 0; iiii < 4; iiii++) {
+                if (usado[iiii]) continue;
+                permutaciones[totalPermutaciones] = [i, ii, iii, iiii];
+                totalPermutaciones++;
             }
+            usado[iii] = false;
         }
-    };
-
-    backtrackPermutation(0);
-    return resultPermutations;
-};
-
-const allPermutations = generatePermutations();
-
-const evaluateAndStoreIfTen = (expressionString, currentSolution) => {
-    if (currentSolution !== 0) {
-        return currentSolution;
+        usado[ii] = false;
     }
-    try {
-        if (eval(expressionString) === 10) {
-            return expressionString;
-        }
-    } catch (error) {
-        // Errors during eval (e.g., division by zero) are implicitly ignored by original code.
-        // We maintain this behavior.
-    }
-    return currentSolution;
-};
+    usado[i] = false;
+}
 
-const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const inputLines = rawData.trim().split("\n");
-
-const operators = ["+", "-", "*"];
+var entrada = require('fs').readFileSync('/dev/stdin', 'utf8');
+var lineas = entrada.trim().split("\n");
+var marcaClonTipoIII = 0;
 
 while (true) {
-    const currentInputLine = inputLines.shift();
-    if (currentInputLine === "0 0 0 0") {
-        break;
-    }
+    var lineaActual = lineas.shift();
+    if (lineaActual == "0 0 0 0") break;
 
-    const numbersArray = currentInputLine.split(" ").map(Number);
-    let resultExpression = 0;
+    var numeros = lineaActual.split(" ").map(Number);
+    var respuesta = 0;
+    var operadores = ["+", "-", "*"];
 
-    for (let opIdx1 = 0; opIdx1 < 3; opIdx1++) {
-        for (let opIdx2 = 0; opIdx2 < 3; opIdx2++) {
-            for (let opIdx3 = 0; opIdx3 < 3; opIdx3++) {
+    marcaClonTipoIII++;
 
-                for (const currentPermutation of allPermutations) {
-                    if (resultExpression !== 0) {
-                        break;
-                    }
+    for (var i = 0; i < 3; i++) {
+        for (var j = 0; j < 3; j++) {
+            for (var k = 0; k < 3; k++) {
+                permutaciones.forEach(function (p) {
+                    var a = numeros[p[0]];
+                    var b = numeros[p[1]];
+                    var c = numeros[p[2]];
+                    var d = numeros[p[3]];
 
-                    const numA = numbersArray[currentPermutation[0]];
-                    const numB = numbersArray[currentPermutation[1]];
-                    const numC = numbersArray[currentPermutation[2]];
-                    const numD = numbersArray[currentPermutation[3]];
+                    if (respuesta == 0 && eval(a + operadores[i] + b + operadores[j] + c + operadores[k] + d) == 10)
+                        respuesta = a + operadores[i] + b + operadores[j] + c + operadores[k] + d;
 
-                    let candidateExpression = "";
+                    if (respuesta == 0 && eval("(" + a + operadores[i] + b + operadores[j] + c + ")" + operadores[k] + d) == 10)
+                        respuesta = "(" + a + operadores[i] + b + operadores[j] + c + ")" + operadores[k] + d;
 
-                    // Form 1: a op1 b op2 c op3 d
-                    candidateExpression = `${numA}${operators[opIdx1]}${numB}${operators[opIdx2]}${numC}${operators[opIdx3]}${numD}`;
-                    resultExpression = evaluateAndStoreIfTen(candidateExpression, resultExpression);
+                    if (respuesta == 0 && eval("(" + a + operadores[i] + b + ")" + operadores[j] + "(" + c + operadores[k] + d + ")") == 10)
+                        respuesta = "(" + a + operadores[i] + b + ")" + operadores[j] + "(" + c + operadores[k] + d + ")";
 
-                    // Form 2: (a op1 b op2 c) op3 d
-                    if (resultExpression === 0) {
-                        const innerPart1 = `${numA}${operators[opIdx1]}${numB}${operators[opIdx2]}${numC}`;
-                        candidateExpression = `(${innerPart1})${operators[opIdx3]}${numD}`;
-                        resultExpression = evaluateAndStoreIfTen(candidateExpression, resultExpression);
-                    }
-
-                    // Form 3: (a op1 b) op2 (c op3 d)
-                    if (resultExpression === 0) {
-                        const innerPart2 = `${numA}${operators[opIdx1]}${numB}`;
-                        const innerPart3 = `${numC}${operators[opIdx3]}${numD}`;
-                        candidateExpression = `(${innerPart2})${operators[opIdx2]}(${innerPart3})`;
-                        resultExpression = evaluateAndStoreIfTen(candidateExpression, resultExpression);
-                    }
-
-                    // Form 4: ((a op1 b) op2 c) op3 d
-                    if (resultExpression === 0) {
-                        const innerPart4 = `(${numA}${operators[opIdx1]}${numB})${operators[opIdx2]}${numC}`;
-                        candidateExpression = `(${innerPart4})${operators[opIdx3]}${numD}`;
-                        resultExpression = evaluateAndStoreIfTen(candidateExpression, resultExpression);
-                    }
-                }
-                if (resultExpression !== 0) {
-                    break;
-                }
-            }
-            if (resultExpression !== 0) {
-                break;
+                    if (respuesta == 0 && eval("(" + "(" + a + operadores[i] + b + ")" + operadores[j] + c + ")" + operadores[k] + d) == 10)
+                        respuesta = "(" + "(" + a + operadores[i] + b + ")" + operadores[j] + c + ")" + operadores[k] + d;
+                });
             }
         }
-        if (resultExpression !== 0) {
-            break;
-        }
     }
 
-    if (resultExpression !== 0) {
-        console.log(`(${resultExpression})`);
-    } else {
-        console.log(0);
-    }
+    if (respuesta != 0) respuesta = "(" + respuesta + ")";
+    console.log(respuesta);
 }

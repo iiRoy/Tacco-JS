@@ -101,7 +101,9 @@ export function tokenizeSource(source) {
 
   // ── Fallback ──────────────────────────────────────────────────────────────
   lexer.rule(/./, (ctx, match) => {
-    console.error(`Unrecognized: "${match[0]}"`);
+    if (process.env.TACCO_TOKENIZER_WARNINGS === "1") {
+      console.error(`Unrecognized: "${match[0]}"`);
+    }
     ctx.ignore();
   });
 

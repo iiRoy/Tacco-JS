@@ -1,28 +1,28 @@
-function processInputAndCount(rawInputString) {
-    const numericStrings = rawInputString.split(' ');
-    const lowerBoundary = parseInt(numericStrings[0], 10);
-    const upperBoundary = parseInt(numericStrings[1], 10);
+function Main(input) {
+  var inputParts = input.split(' ');
 
-    let foundCount = 0;
+  var A = parseInt(inputParts[0], 10);
+  var B = parseInt(inputParts[1], 10);
 
-    function* generateFiveDigitPalindromes() {
-        for (let outerDigit = 1; outerDigit <= 9; outerDigit++) {
-            for (let innerDigitA = 0; innerDigitA <= 9; innerDigitA++) {
-                for (let innerDigitB = 0; innerDigitB <= 9; innerDigitB++) {
-                    const constructedString = `${outerDigit}${innerDigitA}${innerDigitB}${innerDigitA}${outerDigit}`;
-                    yield parseInt(constructedString, 10);
-                }
-            }
-        }
+  var count = 0;
+
+  for (var currentNumber = A; currentNumber <= B; currentNumber++) {
+    if (isFiveDigitPalindrome(currentNumber)) {
+      count++;
     }
+  }
 
-    for (const currentPalindromeCandidate of generateFiveDigitPalindromes()) {
-        if (currentPalindromeCandidate >= lowerBoundary && currentPalindromeCandidate <= upperBoundary) {
-            foundCount++;
-        }
-    }
-
-    console.log(foundCount);
+  console.log(count);
 }
 
-processInputAndCount(require('fs').readFileSync('/dev/stdin', 'utf8'));
+function isFiveDigitPalindrome(value) {
+  if (value < 10000 || value > 99999) {
+    return false;
+  }
+
+  var digits = value.toString();
+
+  return digits[0] === digits[4] && digits[1] === digits[3];
+}
+
+Main(require('fs').readFileSync('/dev/stdin', 'utf8'));

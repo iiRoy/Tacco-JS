@@ -1,65 +1,117 @@
-let opCount = 0;
-
-function generateGapSequence(limitValue, currentTerm = 1, accumulatedGaps = []) {
-  const nextTerm = currentTerm * 3 + 1;
-  if (nextTerm >= limitValue) {
-    return [currentTerm, ...accumulatedGaps];
-  }
-  return generateGapSequence(limitValue, nextTerm, [currentTerm, ...accumulatedGaps]);
-}
-
-function processSegment(dataCollection, gapInterval) {
-  for (let currentElementIndex = gapInterval; currentElementIndex < dataCollection.length; currentElementIndex++) {
-    const valueToPosition = dataCollection[currentElementIndex];
-    let comparisonIndex = currentElementIndex - gapInterval;
-    let targetInsertionPoint = -gapInterval;
-
-    while (comparisonIndex >= 0 && dataCollection[comparisonIndex] > valueToPosition) {
-      comparisonIndex -= gapInterval;
-    }
-    targetInsertionPoint = comparisonIndex;
-
-    for (let shiftSourceIndex = currentElementIndex - gapInterval; shiftSourceIndex > targetInsertionPoint; shiftSourceIndex -= gapInterval) {
-      dataCollection[shiftSourceIndex + gapInterval] = dataCollection[shiftSourceIndex];
-      opCount++;
-    }
-    dataCollection[targetInsertionPoint + gapInterval] = valueToPosition;
-  }
-}
-
-function performShellSort(targetArray) {
-  opCount = 0;
-  const gapSeries = generateGapSequence(targetArray.length);
-
-  gapSeries.forEach(currentGap => {
-    processSegment(targetArray, currentGap);
-  });
-
-  return gapSeries;
-}
-
 process.stdin.resume();
-process.stdin.setEncoding("utf8");
+process.stdin.setEncoding('utf8');
 
-const inputReader = require("readline").createInterface({
+const readline = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout,
 });
 
-const receivedLines = [];
+const rows = [];
+readline.on('line', (line) => rows.push(line));
 
-inputReader.on("line", (inputLine) => {
-  receivedLines.push(inputLine);
-});
+let movementCount = 0;
 
-inputReader.on("close", () => {
-  const arraySize = Number(receivedLines[0]);
-  const inputNumbers = receivedLines.slice(1, arraySize + 1).map(Number);
+function knuthGaps(size) {
+  const gaps = [1];
+  let value = 1;
+  for (;;) {
+    value = value * 3 + 1;
+    if (value < size) {
+      gaps.push(value);
+    } else {
+      return gaps.reverse();
+    }
+  }
+}
 
-  const resultingGaps = performShellSort(inputNumbers);
+function mergeAndCount(values) {
+  if (values.length < 2) {
+    return { ordered: values.slice(), inversions: 0 };
+  }
 
-  console.log(resultingGaps.length);
-  console.log(resultingGaps.join(" "));
-  console.log(opCount);
-  inputNumbers.forEach((elementValue) => console.log(elementValue));
+  const middle = Math.floor(values.length / 2);
+  const left = mergeAndCount(values.slice(0, middle));
+  const right = mergeAndCount(values.slice(middle));
+  const merged = [];
+  let i = 0;
+  let j = 0;
+  let inversions = left.inversions + right.inversions;
+
+  while (i < left.ordered.length && j < right.ordered.length) {
+    if (left.ordered[i] > right.ordered[j]) {
+      inversions += left.ordered.length - i;
+      merged.push(right.ordered[j]);
+      j++;
+    } else {
+      merged.push(left.ordered[i]);
+      i++;
+    }
+  }
+
+  while (i < left.ordered.length) {
+    merged.push(left.ordered[i]);
+    i++;
+  }
+  while (j < right.ordered.length) {
+    merged.push(right.ordered[j]);
+    j++;
+  }
+
+  return { ordered: merged, inversions };
+}
+
+function placeSortedRun(array, locations, values) {
+  if (locations.length === 0) {
+    return;
+  }
+  const result = mergeAndCount(values);
+  movementCount += result.inversions;
+  for (let i = 0; i < locations.length; i++) {
+    array[locations[i]] = result.ordered[i];
+  }
+}
+
+function reorderGapResidue(array, firstIndex, gap) {
+  let locations = [];
+  let values = [];
+
+  for (let pos = firstIndex; pos < array.length; pos += gap) {
+    const item = array[pos];
+    if (Number.isNaN(item)) {
+      placeSortedRun(array, locations, values);
+      locations = [];
+      values = [];
+    } else {
+      locations.push(pos);
+      values.push(item);
+    }
+  }
+
+  placeSortedRun(array, locations, values);
+}
+
+function sortByGapBlocks(array, gap) {
+  for (let residue = 0; residue < gap && residue < array.length; residue++) {
+    reorderGapResidue(array, residue, gap);
+  }
+}
+
+function shellSortWithBlockMerges(array) {
+  movementCount = 0;
+  const gaps = knuthGaps(array.length);
+  for (const gap of gaps) {
+    sortByGapBlocks(array, gap);
+  }
+  return gaps;
+}
+
+readline.on('close', () => {
+  const amount = rows[0] - 0;
+  const values = rows.slice(1, amount + 1).map(Number);
+  const gaps = shellSortWithBlockMerges(values);
+
+  console.log(gaps.length);
+  console.log(gaps.join(' '));
+  console.log(movementCount);
+  values.forEach((value) => console.log(value));
 });

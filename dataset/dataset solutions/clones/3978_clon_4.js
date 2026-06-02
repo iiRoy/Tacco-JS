@@ -1,49 +1,77 @@
-const processInputData = (inputContent) => {
-    const lines = inputContent.trim().split('\n');
-    const totalItems = Number(lines[0]);
-    const coordinatePairs = lines.slice(1).map(line => line.split(' ').map(Number));
+const fs = require('fs');
 
-    const primarySet = coordinatePairs.slice(0, totalItems);
-    const secondarySet = coordinatePairs.slice(totalItems);
+const text = fs.readFileSync('/dev/stdin', 'utf8');
 
-    return { totalItems, primarySet, secondarySet };
-};
+function toMatrix(src) {
+  return src.trim().split('\n').map(function(row) {
+    return row.split(' ').map(function(piece) {
+      return piece | 0;
+    });
+  });
+}
 
-console.log((() => {
-    const { totalItems: itemQuantity, primarySet: scarletPoints, secondarySet: azurePoints } = processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+const table = toMatrix(text);
+const size = table[0][0];
 
-    azurePoints.sort((pointCoordA, pointCoordB) => pointCoordB[0] - pointCoordA[0]); // Sort blue points by x-coordinate descending
-    scarletPoints.sort((pointCoordA, pointCoordB) => pointCoordB[1] - pointCoordA[1]); // Sort red points by y-coordinate descending
+const redList = [];
+const blueList = [];
 
-    let successfulMatches = 0;
-    const scarletAvailability = new Array(itemQuantity).fill(false); // Boolean array to track if a scarlet point has been used
+for (let pos = 0; pos < size; pos++) {
+  redList.push(table[pos + 1]);
+  blueList.push(table[size + pos + 1]);
+}
 
-    for (let currentAzureIndex = 0; currentAzureIndex < itemQuantity; currentAzureIndex++) {
-        const [azureX, azureY] = azurePoints[currentAzureIndex];
-        let chosenScarletIndex = -1;
+const redRanks = redList.map(function(point, order) {
+  return { point: point, order: order };
+});
+const blueRanks = blueList.map(function(point, order) {
+  return { point: point, order: order };
+});
 
-        for (let currentScarletIndex = 0; currentScarletIndex < itemQuantity; currentScarletIndex++) {
-            if (scarletAvailability[currentScarletIndex]) {
-                continue; // Skip already used scarlet points
-            }
+redRanks.sort(function(left, right) {
+  const [lx] = left.point;
+  const [rx] = right.point;
+  return rx - lx;
+});
+blueRanks.sort(function(left, right) {
+  const [lx] = left.point;
+  const [rx] = right.point;
+  return rx - lx;
+});
 
-            const [scarletX, scarletY] = scarletPoints[currentScarletIndex];
+const rankedReds = redRanks.map(function(entry) {
+  return entry.point;
+});
+const rankedBlues = blueRanks.map(function(entry) {
+  return entry.point;
+});
 
-            if (azureX > scarletX && azureY > scarletY) {
-                // Found a suitable scarlet point.
-                // Since scarletPoints is sorted by y-coordinate descending,
-                // the first one encountered that satisfies both x and y conditions
-                // will inherently have the largest y-coordinate among eligible ones.
-                chosenScarletIndex = currentScarletIndex;
-                break; // Found the optimal match for this azure point, proceed to the next azure point
-            }
-        }
+const graph = rankedBlues.map(function(blue) {
+  const [bx, by] = blue;
+  const edges = [];
 
-        if (chosenScarletIndex !== -1) {
-            scarletAvailability[chosenScarletIndex] = true;
-            successfulMatches++;
-        }
+  rankedReds.forEach(function(red, redRank) {
+    const [rx, ry] = red;
+    if (bx >= rx && by > ry && by > -1) {
+      edges.push(redRank);
     }
+  });
 
-    return `${successfulMatches}`;
-})());
+  return edges;
+});
+
+const reserved = new Set();
+let total = 0;
+
+for (const choices of graph) {
+  const picked = choices.find(function(redRank) {
+    return !reserved.has(redRank);
+  });
+
+  if (picked !== undefined) {
+    reserved.add(picked);
+    total++;
+  }
+}
+
+console.log(`${total}`);

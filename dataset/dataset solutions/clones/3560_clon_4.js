@@ -1,60 +1,67 @@
 'use strict';
 
-const processInputData = (rawInput) => {
-    const inputLines = rawInput.split('\n');
-    const dimensionsStr = inputLines[0].split(' ');
-    const rowCount = Number(dimensionsStr[0]);
-    const colCount = Number(dimensionsStr[1]);
+const run = (source) => {
+    const lines = source.split('\n');
+    const shape = lines[0].split(' ');
+    const height = parseInt(shape[0], 10);
+    const width = parseInt(shape[1], 10);
 
-    const valueGrid = Array.from({ length: rowCount }, (_, rIdx) =>
-        inputLines[rIdx + 1].split(' ').map(Number)
-    );
+    const grid = new Map();
+    Array.from({ length: height }).forEach((_, row) => {
+        const pieces = lines[row + 1].split(' ');
+        Array.from({ length: width }).forEach((_, col) => {
+            grid.set(row + ':' + col, parseInt(pieces[col], 10));
+        });
+    });
 
-    const operationLog = [];
-
-    const transferOddness = (fromCol, fromRow, toCol, toRow) => {
-        operationLog.push({ fromCol, fromRow, toCol, toRow });
-        valueGrid[toRow][toCol]++;
-        valueGrid[fromRow][fromCol]--;
+    const read = (row, col) => grid.get(row + ':' + col);
+    const write = (row, col, value) => {
+        grid.set(row + ':' + col, value);
     };
 
-    const displacementOptions = [
-        { dc: 1, dr: 0 }, // Attempt to move right
-        { dc: 0, dr: 1 }  // Otherwise, attempt to move down
-    ];
+    const addOne = (row, col) => {
+        write(row, col, read(row, col) + 1);
+    };
 
-    for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-        for (let colIndex = 0; colIndex < colCount; colIndex++) {
-            if (valueGrid[rowIndex][colIndex] % 2 !== 0) {
-                const chosenDisplacement = displacementOptions.find(disp => {
-                    const nextCol = colIndex + disp.dc;
-                    const nextRow = rowIndex + disp.dr;
-                    return nextCol < colCount && nextRow < rowCount;
-                });
-
-                if (chosenDisplacement) {
-                    transferOddness(
-                        colIndex,
-                        rowIndex,
-                        colIndex + chosenDisplacement.dc,
-                        rowIndex + chosenDisplacement.dr
-                    );
-                }
-            }
+    const subtractByOriginalIndexing = (firstIndex, secondIndex) => {
+        if (firstIndex < 0 || firstIndex >= height) {
+            const missingRow = undefined;
+            missingRow[secondIndex]--;
         }
-    }
+        write(firstIndex, secondIndex, read(firstIndex, secondIndex) - 1);
+    };
 
-    console.log(operationLog.length);
-    const formattedLog = operationLog.map(op =>
-        `${op.fromCol} ${op.fromRow} ${op.toCol} ${op.toRow}`
-    );
-    console.log(formattedLog.join('\n') + '\n');
+    const route = Array.from({ length: height * width }, (_, pos) => {
+        const row = Math.floor(pos / width);
+        const col = pos - row * width;
+        if (col + 1 < width) {
+            return { col, row, nextCol: col + 1, nextRow: row };
+        }
+        if (row + 1 < height) {
+            return { col, row, nextCol: col, nextRow: row + 1 };
+        }
+        return null;
+    });
+
+    const answer = route.reduce((moves, edge, pos) => {
+        const row = Math.floor(pos / width);
+        const col = pos - row * width;
+        if (read(row, col) % 2 != 0 && edge !== null) {
+            moves.push([edge.col, edge.row, edge.nextCol, edge.nextRow].join(' '));
+            addOne(edge.nextRow, edge.nextCol);
+            subtractByOriginalIndexing(edge.col, edge.row);
+        }
+        return moves;
+    }, []);
+
+    console.log(answer.length);
+    console.log(answer.join('\n') + '\n');
 };
 
-const isTestMode = false;
+const testing = false;
 
-if (isTestMode) {
-    processInputData('2 3\n1 2 3\n0 1 1\n');
+if (testing) {
+    run('2 3\n1 2 3\n0 1 1\n');
 } else {
-    processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+    run(require('fs').readFileSync('/dev/stdin', 'utf8'));
 }

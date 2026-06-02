@@ -1,5 +1,3 @@
-function displayValue(valueToDisplay) {
-  console.log(valueToDisplay);
-}
-
-displayValue(answer);
+let salidaGenerada;
+salidaGenerada = answer;
+console.log(salidaGenerada);

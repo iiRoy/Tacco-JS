@@ -1,35 +1,29 @@
-function processInput(rawData) {
-  const allInputLines = rawData.split('\n');
-  const processedNumericLines = allInputLines.map(lineString => lineString.split(' ').map(Number));
+function main(source) {
+  const rows = source.split('\n');
+  const parsedRows = rows.map(function (row) {
+    const cells = row.split(' ');
+    return cells.map(function (cell) {
+      return Number(cell);
+    });
+  });
 
-  const initialParameters = processedNumericLines[0];
-  const totalPointsExpected = initialParameters[0]; // N from original
-  const maximumAllowedDistance = initialParameters[1]; // D from original
+  const firstRow = parsedRows[0];
+  const N = firstRow[0];
+  const D = firstRow[1];
+  const pList = parsedRows.slice(1);
 
-  const pointCoordinateList = processedNumericLines.slice(1); // pList from original
+  let count = 0;
+  pList.forEach(point => {
+    const x = point[0];
+    const y = point[1];
+    const xx = x * x;
+    const yy = y * y;
+    const distance = Math.sqrt(xx + yy);
 
-  let pointsWithinRangeCount = 0;
-
-  // Helper function to determine if a point is within the specified distance
-  const checkPointDistance = (xCoordinate, yCoordinate, distanceLimit) => {
-    const xSquared = xCoordinate * xCoordinate;
-    const ySquared = yCoordinate * yCoordinate;
-    const sumOfSquaredCoordinates = xSquared + ySquared;
-    const calculatedDistance = Math.sqrt(sumOfSquaredCoordinates);
-    return calculatedDistance <= distanceLimit;
-  };
-
-  for (const currentPointData of pointCoordinateList) { // Changed from forEach to for...of
-    const [xVal, yVal] = currentPointData;
-
-    if (checkPointDistance(xVal, yVal, maximumAllowedDistance)) { // Using helper function
-      pointsWithinRangeCount = pointsWithinRangeCount + 1; // Rewritten increment
+    if (distance <= D) {
+      count++;
     }
-  }
-
-  console.log(pointsWithinRangeCount);
+  })
+  console.log(count)
 }
-
-const standardInputPath = '/dev/stdin'; // Helper constant for input path
-const fileContents = require('fs').readFileSync(standardInputPath, 'utf8');
-processInput(fileContents);
+main(require('fs').readFileSync('/dev/stdin', 'utf8'))

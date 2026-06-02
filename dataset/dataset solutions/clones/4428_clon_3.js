@@ -1,174 +1,183 @@
-const fs = require("fs");
+module.exports = function(modules) {
+  var installedModules = {};
 
-/**
- * A robust helper function to ensure an iterable can be destructured into an array.
- * Mimics Babel's _slicedToArray helper.
- *
- * @param {Iterable} iterableInput The value to be destructured.
- * @param {number} [expectedLength] Optional. If provided, the function will stop
- *                                  iterating once this length is reached.
- * @returns {Array} An array representation of the iterable.
- * @throws {TypeError} If the input is not an array and not a valid iterable,
- *                     or if an error occurs during iteration.
- */
-function ensureArrayDestructuring(iterableInput, expectedLength) {
-    // If the input is already an array, return it directly.
-    if (Array.isArray(iterableInput)) {
-        return iterableInput;
+  function __webpack_require__(moduleId) {
+    var cachedModule = installedModules[moduleId];
+    if (cachedModule) return cachedModule.exports;
+
+    var module = installedModules[moduleId] = {
+      i: moduleId,
+      l: !1,
+      exports: {}
+    };
+
+    var moduleFactory = modules[moduleId];
+    moduleFactory.call(module.exports, module, module.exports, __webpack_require__);
+    module.l = !0;
+    return module.exports;
+  }
+
+  __webpack_require__.m = modules;
+  __webpack_require__.c = installedModules;
+  __webpack_require__.d = function(exportsObject, propertyName, getter) {
+    if (!__webpack_require__.o(exportsObject, propertyName)) {
+      Object.defineProperty(exportsObject, propertyName, {
+        enumerable: !0,
+        get: getter
+      });
     }
+  };
+  __webpack_require__.r = function(exportsObject) {
+    var canTag = "undefined" != typeof Symbol && Symbol.toStringTag;
+    if (canTag) Object.defineProperty(exportsObject, Symbol.toStringTag, { value: "Module" });
+    Object.defineProperty(exportsObject, "__esModule", { value: !0 });
+  };
+  __webpack_require__.t = function(value, mode) {
+    if (1 & mode) {
+      value = __webpack_require__(value);
+    }
+    if (8 & mode) return value;
+    if (4 & mode && "object" == typeof value && value && value.__esModule) return value;
 
-    let resultElements = [];
-    let iterationCompleted = false;
-    let encounteredError = false;
-    let caughtIterationError = undefined;
-    let currentIterator;
+    var namespace = Object.create(null);
+    __webpack_require__.r(namespace);
+    Object.defineProperty(namespace, "default", {
+      enumerable: !0,
+      value: value
+    });
 
-    try {
-        // Attempt to get an iterator from the input.
-        // If iterableInput is not iterable, this will throw a TypeError.
-        currentIterator = iterableInput[Symbol.iterator]();
-        let iterationItem;
+    if (2 & mode && "string" != typeof value) {
+      for (var key in value) {
+        __webpack_require__.d(namespace, key, function(boundKey) {
+          return value[boundKey];
+        }.bind(null, key));
+      }
+    }
+    return namespace;
+  };
+  __webpack_require__.n = function(moduleValue) {
+    var getter = moduleValue && moduleValue.__esModule ? function() {
+      return moduleValue.default;
+    } : function() {
+      return moduleValue;
+    };
+    __webpack_require__.d(getter, "a", getter);
+    return getter;
+  };
+  __webpack_require__.o = function(object, propertyName) {
+    return Object.prototype.hasOwnProperty.call(object, propertyName);
+  };
+  __webpack_require__.p = "";
 
-        // Loop through the iterable, pushing values to resultElements.
-        // Stop if the iterator is done, or if expectedLength is reached (if specified).
-        while (!(iterationCompleted = (iterationItem = currentIterator.next()).done) &&
-               (resultElements.push(iterationItem.value), !expectedLength || resultElements.length !== expectedLength)) {
-            // Continue looping
-        }
-    } catch (err) {
-        encounteredError = true;
-        caughtIterationError = err;
-    } finally {
+  var startModule = __webpack_require__.s = 0;
+  return __webpack_require__(startModule);
+}([
+  function(module, exports, __webpack_require__) {
+    var runner = __webpack_require__(1);
+    var fileSystem = __webpack_require__(2);
+    var sourceText = fileSystem.readFileSync("/dev/stdin", "UTF-8");
+    var inputRows = sourceText.split("\n");
+    runner(inputRows);
+  },
+  function(module, exports, __webpack_require__) {
+    "use strict";
+
+    function sliceToArray(input, length) {
+      var directArray = function(value) {
+        if (Array.isArray(value)) return value;
+      }(input);
+      if (directArray) return directArray;
+
+      var iteratedArray = function(value, limit) {
+        var output = [];
+        var normalCompletion = !0;
+        var didErr = !1;
+        var err = void 0;
+        var iterator;
+        var step;
         try {
-            // If iteration was not completed (e.g., due to reaching expectedLength or an early break),
-            // and the iterator has a 'return' method, call it to clean up resources.
-            if (!iterationCompleted && currentIterator && typeof currentIterator.return === 'function') {
-                currentIterator.return();
-            }
+          iterator = value[Symbol.iterator]();
+          for (; !(normalCompletion = (step = iterator.next()).done) && (output.push(step.value), !limit || output.length !== limit); normalCompletion = !0) {}
+        } catch (error) {
+          didErr = !0;
+          err = error;
         } finally {
-            // If an error occurred during the main iteration, re-throw it.
-            if (encounteredError) {
-                throw caughtIterationError;
-            }
+          try {
+            if (!normalCompletion && null != iterator.return) iterator.return();
+          } finally {
+            if (didErr) throw err;
+          }
         }
+        return output;
+      }(input, length);
+      if (iteratedArray) return iteratedArray;
+
+      throw new TypeError("Invalid attempt to destructure non-iterable instance");
     }
-    return resultElements;
-}
 
-/**
- * Parses a string line containing space-separated numbers into an array of numbers.
- * @param {string} lineContent The string line to parse.
- * @returns {number[]} An array of numbers.
- */
-function parseNumbersFromLine(lineContent) {
-    return lineContent.split(" ").map(Number);
-}
+    module.exports = function(lines) {
+      var nodeCount = Number(lines[0]);
+      var graph = new Array(nodeCount);
+      for (var index = 0; index < nodeCount; index++) {
+        graph[index] = [];
+      }
 
-/**
- * Constructs the adjacency list for the graph based on input lines.
- * Edges are added bidirectionally, excluding connections to the start node.
- *
- * @param {number} numNodes The total number of nodes in the graph.
- * @param {number} startNodeId The 1-based ID of the starting node.
- * @param {string[]} allInputLines All lines read from input.
- * @param {Array<Array<[number, number]>>} adjacencyList The graph's adjacency list (modified in place).
- */
-function buildAdjacencyList(numNodes, startNodeId, allInputLines, adjacencyList) {
-    const startNodeZeroIndexed = startNodeId - 1;
+      var firstPairLine = lines[nodeCount];
+      var firstPairValues = firstPairLine.split(" ").map(function(value) {
+        return Number(value);
+      });
+      var firstPair = sliceToArray(firstPairValues, 2);
+      var queryCount = firstPair[0];
+      var startNode = firstPair[1];
 
-    for (let edgeIndex = 0; edgeIndex < numNodes - 1; edgeIndex++) {
-        const edgeLine = allInputLines[edgeIndex + 1];
-        const [nodeA_id, nodeB_id, edgeWeight] = ensureArrayDestructuring(parseNumbersFromLine(edgeLine), 3);
+      for (var edgeIndex = 0; edgeIndex < nodeCount - 1; edgeIndex++) {
+        var edgeLine = lines[edgeIndex + 1];
+        var edgeValues = edgeLine.split(" ").map(function(value) {
+          return Number(value);
+        });
+        var edge = sliceToArray(edgeValues, 3);
+        var fromNode = edge[0];
+        var toNode = edge[1];
+        var cost = edge[2];
 
-        const nodeA_zeroIndexed = nodeA_id - 1;
-        const nodeB_zeroIndexed = nodeB_id - 1;
-
-        // Add edge if neither node is the start node (or if it's not the start node for the other end)
-        if (nodeB_zeroIndexed !== startNodeZeroIndexed) {
-            adjacencyList[nodeA_zeroIndexed].push([nodeB_zeroIndexed, edgeWeight]);
+        if (toNode != startNode) {
+          var toEntry = [toNode - 1, cost];
+          graph[fromNode - 1].push(toEntry);
         }
-        if (nodeA_zeroIndexed !== startNodeZeroIndexed) {
-            adjacencyList[nodeB_zeroIndexed].push([nodeA_zeroIndexed, edgeWeight]);
+        if (fromNode != startNode) {
+          var fromEntry = [fromNode - 1, cost];
+          graph[toNode - 1].push(fromEntry);
         }
-    }
-}
+      }
 
-/**
- * Performs a Depth-First Search (DFS) to calculate distances from a starting node
- * to all reachable nodes in the graph.
- *
- * @param {number} currentNodeIndex The 0-based index of the current node in the DFS.
- * @param {number} currentAccumulatedDistance The distance from the start node to the currentNodeIndex.
- * @param {Array<Array<[number, number]>>} graph The adjacency list of the graph.
- * @param {number[]} distancesArray An array to store the calculated distances (modified in place).
- *                                  Initialized with -1 for unvisited nodes.
- */
-function calculateDistancesDFS(currentNodeIndex, currentAccumulatedDistance, graph, distancesArray) {
-    distancesArray[currentNodeIndex] = currentAccumulatedDistance;
-
-    const neighbors = graph[currentNodeIndex];
-    for (let neighborIndex = 0; neighborIndex < neighbors.length; neighborIndex++) {
-        const [neighborNode, weightToNeighbor] = neighbors[neighborIndex];
-
-        // If the neighbor has not been visited yet (distance is -1)
-        if (distancesArray[neighborNode] === -1) {
-            const newDistance = currentAccumulatedDistance + weightToNeighbor;
-            calculateDistancesDFS(neighborNode, newDistance, graph, distancesArray);
+      var distance = new Array(nodeCount).fill(-1);
+      !function walk(current, total) {
+        distance[current] = total;
+        var edgeTotal = graph[current].length;
+        for (var i = 0; i < edgeTotal; i++) {
+          var nextEdge = graph[current][i];
+          var nextNode = nextEdge[0];
+          if (-1 == distance[nextNode]) {
+            var nextTotal = total + nextEdge[1];
+            walk(nextNode, nextTotal);
+          }
         }
-    }
-}
+      }(startNode - 1, 0);
 
-/**
- * Processes all query lines and prints the sum of distances for each pair of query nodes.
- *
- * @param {number} numQueries The total number of queries.
- * @param {number} numNodes The total number of nodes in the graph.
- * @param {string[]} allInputLines All lines read from input.
- * @param {number[]} distancesArray The pre-calculated distances from the start node to all other nodes.
- */
-function processQueries(numQueries, numNodes, allInputLines, distancesArray) {
-    for (let queryIndex = 0; queryIndex < numQueries; queryIndex++) {
-        // Query lines start after nodeCount + 1 (first line is N, then N-1 edge lines, then 1 line for Q and S)
-        const queryLine = allInputLines[queryIndex + numNodes + 1];
-        const [queryNodeA_id, queryNodeB_id] = ensureArrayDestructuring(parseNumbersFromLine(queryLine), 2);
-
-        // Calculate the sum of distances from the start node to each query node.
-        const totalPathDistance = distancesArray[queryNodeA_id - 1] + distancesArray[queryNodeB_id - 1];
-        console.log(totalPathDistance);
-    }
-}
-
-/**
- * Main function to orchestrate reading input, processing, and printing output.
- */
-function main() {
-    const allInputLines = fs.readFileSync("/dev/stdin", "UTF-8").split("\n");
-
-    // Parse the first line for the number of nodes.
-    const nodeCount = Number(allInputLines[0]);
-
-    // Parse the line containing query count and start node ID.
-    // This line is located after the N-1 edge lines, which follow the initial N line.
-    const queryAndStartNodeLine = allInputLines[nodeCount];
-    const [queryCount, startNodeId] = ensureArrayDestructuring(parseNumbersFromLine(queryAndStartNodeLine), 2);
-
-    // Initialize adjacency list for the graph.
-    // Each element is an array to store [neighborNodeIndex, edgeWeight] pairs.
-    const adjList = Array.from({ length: nodeCount }, () => []);
-
-    // Initialize distances array with -1 to mark all nodes as unvisited.
-    const distances = new Array(nodeCount).fill(-1);
-
-    // Build the graph's adjacency list from input lines.
-    buildAdjacencyList(nodeCount, startNodeId, allInputLines, adjList);
-
-    // Calculate distances from the start node using DFS.
-    // Convert startNodeId to 0-based index for array access.
-    calculateDistancesDFS(startNodeId - 1, 0, adjList, distances);
-
-    // Process all queries and print results.
-    processQueries(queryCount, nodeCount, allInputLines, distances);
-}
-
-// Execute the main function when the script runs.
-main();
+      for (var queryIndex = 0; queryIndex < queryCount; queryIndex++) {
+        var queryLine = lines[queryIndex + nodeCount + 1];
+        var queryValues = queryLine.split(" ").map(function(value) {
+          return Number(value);
+        });
+        var query = sliceToArray(queryValues, 2);
+        var leftNode = query[0];
+        var rightNode = query[1];
+        var answer = distance[leftNode - 1] + distance[rightNode - 1];
+        console.log(answer);
+      }
+    };
+  },
+  function(module, exports) {
+    module.exports = require("fs");
+  }
+]);

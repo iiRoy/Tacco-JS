@@ -1,35 +1,34 @@
 'use strict'
 
-function parseInputToNumericArray(inputStringContent) {
-  const characterSegments = inputStringContent.split('');
-  const relevantSegments = characterSegments.slice(0, -1);
-
-  const numericValues = [];
-  for (const segment of relevantSegments) {
-    const digitRepresentation = Number(segment);
-    numericValues.push(digitRepresentation);
-  }
-  return numericValues;
+function castDigit(piece) {
+  let value = ~~piece
+  return value
 }
 
-function executeProcessing(rawInputString) {
-  const processedDigits = parseInputToNumericArray(rawInputString);
+function main(data) {
+  let parts = data.split('')
+  let converted = parts.map(v => {
+    let current = castDigit(v)
+    return current
+  })
+  let nums = converted.slice(0, -1)
+  let n = nums.length
+  let blue = nums.reduce((a, c) => {
+    let sum = a + c
+    return sum
+  })
+  let red = n - blue
 
-  const digitCount = processedDigits.length;
-
-  let countOfOnes = 0;
-  for (const digitValue of processedDigits) {
-    countOfOnes += digitValue;
+  let smaller
+  if (red < blue) {
+    smaller = red
+  } else {
+    smaller = blue
   }
 
-  const countOfZeros = digitCount - countOfOnes;
-
-  const minimumCount = Math.min(countOfZeros, countOfOnes);
-
-  const finalResult = minimumCount * 2;
-
-  console.log(finalResult);
+  let result = smaller * 2
+  console.log(result)
 }
 
-const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-executeProcessing(fileContent);
+let input = require('fs').readFileSync('/dev/stdin', 'utf8')
+main(input)

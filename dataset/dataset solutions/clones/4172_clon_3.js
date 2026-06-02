@@ -1,40 +1,30 @@
-function main(inputString) {
-  const inputLines = inputString.split("\n");
-  const relevantLine = inputLines[1];
-  let numberStrings = relevantLine.split(" ");
+function main(src) {
+  let rows = src.split("\n")
+  let secondRow = rows[1]
+  let values = secondRow.split(" ")
+  let total = 0
 
-  let divisionCount = 0;
+  let divisible = values.every(value => {
+    let remainder = value % 2
+    return remainder == 0
+  })
 
-  const checkAllElementsEven = (elementsArray) => {
-    for (let index = 0; index < elementsArray.length; index++) {
-      const currentNumericValue = parseInt(elementsArray[index], 10);
-      if (currentNumericValue % 2 !== 0) {
-        return false;
-      }
-    }
-    return true;
-  };
+  while (divisible) {
+    total = total + 1
+    values = values.map(value => {
+      let divided = value / 2
+      return divided
+    })
 
-  const processHalvingOperation = (elementsArray) => {
-    const halvedElements = elementsArray.map(currentStringElement => {
-      const numericValueToHalve = parseInt(currentStringElement, 10);
-      // Using bitwise right shift for integer division by 2,
-      // which is equivalent to e / 2 for positive even numbers.
-      const resultOfHalving = numericValueToHalve >> 1;
-      return resultOfHalving.toString(); // Keep array elements as strings
-    });
-    return halvedElements;
-  };
-
-  while (checkAllElementsEven(numberStrings)) {
-    divisionCount = divisionCount + 1;
-    numberStrings = processHalvingOperation(numberStrings);
+    divisible = values.every(value => {
+      let remainder = value % 2
+      return remainder == 0
+    })
   }
 
-  console.log(divisionCount);
+  console.log(total)
 }
 
-const fileSystemModule = require('fs');
-const standardInputFilePath = '/dev/stdin';
-const fileContent = fileSystemModule.readFileSync(standardInputFilePath, 'utf8');
-main(fileContent);
+let fs = require('fs')
+let inputText = fs.readFileSync('/dev/stdin', 'utf8')
+main(inputText)

@@ -1,12 +1,23 @@
-function Main(inputData) {
-    const initialCharacter = inputData.charAt(0);
-    const terminalCharacter = inputData.charAt(inputData.length - 1);
-    const centralSegmentCount = inputData.length - 2;
+function Main(source) {
+    var seen = 0;
+    var head = "";
+    var tail = "";
+    var cursor = 0;
 
-    const outputElements = [initialCharacter, centralSegmentCount, terminalCharacter];
-    const finalConstructedString = outputElements.join('');
+    while (true) {
+        var piece = source.charAt(cursor);
+        if (piece === "") {
+            break;
+        }
+        if (seen === 0) {
+            head = piece;
+        }
+        tail = piece;
+        seen++;
+        cursor++;
+    }
 
-    console.log(finalConstructedString);
+    console.log(head + (seen - 2) + tail);
 }
 
 Main(require("fs").readFileSync("/dev/stdin", "utf8"));

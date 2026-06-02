@@ -1,45 +1,58 @@
-function gameSolver(rawInput) {
-    const inputLines = rawInput.split("\n");
+function solveGame(source) {
+  var rows = source.split("\n");
+  var header = rows[0].split(" ");
+  var count = parseInt(header[0]);
+  var limit = parseInt(header[1]);
+  var moves = rows[1].split(" ").map(function (entry) {
+    return parseInt(entry);
+  });
 
-    const [movesCountStr, targetPileSizeStr] = inputLines[0].split(" ");
-    const numAvailableMoves = parseInt(movesCountStr, 10);
-    const finalPileSize = parseInt(targetPileSizeStr, 10);
+  new Array(limit + 1);
 
-    const stoneRemovalOptions = inputLines[1].split(" ").map(val => parseInt(val, 10));
+  var border = moves[0];
+  var usefulMoves = [];
+  for (var m = 0; m < count; m++) {
+    if (moves[m] > 0) {
+      usefulMoves.push(moves[m]);
+    }
+  }
 
-    const outcomeMemo = new Map();
+  var forcedFirst = new Set();
+  var answer = 0;
 
-    const calculateWinner = (currentPile) => {
-        if (outcomeMemo.has(currentPile)) {
-            return outcomeMemo.get(currentPile);
-        }
+  function spreadFromSecond(position) {
+    for (var q = 0; q < usefulMoves.length; q++) {
+      var next = position + usefulMoves[q];
+      if (next >= border && next <= limit) {
+        forcedFirst.add(next);
+      }
+    }
+  }
 
-        if (currentPile === 0) {
-            outcomeMemo.set(0, "Second");
-            return "Second";
-        }
+  for (var base = 0; base < border; base++) {
+    spreadFromSecond(base);
+  }
 
-        const canCurrentPlayerWin = stoneRemovalOptions.some(removalAmount => {
-            if (currentPile - removalAmount >= 0) {
-                return calculateWinner(currentPile - removalAmount) === "Second";
-            }
-            return false;
-        });
+  for (var pile = border; pile < limit + 1; pile++) {
+    if (forcedFirst.has(pile)) {
+      answer = "First";
+    } else {
+      answer = "Second";
+      spreadFromSecond(pile);
+    }
+  }
 
-        const resultForCurrentPile = canCurrentPlayerWin ? "First" : "Second";
-        outcomeMemo.set(currentPile, resultForCurrentPile);
-        return resultForCurrentPile;
-    };
+  if (limit < border) {
+    answer = "Second";
+  }
 
-    const finalGameOutcome = calculateWinner(finalPileSize);
-
-    console.log('%s', finalGameOutcome);
-    return finalGameOutcome;
+  console.log('%s', answer);
+  return answer;
 }
 
 function debug(n){
   var input = document.getElementById("input"+n).value;
-  var ans=gameSolver(input);
+  var ans=solveGame(input);
   var result="WA";
   if(ans==document.getElementById("output"+n).value.split("\n")[0]){
     result="AC";
@@ -47,4 +60,4 @@ function debug(n){
   document.getElementById("result"+n).innerHTML=result;
 }
 
-gameSolver(require("fs").readFileSync("/dev/stdin", "utf8"));
+solveGame(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,20 +1,15 @@
-const fileSystemInterface = require('fs');
+const source = require('fs').readFileSync('/dev/stdin', 'utf8');
+const cells = source.trim().split(/\s/);
 
-const rawInputContent = fileSystemInterface.readFileSync('/dev/stdin', 'utf8');
+const measuredArea = [0, 1].reduce((value, position) => value * cells[position], 1);
+const conversionUnit = Number('0.000003305785');
 
-const processedTokens = rawInputContent.trim().match(/\S+/g);
+function integerNotGreaterThan(value) {
+  if (!Number.isFinite(value) || value === 0) return value;
 
-const [firstValue, secondValue] = processedTokens.slice(0, 2).map(Number);
+  const towardZero = Math.trunc(value);
+  return value < 0 && towardZero !== value ? towardZero - 1 : towardZero;
+}
 
-const initialDivisor = 0.000003305785;
-const finalScalingFactor = 1000000;
-
-const productResult = firstValue * secondValue;
-
-const preFloorCalculation = productResult / initialDivisor;
-
-const integerPart = Math.round(preFloorCalculation - 0.5);
-
-const finalOutput = integerPart / finalScalingFactor;
-
-console.log(finalOutput);
+const wholeConvertedUnits = integerNotGreaterThan(measuredArea / conversionUnit);
+console.log(wholeConvertedUnits / Number('1000000'));
