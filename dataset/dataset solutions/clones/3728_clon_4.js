@@ -1,26 +1,10 @@
-"use strict";
+const fs = require("fs");
 
-const processInputAndCompute = (rawInputData) => {
-    const lineSegments = rawInputData.match(/[^\n]+/g).map(s => s.trim());
+const data = fs.readFileSync(0, "utf8").trim().split(/\s+/).map(Number);
+const n = data[0];
+const k = data[1];
 
-    const firstLineTokens = lineSegments[0].match(/(\d+)\s+(\d+)/);
-    const firstNumericValue = Number(firstLineTokens[1]);
-    const secondNumericValue = Number(firstLineTokens[2]);
+let numerator = n - 1;
+numerator += k - 2;
 
-    const numericSequence = Array.from(lineSegments[1].split(" "), Number);
-
-    const performCalculation = (operandA, operandB) => {
-        const minuendA = operandA - 1;
-        const minuendB = operandB - 2;
-        const sumOfMinuends = minuendA + minuendB;
-        const subtrahend = operandB - 1;
-
-        return sumOfMinuends / subtrahend;
-    };
-
-    const finalResult = performCalculation(firstNumericValue, secondNumericValue);
-
-    console.log(finalResult);
-};
-
-processInputAndCompute(require('fs').readFileSync('/dev/stdin', 'utf8'));
+process.stdout.write(String(numerator / (k - 1)));

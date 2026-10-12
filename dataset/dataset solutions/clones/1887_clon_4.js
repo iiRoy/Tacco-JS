@@ -1,70 +1,74 @@
-console.log(function(inputArgument) {
-    const inputLines = inputArgument.trim().split('\n');
-    const numSegments = Number(inputLines.shift());
-    const segmentDetails = [];
-    let overallBalance = 0;
-    let startsWithOpen = 0;
-    let endsWithClose = 0;
+const fs = require("fs");
 
-    for (let i = 0; i < numSegments; i++) {
-        const currentSegmentString = inputLines[i];
-        const firstChar = currentSegmentString[0];
-        const lastChar = currentSegmentString[currentSegmentString.length - 1];
-        let currentBalanceChange = 0;
+const lines = fs.readFileSync(0, "utf8").trim().split(/\n/);
+const n = Number(lines[0]);
+const items = lines.slice(1, n + 1).map(s => {
+  let balance = 0;
+  for (const ch of s) {
+    balance += ch === "(" ? 1 : -1;
+  }
+  return {
+    first: s[0],
+    last: s[s.length - 1],
+    balance
+  };
+});
 
-        for (let j = 0; j < currentSegmentString.length; j++) {
-            if (currentSegmentString[j] === '(') {
-                currentBalanceChange++;
-            } else if (currentSegmentString[j] === ')') {
-                currentBalanceChange--;
-            }
-        }
+let sum = 0;
+let hasLeft = false;
+let hasRight = false;
 
-        segmentDetails.push({ initialChar: firstChar, finalChar: lastChar, balanceValue: currentBalanceChange });
-        overallBalance += currentBalanceChange;
-        if (firstChar === '(') {
-            startsWithOpen++;
-        }
-        if (lastChar === ')') {
-            endsWithClose++;
-        }
+for (const item of items) {
+  sum += item.balance;
+  if (item.first === "(") hasLeft = true;
+  if (item.last === ")") hasRight = true;
+}
+
+if (sum !== 0 || !hasLeft || !hasRight) {
+  console.log("No");
+} else if (n === 1) {
+  console.log("Yes");
+} else {
+  items.sort((a, b) => b.balance - a.balance);
+
+  const full = (1 << n) - 1;
+  const start = [];
+  const seen = new Set();
+
+  for (let i = 0; i < n; i++) {
+    if (items[i].first !== ")" && items[i].balance >= 0) {
+      start.push([1 << i, items[i].balance]);
     }
+  }
 
-    if (overallBalance !== 0 || !startsWithOpen || !endsWithClose) {
-        return 'No';
-    }
-    if (numSegments === 1) {
-        return 'Yes';
-    }
+  let ok = false;
 
-    const allSegmentsUsedMask = (1 << numSegments) - 1;
-    const possibleBalances = new Array(allSegmentsUsedMask + 1).fill(null).map(() => new Set());
-    possibleBalances[0].add(0);
+  while (start.length && !ok) {
+    const state = start.pop();
+    const used = state[0];
+    const value = state[1];
 
-    for (let currentMask = 0; currentMask <= allSegmentsUsedMask; currentMask++) {
-        if (possibleBalances[currentMask].size === 0) {
-            continue;
+    for (let i = 0; i < n; i++) {
+      if ((used & (1 << i)) !== 0) continue;
+
+      const nextMask = used | (1 << i);
+      const nextBalance = value + items[i].balance;
+
+      if (nextMask === full) {
+        if (items[i].last === ")" && nextBalance === 0) {
+          ok = true;
+          break;
         }
+        continue;
+      }
 
-        for (const currentAccumulatedBalance of possibleBalances[currentMask]) {
-            for (let segmentIdx = 0; segmentIdx < numSegments; segmentIdx++) {
-                if ((currentMask & (1 << segmentIdx)) === 0) {
-                    const nextMask = currentMask | (1 << segmentIdx);
-                    const nextAccumulatedBalance = currentAccumulatedBalance + segmentDetails[segmentIdx].balanceValue;
+      const key = nextMask + ":" + nextBalance;
+      if (seen.has(key)) continue;
+      seen.add(key);
 
-                    if (nextAccumulatedBalance >= 0) {
-                        if (nextMask === allSegmentsUsedMask) {
-                            if (nextAccumulatedBalance === 0 && segmentDetails[segmentIdx].finalChar === ')') {
-                                return 'Yes';
-                            }
-                        } else {
-                            possibleBalances[nextMask].add(nextAccumulatedBalance);
-                        }
-                    }
-                }
-            }
-        }
+      start.push([nextMask, nextBalance]);
     }
+  }
 
-    return 'No';
-}(require('fs').readFileSync('/dev/stdin', 'utf8')));
+  console.log(ok ? "Yes" : "No");
+}

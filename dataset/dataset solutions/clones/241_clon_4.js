@@ -1,31 +1,37 @@
-const rli = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
+const fs = require('fs');
+
+const input = fs
+    .readFileSync(0, 'utf8')
+    .trim()
+    .split(/\s+/)
+    .map(Number);
+
+const desiredFrequency = input.shift();
+const pendingSignals = new Map();
+
+let result;
+
+input.some((currentSignal, currentPosition) => {
+    const complement = desiredFrequency - currentSignal;
+
+    if (pendingSignals.has(complement)) {
+        result = [
+            pendingSignals.get(complement),
+            currentPosition + 1,
+        ];
+
+        return true;
+    }
+
+    if (!pendingSignals.has(currentSignal)) {
+        pendingSignals.set(currentSignal, currentPosition + 1);
+    }
+
+    return false;
 });
 
-const outputCollector = [];
-
-const processInputLine = (currentLine) => {
-    const numberStrings = currentLine.split(' ');
-    const firstValue = Number(numberStrings[0]);
-    const secondValue = Number(numberStrings[1]);
-    const thirdValue = Number(numberStrings[2]);
-
-    const determineFourthElement = (valA, valB, valC) => {
-        const areAllEqual = (valA === valB) && (valB === valC);
-        const isSmallEqual = areAllEqual && (valA <= 4);
-        return isSmallEqual ? 5 : 4;
-    };
-
-    const fourthElementResult = determineFourthElement(firstValue, secondValue, thirdValue);
-
-    const finalComparisonSum = firstValue + secondValue + fourthElementResult;
-
-    outputCollector.push(finalComparisonSum <= 20 ? "YES" : "NO");
-};
-
-rli.on('line', processInputLine);
-
-rli.on('close', () => {
-    outputCollector.forEach(resultEntry => console.log(resultEntry));
-});
+process.stdout.write(
+    result
+        ? `${result[0]} ${result[1]}\n`
+        : 'SIN COINCIDENCIA\n'
+);

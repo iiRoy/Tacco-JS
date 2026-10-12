@@ -1,24 +1,41 @@
-const rli = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-});
+const fs = require('fs');
 
-let acquiredOperands = [];
+const packet = fs
+    .readFileSync(0, 'utf8')
+    .trim()
+    .split(/\s+/)
+    .map(Number);
 
-rli.on('line', (inputLineContent) => {
-    acquiredOperands = inputLineContent.split(' ').map(Number);
-    rli.close();
-});
+const declaredSize = packet.shift();
+const swarmMessages = packet.slice(0, declaredSize);
 
-rli.on('close', () => {
-    const [divisorValue, dividendValue] = acquiredOperands;
+let candidateFrequency = 0;
+let signalBalance = 0;
 
-    const deriveAdjustedQuotient = (numerator, denominator) => {
-        return Math.floor(numerator / denominator) + 1;
-    };
+for (const receivedFrequency of swarmMessages) {
+    if (signalBalance === 0) {
+        candidateFrequency = receivedFrequency;
+        signalBalance = 1;
+    } else if (receivedFrequency === candidateFrequency) {
+        signalBalance++;
+    } else {
+        signalBalance--;
+    }
+}
 
-    const computedResult = deriveAdjustedQuotient(dividendValue, divisorValue);
+let candidateOccurrences = 0;
 
-    process.stdout.write(String(computedResult));
-});
+for (const receivedFrequency of swarmMessages) {
+    if (receivedFrequency === candidateFrequency) {
+        candidateOccurrences++;
+    }
+}
+
+const hasDominantFrequency =
+    candidateOccurrences > swarmMessages.length / 2;
+
+process.stdout.write(
+    hasDominantFrequency
+        ? `${candidateFrequency}\n`
+        : 'SIN FRECUENCIA DOMINANTE\n'
+);

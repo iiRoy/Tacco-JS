@@ -1,9 +1,20 @@
-const initialFirstValue = 4;
-let firstOperandValue = initialFirstValue;
+function countVowels(text) {
+    if (text.length === 0) {
+        return 0;
+    }
 
-const initialSecondValue = 11;
-let secondOperandValue = initialSecondValue;
+    const vowels = new Set(["a", "e", "i", "o", "u"]);
+    let count = 0;
 
-const messageToDisplay = "a+b";
+    for (let i = 0; i < text.length; i++) {
+        const normalizedCharacter = text[i].toLowerCase();
 
-console.log(messageToDisplay);
+        if (!vowels.has(normalizedCharacter)) {
+            continue;
+        }
+
+        count += 1;
+    }
+
+    return count;
+}

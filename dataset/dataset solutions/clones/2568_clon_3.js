@@ -1,77 +1,146 @@
-function getArrayElements(sourceIterable, limitCount) {
-    if (Array.isArray(sourceIterable)) {
-        return sourceIterable;
-    }
-
-    let extractedElements = [];
-    let iterationCompleted = false;
-    let iterationErrored = false;
-    let caughtError = undefined;
-    let currentIterator;
-
-    try {
-        currentIterator = sourceIterable[Symbol.iterator]();
-
-        for (
-            let iteratorResult;
-            !(iterationCompleted = (iteratorResult = currentIterator.next()).done) &&
-            (extractedElements.push(iteratorResult.value), !limitCount || extractedElements.length !== limitCount);
-            iterationCompleted = true
-        ) {
-            // Elements are pushed in the loop condition.
-        }
-    } catch (err) {
-        iterationErrored = true;
-        caughtError = err;
-    } finally {
-        try {
-            if (!iterationCompleted && currentIterator != null && typeof currentIterator.return === 'function') {
-                currentIterator.return();
+module.exports = (function (mods) {
+  var cache = {};
+  function req(id) {
+    var hit = cache[id];
+    if (hit) return hit.exports;
+    var mod = (cache[id] = { i: id, l: !1, exports: {} });
+    mods[id].call(mod.exports, mod, mod.exports, req);
+    mod.l = !0;
+    return mod.exports;
+  }
+  return (
+    (req.m = mods),
+    (req.c = cache),
+    (req.d = function (obj, key, getter) {
+      req.o(obj, key) ||
+        Object.defineProperty(obj, key, { enumerable: !0, get: getter });
+    }),
+    (req.r = function (obj) {
+      "undefined" != typeof Symbol &&
+        Symbol.toStringTag &&
+        Object.defineProperty(obj, Symbol.toStringTag, { value: "Module" }),
+        Object.defineProperty(obj, "__esModule", { value: !0 });
+    }),
+    (req.t = function (value, mode) {
+      if ((1 & mode && (value = req(value)), 8 & mode)) return value;
+      if (4 & mode && "object" == typeof value && value && value.__esModule)
+        return value;
+      var ns = Object.create(null);
+      if (
+        (req.r(ns),
+        Object.defineProperty(ns, "default", { enumerable: !0, value: value }),
+        2 & mode && "string" != typeof value)
+      )
+        for (var k in value)
+          req.d(
+            ns,
+            k,
+            function (modeKey) {
+              return value[modeKey];
+            }.bind(null, k),
+          );
+      return ns;
+    }),
+    (req.n = function (value) {
+      var getter =
+        value && value.__esModule
+          ? function () {
+              return value.default;
             }
-        } finally {
-            if (iterationErrored) {
-                throw caughtError;
+          : function () {
+              return value;
+            };
+      return req.d(getter, "a", getter), getter;
+    }),
+    (req.o = function (obj, key) {
+      return Object.prototype.hasOwnProperty.call(obj, key);
+    }),
+    (req.p = ""),
+    req((req.s = 0))
+  );
+})([
+  function (mod, exports, req) {
+    var fs = req(2);
+    var input = fs.readFileSync("/dev/stdin", "UTF-8").split("\n");
+    req(1)(input);
+  },
+  function (mod, exports) {
+    function slicePair(arr, limit) {
+      return (
+        (function (value) {
+          if (Array.isArray(value)) return value;
+        })(arr) ||
+        (function (value, limit) {
+          var out = [],
+            normal = !0,
+            failed = !1,
+            error = void 0;
+          try {
+            for (
+              var step, it = value[Symbol.iterator]();
+              !(normal = (step = it.next()).done) &&
+              (out.push(step.value), !limit || out.length !== limit);
+              normal = !0
+            );
+          } catch (err) {
+            (failed = !0), (error = err);
+          } finally {
+            try {
+              normal || null == it.return || it.return();
+            } finally {
+              if (failed) throw error;
             }
-        }
-    }
-    return extractedElements;
-}
-
-const MINIMUM_HALVING_THRESHOLD = 4;
-
-function processCompetitionData(inputLines) {
-    const firstLineValues = inputLines[0].split(" ").map(Number);
-    const [itemCount, maxHalvingOperations] = getArrayElements(firstLineValues, 2);
-
-    const itemScores = inputLines[1].split(" ").map(Number);
-
-    itemScores.sort((a, b) => b - a);
-
-    let totalFinalScore = 0;
-    let remainingHalvingBudget = maxHalvingOperations;
-
-    for (let currentItemIndex = 0; currentItemIndex < itemCount; currentItemIndex++) {
-        let currentItemScore = itemScores[currentItemIndex];
-        let nextItemComparisonValue = 0;
-
-        if (currentItemIndex < itemCount - 1) {
-            nextItemComparisonValue = Math.min(itemScores[currentItemIndex + 1], MINIMUM_HALVING_THRESHOLD);
-        }
-
-        while (remainingHalvingBudget > 0 && currentItemScore >= nextItemComparisonValue) {
-            currentItemScore = Math.floor(currentItemScore / 2);
-            remainingHalvingBudget--;
-        }
-        totalFinalScore += currentItemScore;
+          }
+          return out;
+        })(arr, limit) ||
+        (function () {
+          throw new TypeError(
+            "Invalid attempt to destructure non-iterable instance",
+          );
+        })()
+      );
     }
 
-    console.log(totalFinalScore);
-}
+    function toNumberList(line) {
+      return line.split(" ").map(function (v) {
+        return Number(v);
+      });
+    }
 
-const fileSystemModule = require("fs");
+    mod.exports = function (lines) {
+      var first = slicePair(toNumberList(lines[0]), 2),
+        n = first[0],
+        m = first[1],
+        prices = toNumberList(lines[1]);
 
-const rawInputContent = fileSystemModule.readFileSync("/dev/stdin", "UTF-8");
+      prices.sort(function (x, y) {
+        return y - x;
+      });
 
-const inputDataLines = rawInputContent.split("\n");
+      var answer = 0;
+      var rest = m;
 
-processCompetitionData(inputDataLines);
+      for (var i = 0; i < n; i++) {
+        var current = prices[i];
+        var border = 0;
+
+        if (i !== n - 1) {
+          border = Math.min(prices[i + 1], 4);
+        }
+
+        while (rest > 0) {
+          if (current < border) break;
+          current = Math.floor(current / 2);
+          rest--;
+        }
+
+        answer = answer + current;
+      }
+
+      console.log(answer);
+    };
+  },
+  function (mod, exports) {
+    mod.exports = require("fs");
+  },
+]);

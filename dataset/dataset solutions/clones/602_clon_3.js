@@ -1,30 +1,19 @@
-var rawDataString = require('fs').readFileSync('/dev/stdin', 'utf8');
-var inputLines = rawDataString.split('\n');
+var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+var lines = input.trim().split('\n');
 
-const extractAndParseNumbers = (sourceLines, startingIndex, count) => {
-    const numericValues = [];
-    for (let i = 0; i < count; i++) {
-        const currentLineContent = sourceLines[startingIndex + i];
-        const parsedValue = Number(currentLineContent);
-        numericValues.push(parsedValue);
-    }
-    return numericValues;
-};
+var p = [];
+var j = [];
 
-const determineMinimumValue = (valueCollection) => {
-    if (valueCollection.length === 0) {
-        return Infinity; // Consistent with Math.min() on empty set
-    }
-    return Math.min(...valueCollection);
-};
+for (var i = 0; i < 3; i++) {
+  p[i] = Number(lines[i]);
+}
 
-var pizzaPrices = extractAndParseNumbers(inputLines, 0, 3);
-var juicePrices = extractAndParseNumbers(inputLines, 3, 2);
+for (var k = 0; k < 2; k++) {
+  j[k] = Number(lines[k + 3]);
+}
 
-var lowestPizzaOption = determineMinimumValue(pizzaPrices);
-var lowestJuiceOption = determineMinimumValue(juicePrices);
+var minP = Math.min.apply(null, p);
+var minJ = Math.min.apply(null, j);
+var answer = minP + minJ - 50;
 
-var combinedMinimumCost = lowestPizzaOption + lowestJuiceOption;
-var finalDiscountedPrice = combinedMinimumCost - 50;
-
-console.log(finalDiscountedPrice);
+console.log(answer);

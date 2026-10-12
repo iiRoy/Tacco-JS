@@ -1,0 +1,10 @@
+for(pos=0,datos=require("fs").readFileSync("/dev/stdin","utf8").split(/\s/);x1=+datos[pos++],y1=+datos[pos++],x2=+datos[pos++],y2=+datos[pos++],x3=+datos[pos++],y3=+datos[pos++],x4=+datos[pos++],y4=+datos[pos++];){
+    testA=x1<=x4;
+    testB=x3<=x2;
+    testC=y1<=y4;
+    testD=y3<=y2;
+    ok=testA&testB;
+    ok=ok&testC;
+    ok=ok&testD;
+    console.log(ok?"YES":"NO")
+}

@@ -1,91 +1,66 @@
-function generateStateKey(col, row, grid) {
-    return `${col} ${row} ${grid.join("")}`;
-}
-
-const DIRECTION_OFFSETS = [
-    { deltaCol: 0, deltaRow: -1 },
-    { deltaCol: -1, deltaRow: 0 },
-    { deltaCol: 1, deltaRow: 0 },
-    { deltaCol: 0, deltaRow: 1 }
-];
-
-function calculateShortestPath(startCol, startRow, initialGridConfiguration, gridWidth, gridHeight, requiredPowerLevel) {
-    initialGridConfiguration[startRow][startCol] = ".";
-
-    let stepsTaken = 0;
-    const pathQueue = [[startCol, startRow, stepsTaken, 1, initialGridConfiguration]];
-
-    const visitedPathStates = new Set();
-    visitedPathStates.add(generateStateKey(startCol, startRow, initialGridConfiguration));
-
-    let finalPathLength = -1;
-
-    while (pathQueue.length > 0) {
-        const [currentCol, currentRow, currentSteps, currentPower, gridSnapshot] = pathQueue.shift();
-
-        if (currentPower === requiredPowerLevel + 1) {
-            finalPathLength = currentSteps;
-            break;
-        }
-
-        for (const offset of DIRECTION_OFFSETS) {
-            const nextCol = currentCol + offset.deltaCol;
-            const nextRow = currentRow + offset.deltaRow;
-            let nextPower = currentPower;
-
-            if (nextCol < 0 || nextRow < 0 || nextCol >= gridWidth || nextRow >= gridHeight) {
-                continue;
-            }
-
-            if (gridSnapshot[nextRow][nextCol] === "X") {
-                continue;
-            }
-
-            const nextGridState = gridSnapshot.map(row => row.slice());
-
-            if (nextGridState[nextRow][nextCol] === String(nextPower)) {
-                nextPower++;
-                nextGridState[nextRow][nextCol] = ".";
-            }
-
-            const stateIdentifierKey = generateStateKey(nextCol, nextRow, nextGridState);
-
-            if (!visitedPathStates.has(stateIdentifierKey)) {
-                visitedPathStates.add(stateIdentifierKey);
-                pathQueue.push([nextCol, nextRow, currentSteps + 1, nextPower, nextGridState]);
-            }
-        }
-    }
-    return finalPathLength;
-}
-
 const fs = require('fs');
-const rawInputData = fs.readFileSync('/dev/stdin', 'utf8');
-const inputLinesArray = rawInputData.trim().split("\n");
 
-const gridDimensionsAndPower = inputLinesArray.shift().split(" ").map(Number);
-const gridWidth = gridDimensionsAndPower[0];
-const gridHeight = gridDimensionsAndPower[1];
-const requiredPowerLevel = gridDimensionsAndPower[2];
+function loadChronologicalReadings() {
+    const numbers = fs
+        .readFileSync(0, 'utf8')
+        .trim()
+        .split(/\s+/)
+        .map(Number);
 
-const initialGridMap = [];
-let startingCoordinates = [];
-
-for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
-    const currentRowChars = inputLinesArray.shift().split("");
-    if (currentRowChars.includes("S")) {
-        startingCoordinates = [currentRowChars.indexOf("S"), rowIndex];
-    }
-    initialGridMap.push(currentRowChars);
+    return {
+        readings: numbers.slice(2, numbers[0] + 2),
+        permittedGap: numbers[1],
+    };
 }
 
-const finalPathLength = calculateShortestPath(
-    startingCoordinates[0],
-    startingCoordinates[1],
-    initialGridMap,
-    gridWidth,
-    gridHeight,
-    requiredPowerLevel
+function signalAppearsAgain(readings, origin, limit) {
+    const finalPosition = Math.min(
+        readings.length - 1,
+        origin + limit
+    );
+
+    let comparison = origin + 1;
+
+    while (comparison <= finalPosition) {
+        if (readings[origin] === readings[comparison]) {
+            return true;
+        }
+
+        comparison++;
+    }
+
+    return false;
+}
+
+function containsChronologicalEcho(readings, permittedGap) {
+    let currentPosition = 0;
+
+    while (currentPosition < readings.length) {
+        const repeatedSignal = signalAppearsAgain(
+            readings,
+            currentPosition,
+            permittedGap
+        );
+
+        if (repeatedSignal) {
+            return true;
+        }
+
+        currentPosition++;
+    }
+
+    return false;
+}
+
+const timeline = loadChronologicalReadings();
+
+const result = containsChronologicalEcho(
+    timeline.readings,
+    timeline.permittedGap
 );
 
-console.log(finalPathLength);
+process.stdout.write(
+    result
+        ? 'ECO TEMPORAL\n'
+        : 'LÍNEA TEMPORAL ESTABLE\n'
+);

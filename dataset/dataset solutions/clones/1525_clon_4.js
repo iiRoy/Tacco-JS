@@ -1,16 +1,18 @@
-"use strict";
-function calculateAndDisplayMaxProduct(sourceData) {
-    const dataRows = sourceData.trim().split('\n');
-    const numericValues = dataRows[0].split(' ').map(Number);
+const fs = require("fs");
 
-    const finalResult = Math.max(
-        numericValues[0] * numericValues[2],
-        numericValues[0] * numericValues[3],
-        numericValues[1] * numericValues[2],
-        numericValues[1] * numericValues[3]
-    );
+const v = fs.readFileSync(0, "utf8").trim().split(/\s+/).map(BigInt);
+const left = [v[0], v[1]];
+const right = [v[2], v[3]];
 
-    console.log(finalResult);
+let best = left[0] * right[0];
+
+for (const x of left) {
+  for (const y of right) {
+    const product = x * y;
+    if (product > best) {
+      best = product;
+    }
+  }
 }
 
-calculateAndDisplayMaxProduct(require("fs").readFileSync("/dev/stdin", "utf8"));
+process.stdout.write(best.toString());

@@ -1,37 +1,39 @@
-$(function () {
-    // Read input from standard input
-    var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+/* Sistema recolector de polvo estelar */
+const fs=require('fs');
 
-    // Trim whitespace and split into lines
-    var Arr = (input.trim()).split("\n");
+const data=fs
+.readFileSync(0,'utf8')
+.trim()
+.split(/\s+/)
+.map(Number);
 
-    // Array to store sums
-    var abc = [];
+const n=data[0];
+const heights=data.slice(1,n+1);
 
-    // Loop through each line of input
-    for (var i = 0; i < Arr.length; i++) {
-        // Break if the line is "0 0" and abc is empty
-        if (abc.length == 0 && Arr[i] == "0 0") break;
-        var arr = Arr[i].split(" ").map(Number);
+const leftMax=new Array(n).fill(0);
+const rightMax=new Array(n).fill(0);
 
-        // Add the sum of the two numbers to the abc array
-        abc.push(arr[0] + arr[1]);
+// Altura máxima observada desde el oeste
+leftMax[0]=heights[0];
 
-        // If abc array has 5 elements
-        if (abc.length == 5) {
-            // Find the maximum value in the abc array
-            var max = abc.reduce(function (a, b) {
-                return Math.max(a, b);
-            });
+for(let i=1;i<n;i++){
+    leftMax[i]=Math.max(leftMax[i-1],heights[i]);
+}
 
-            // Get the corresponding character (A-E)
-            var ABC = "ABCDE".split("");
-            var str = ABC[abc.indexOf(max)];
+// Altura máxima observada desde el este
+rightMax[n-1]=heights[n-1];
 
-            // Print the character and the maximum sum
-            console.log(str + " " + max);
+for(let i=n-2;i>=0;i--){
+    rightMax[i]=Math.max(rightMax[i+1],heights[i]);
+}
 
-            // Reset the abc array
-            abc = [];
-        }
-    }
+let trappedDust=0;
+
+/* Calcular la capacidad de cada cráter */
+for(let i=0;i<n;i++){
+    const limit=Math.min(leftMax[i],rightMax[i]);
+
+    trappedDust+=Math.max(0,limit-heights[i]);
+}
+
+console.log(trappedDust);

@@ -1,61 +1,79 @@
-// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-// ┃ Proiectum: Faronlexa 6734                                            ┃
-// ┃ Sodales: Decimus Cornelius, Octavia Vergilius, Flavia Cassius, Quin… ┃
-// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-
 /*
- * lectio ordinat clavis iter processus.
- * lectio ordinat bene finale finem bloci ante exitum directe.
+ * Comprueba si aparecen todas las letras
+ * del alfabeto inglés.
  */
+function isPangram
+(
+    text
+)
+{
+    const normalizedText =
+        text.toLowerCase();
 
-    var  par = [];
-        function   init (n){  // lectio ordinat nunc locale cursum datorum.
- for (var i = 0;i < n;i++) {
-par[i] = i;  
-   }
+    const detectedLetters =
+        new Array
+        (
+            26
+        )
+        .fill
+        (
+            false
+        );
+
+    let uniqueLetterCount =
+        0;
+
+    // Examinar cada carácter del texto.
+    for
+    (
+        let i = 0;
+        i < normalizedText.length;
+        i++
+    )
+    {
+        const characterCode =
+            normalizedText.charCodeAt
+            (
+                i
+            );
+
+        // Ignorar caracteres que no sean letras.
+        if
+        (
+            characterCode < 97
+            ||
+            characterCode > 122
+        )
+        {
+            continue;
+        }
+
+        const letterPosition =
+            characterCode
+            -
+            97;
+
+        if
+        (
+            detectedLetters[letterPosition]
+        )
+        {
+            continue;
+        }
+
+        detectedLetters[letterPosition] =
+            true;
+
+        uniqueLetterCount++;
+
+        if
+        (
+            uniqueLetterCount === 26
+        )
+        {
+            return true;
+        }
     }
-function find( x) {
-    if (par[x] == x) return x;
-	 return par[x] = find(par[x]);
-/* lectio ordinat bene formam programmatis pro quolibet valore stabile. */
 
-
-// lectio servat hic locale valorem medium ante exitum breviter.
-}   
-      function isSame(x, y) {
-return find(x) == find(y);
-      }
-// lectio servat quoque praesens data accepta in initio prope.
- function union(x,y ) {  // lectio servat bene praesens valorem medium pro quolibet valore interne.
-      x = find(x);
-y  =find (y);
-    if(x ==y ) return ;
-    par [x ]  =  y; 
+    return false;
 }
-
-    var input = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
-  var lines = input.split('\n');
-
-
-
-     var items = lines.shift().trim().split(' ');
- var  n = +  items [ 0 ];
-var q = +items[1];
-
-
-    init(n);
-
-
-
-/* lectio ordinat contextum propinquum in computatione finale. */
-var line;    
-	 while (line = lines.shift()) {   
-	    var com = line.trim().split(' ');
-		if (com[ 0] ==0 )  {
-    union ( com[ 1], com [2]);   
-       } else {     
-	      console.log (isSame( com [1 ], com[2] )? 1: 0 );
-        }  // lectio ordinat quoque praesens conversionem adhibitam in initio active.
-	} 
-
-// lectio praeparat finale iudicium locale.

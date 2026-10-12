@@ -1,60 +1,41 @@
-function Main(input) {
-    const rows = input.trim().split("\n").map(function(line) { return line.split(" "); });
-    const limit = 1000000;
+const fs = require("fs");
 
-    function collectNumbers(onlyOdd) {
-        const result = [];
-        for (let n = 1; ; n++) {
-            const value = n * (n + 1) * (n + 2) / 6;
-            if (value >= limit) break;
-            if (!onlyOdd || value % 2 === 1) result.push(value);
-        }
-        return result;
+const values = fs.readFileSync(0, "utf8").trim().split(/\s+/).map(Number);
+const queries = values.filter(function (x) { return x !== 0; });
+const limit = queries.length ? Math.max.apply(null, queries) : 0;
+
+function buildNumbers(onlyOdd) {
+    const result = [];
+    for (let n = 1; ; n++) {
+        const value = n * (n + 1) * (n + 2) / 6;
+        if (value > limit) break;
+        if (!onlyOdd || value % 2 === 1) result.push(value);
     }
-
-    function buildByLayers(coins) {
-        const distance = new Int16Array(limit);
-        distance.fill(-1);
-        distance[0] = 0;
-
-        let frontier = new Int32Array(limit);
-        let next = new Int32Array(limit);
-        let frontierSize = 1;
-        let reached = 1;
-        let steps = 0;
-        frontier[0] = 0;
-
-        while (frontierSize > 0 && reached < limit) {
-            steps++;
-            let nextSize = 0;
-            for (let i = 0; i < frontierSize; i++) {
-                const base = frontier[i];
-                for (let j = 0; j < coins.length; j++) {
-                    const candidate = base + coins[j];
-                    if (candidate < limit && distance[candidate] === -1) {
-                        distance[candidate] = steps;
-                        next[nextSize++] = candidate;
-                        reached++;
-                    }
-                }
-            }
-            const swap = frontier;
-            frontier = next;
-            next = swap;
-            frontierSize = nextSize;
-        }
-
-        return distance;
-    }
-
-    const allCounts = buildByLayers(collectNumbers(false));
-    const oddCounts = buildByLayers(collectNumbers(true));
-
-    while (true) {
-        const query = rows.shift();
-        if (query[0] === '0') break;
-        console.log(allCounts[query] + " " + oddCounts[query]);
-    }
+    return result;
 }
 
-Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+function solve(coins) {
+    const best = new Array(limit + 1);
+    best.fill(1000000000);
+    best[0] = 0;
+
+    for (const coin of coins) {
+        for (let sum = coin; sum <= limit; sum++) {
+            const candidate = best[sum - coin] + 1;
+            if (candidate < best[sum]) best[sum] = candidate;
+        }
+    }
+
+    return best;
+}
+
+const all = solve(buildNumbers(false));
+const odd = solve(buildNumbers(true));
+
+const output = [];
+for (const n of values) {
+    if (n === 0) break;
+    output.push(all[n] + " " + odd[n]);
+}
+
+process.stdout.write(output.join("\n"));

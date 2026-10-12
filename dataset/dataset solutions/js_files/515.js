@@ -8,7 +8,7 @@ while(true){
    var sum=p.reduce(function(a,b){return a+b;});
    j.sort(function(a,b){return b-a;});
    var max=sum*n;
-*/
+/*
    while(true){
       if(j.length==0)break;
       n--;

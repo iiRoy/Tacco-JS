@@ -1,20 +1,15 @@
-function processInput(rawData) {
-    let currentValue = parseInt(rawData);
-    let doubledCount = 1;
-    let totalOutput = 1;
+function main(input){
+    var H = parseInt(input, 10);
+    var count = 1;
+    var out = 0;
 
-    while (true) {
-        currentValue = currentValue / 2;
-
-        if (currentValue < 1) {
-            break;
-        }
-
-        doubledCount = doubledCount * 2;
-        totalOutput = totalOutput + doubledCount;
+    while(H >= 1){
+        out = out + count;
+        H = Math.floor(H / 2);
+        count = count * 2;
     }
 
-    console.log(totalOutput);
+    console.log(out);
 }
 
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

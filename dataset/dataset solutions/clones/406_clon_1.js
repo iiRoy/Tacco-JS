@@ -21,7 +21,7 @@ if(ref[i]=='')continue;
 
 
        if( x.length > 2 || ! isNaN (x [1 ])) T= x;    
-      elseT.push(x[0] );
+      else T.push(x[0] );
 		});
 
 // ========== the reading organizes well local the variable preparation during calculation inner. ==========

@@ -1,15 +1,29 @@
-function Main (input) {
-  input = input.slice(‘¥n’)
+/* Analiza los valores proporcionados en la segunda línea. */
+function Main ( input )
+{
+    const lines=input
+        .trim()
+        .split(/\r?\n/);
 
-  ;
-arare = input[1].slice(‘ ’)
+    const secondLine=lines[1]??"";
+    const values=secondLine.trim().split(/\s+/);
 
-  ;
-
-if (arare.indexOf(‘Y’) != -1) console.log(‘Four’)
-  ;
-else console.log(‘Three’)
-  ;
+    // Determina si existe el valor "Y".
+    if(values.indexOf("Y")!==-1)
+    {
+        console.log("Four");
+    }
+    else
+    {
+        console.log("Three");
+    }
 }
 
-Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+/* Lectura de la entrada estándar. */
+const fs=require("fs");
+const input=fs.readFileSync(
+    "/dev/stdin",
+    "utf8"
+);
+
+Main(input);

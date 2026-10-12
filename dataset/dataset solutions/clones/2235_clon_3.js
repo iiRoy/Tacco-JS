@@ -1,19 +1,19 @@
 "use strict";
-
-function processInput(rawInputData) {
-  const inputLineArray = rawInputData.split('\n');
-  const containerHeight = Number(inputLineArray[0]);
-  const containerWidth = Number(inputLineArray[1]);
-  const requiredItems = Number(inputLineArray[2]);
-
-  // The original code had an if/else block where both branches performed the exact same calculation and logging.
-  // This conditional structure is redundant for the observable behavior.
-  // We simplify by removing the unnecessary conditional logic and directly performing the calculation.
-
-  const itemsPerHeightUnit = requiredItems / containerHeight;
-  const calculatedCeilingValue = Math.ceil(itemsPerHeightUnit);
-  
-  console.log(calculatedCeilingValue);
+function Main(candidateValue) {
+    const assignedValue = candidateValue.split('\n');
+    candidateValue = assignedValue;
+    const initialValue = Number(candidateValue[0]);
+    const itemValue = initialValue;
+    const initialValue1 = Number(candidateValue[1]);
+    const storedValue = initialValue1;
+    const initialValue2 = Number(candidateValue[2]);
+    const limitValue = initialValue2;
+    const conditionMet = itemValue > storedValue;
+    if (conditionMet) {
+        console.log(Math.ceil(limitValue / itemValue));
+    }
+    else {
+        console.log(Math.ceil(limitValue / itemValue));
+    }
 }
-
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

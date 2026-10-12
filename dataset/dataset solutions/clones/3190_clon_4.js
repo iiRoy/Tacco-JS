@@ -1,36 +1,32 @@
-'use strict';
+const fs = require("fs");
 
-function processInputAndCalculate(sourceText) {
-    const processedLines = sourceText.trim().split('\n');
+const data = fs.readFileSync(0, "utf8").trim().split(/\s+/).map(Number);
+const count = data[0];
+const values = data.slice(1, count + 1);
 
-    const totalItems = Number(processedLines[0].split(' ')[0]);
-    const entityMeasures = processedLines[1].split(' ').map(Number).sort((valA, valB) => valA - valB);
+values.sort((x, y) => x - y);
 
-    const computeGreatestCommonDivisor = (firstOperand, secondOperand) => {
-        while (secondOperand !== 0) {
-            const remainder = firstOperand % secondOperand;
-            firstOperand = secondOperand;
-            secondOperand = remainder;
-        }
-        return firstOperand;
-    };
-
-    let smallestFactor;
-
-    if (totalItems < 2) {
-        smallestFactor = Number.MAX_SAFE_INTEGER;
-    } else {
-        const pairStartIndices = Array.from({ length: totalItems - 1 }, (_, k) => k);
-
-        smallestFactor = pairStartIndices.reduce((currentMinimum, currentIndex) => {
-            const currentEntity = entityMeasures[currentIndex];
-            const nextEntity = entityMeasures[currentIndex + 1];
-            const pairDivisor = computeGreatestCommonDivisor(currentEntity, nextEntity);
-            return Math.min(currentMinimum, pairDivisor);
-        }, Number.MAX_SAFE_INTEGER);
-    }
-
-    console.log(smallestFactor);
+function divisor(a, b) {
+  while (b !== 0) {
+    const r = a - Math.floor(a / b) * b;
+    a = b;
+    b = r;
+  }
+  return a;
 }
 
-processInputAndCalculate(require('fs').readFileSync('/dev/stdin', 'utf8'));
+let answer = Infinity;
+let previous = values.shift();
+
+while (values.length > 0) {
+  const current = values.shift();
+  const g = divisor(previous, current);
+
+  if (g < answer) {
+    answer = g;
+  }
+
+  previous = current;
+}
+
+process.stdout.write(String(answer));

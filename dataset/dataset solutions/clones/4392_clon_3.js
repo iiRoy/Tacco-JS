@@ -1,85 +1,85 @@
-const rawDataLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
-
-class DataLineReader {
-  constructor(lines) {
-    this.dataLines = lines;
-    this.currentLineIndex = 0;
-    this.totalLines = lines.length;
-  }
-
-  fetchNextLine() {
-    if (!this.canFetchMore()) {
-      throw "NoSuchElementException:次に要素は無いよ";
+var input = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+var obj = {
+  "list" : input,
+  "index" : 0,
+  "max" : input.length,
+  "next" : function(){
+    if(!this.hasNext()){
+      throw "NoSuchElementException";
     }
-    const retrievedLine = this.dataLines[this.currentLineIndex];
-    this.currentLineIndex++;
-    return retrievedLine;
+    var returnObj = this.list[this.index++];
+    return returnObj;
+  },
+  "hasNext" : function(){
+    return this.index < this.max;
   }
+};
 
-  canFetchMore() {
-    return (this.currentLineIndex < this.totalLines);
+Main();
+
+function next(){return obj.next();}
+function nextInt(){return myconv(next(),1);}
+function nextStrArray(){return myconv(next(),2);}
+function nextIntArray(){return myconv(next(),4);}
+function nextCharArray(){return myconv(next(),6);}
+function hasNext(){return obj.hasNext();}
+function myout(t){console.log(t);}
+function myerr(t){console.error(t);}
+
+function myconv(i,no){
+  try{
+    switch(no){
+      case 1:
+        return parseInt(i,10);
+      case 2:
+        return i.split(" ");
+      case 4:
+        return i.split(" ").map(function(a){return Number(a);});
+      case 6:
+        return i.split("");
+      case 7:
+        return i.split("").map(function(a){return Number(a);});
+      case 8:
+        return i.join(" ");
+      case 9:
+        return i.join("\n");
+      case 0:
+        return i.join("");
+      default:
+        return i;
+    }
+  }catch(e){
+    return i;
   }
 }
 
-const inputReader = new DataLineReader(rawDataLines);
+function Main(){
+  var price = nextIntArray();
+  var Q = price[0];
+  var H = price[1];
+  var S = price[2];
+  var D = price[3];
+  var N = nextInt();
 
-function retrieveNextLine() { return inputReader.fetchNextLine(); }
-function retrieveNextInteger() { return dataConverter(retrieveNextLine(), 1); }
-function retrieveNextStringArray() { return dataConverter(retrieveNextLine(), 2); }
-function retrieveNextIntegerArray() { return dataConverter(retrieveNextLine(), 4); }
-function retrieveNextCharacterArray() { return dataConverter(retrieveNextLine(), 6); }
-function hasMoreLines() { return inputReader.canFetchMore(); }
-function printResult(content) { console.log(content); }
-function printError(content) { console.error(content); }
+  var twoLiterPrices = [];
+  twoLiterPrices.push(Q * 8);
+  twoLiterPrices.push(H * 4);
+  twoLiterPrices.push(S * 2);
+  twoLiterPrices.push(D);
 
-const conversionStrategies = new Map([
-  [1, (val) => parseInt(val)],
-  [2, (val) => val.split(" ")],
-  [4, (val) => val.split(" ").map((a) => Number(a))],
-  [6, (val) => val.split("")],
-  [7, (val) => val.split("").map((a) => Number(a))],
-  [8, (val) => val.join(" ")],
-  [9, (val) => val.join("\n")],
-  [0, (val) => val.join("")],
-]);
+  var output = 0;
+  var bestTwo = Math.min.apply(null, twoLiterPrices);
+  var pairCount = Math.floor(N / 2);
 
-function dataConverter(inputVal, conversionType) {
-  try {
-    const strategy = conversionStrategies.get(conversionType);
-    if (strategy) {
-      return strategy(inputVal);
-    }
-    return inputVal;
-  } catch (e) {
-    return inputVal;
-  }
-}
+  output += bestTwo * pairCount;
 
-calculateCost();
-
-function calculateCost() {
-  const firstLineValues = retrieveNextIntegerArray();
-  const [quarterLiterCost, halfLiterCost, singleLiterCost, doubleLiterCost] = firstLineValues;
-  const totalLiters = retrieveNextInteger();
-
-  const costPerTwoLitersQ = quarterLiterCost * 8;
-  const costPerTwoLitersH = halfLiterCost * 4;
-  const costPerTwoLitersS = singleLiterCost * 2;
-
-  let finalCalculatedCost = 0;
-
-  const twoLiterCostOptions = [costPerTwoLitersQ, costPerTwoLitersH, costPerTwoLitersS, doubleLiterCost];
-  const minCostPerTwoLiters = Math.min.apply(null, twoLiterCostOptions);
-
-  const numberOfTwoLiterUnits = Math.floor(totalLiters / 2);
-  finalCalculatedCost = minCostPerTwoLiters * numberOfTwoLiterUnits;
-
-  if (totalLiters % 2 === 1) {
-    const costForOneLiterQ = quarterLiterCost * 4;
-    const costForOneLiterH = halfLiterCost * 2;
-    
-    finalCalculatedCost += Math.min(costForOneLiterQ, costForOneLiterH, singleLiterCost);
+  if(N % 2 !== 0){
+    var oneLiterPrices = [Q * 4, H * 2, S];
+    var bestOne = Math.min.apply(null, oneLiterPrices);
+    output = output + bestOne;
+  }else{
+    output = output + 0;
   }
 
-  printResult(finalCalculatedCost);
+  myout(output);
 }

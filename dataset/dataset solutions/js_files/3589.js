@@ -1,27 +1,46 @@
-'use strict'
+function calculateEditDistance(source, target) {
+    const rowCount = source.length + 1;
+    const columnCount = target.length + 1;
 
-const main = (input) => {
-    input = input.split('\n')
-    const N = parseInt(input[0].split(' ')[0])
-    const K = parseInt(input[0].split(' ')[1])
-    const arr = input[1].split(' ').map(v => parseInt(v))
+    const distanceTable = Array.from(
+        { length: rowCount },
+        () => new Array(columnCount).fill(0)
+    );
 
-    let dist = 100000000000
-    // 通るべき点を調べ上げる
-    for(let i = 0; i <= arr.length - K; i++){
-        let points = arr.slice(i, K + i)
-        // 左端からスタートするときの距離
-        let sleft = Math.abs(points[0]) + Math.abs(points[0] - points[points.length - 1])
-        if(dist > sleft){
-            dist = sleft
-        }
-        // 右端からスタートするときの距離
-        let sright = Math.abs(points[points.length - 1]) + Math.abs(points[points.length - 1] - points[0])
-        if(dist > sright){
-            dist = sright
+    for (let row = 0; row < rowCount; row++) {
+        distanceTable[row][0] = row;
+    }
+
+    for (let column = 0; column < columnCount; column++) {
+        distanceTable[0][column] = column;
+    }
+
+    for (let row = 1; row < rowCount; row++) {
+        for (let column = 1; column < columnCount; column++) {
+            const sourceCharacter = source[row - 1];
+            const targetCharacter = target[column - 1];
+
+            if (sourceCharacter === targetCharacter) {
+                distanceTable[row][column] =
+                    distanceTable[row - 1][column - 1];
+            } else {
+                const deletionCost =
+                    distanceTable[row - 1][column] + 1;
+
+                const insertionCost =
+                    distanceTable[row][column - 1] + 1;
+
+                const substitutionCost =
+                    distanceTable[row - 1][column - 1] + 1;
+
+                distanceTable[row][column] = Math.min(
+                    deletionCost,
+                    insertionCost,
+                    substitutionCost
+                );
+            }
         }
     }
-    console.log(dist)
-}
 
-main(require('fs').readFileSync('/dev/stdin', 'utf-8'))
+    return distanceTable[rowCount - 1][columnCount - 1];
+}

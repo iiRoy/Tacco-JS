@@ -1,20 +1,90 @@
-process.stdin.on(
-  "data",
-  function (inputDataChunk, encodingParameter) {
-    // Convert the incoming data chunk to a string, remove leading/trailing whitespace,
-    // and then split it into an array of string values based on spaces.
-    let stringComponents = (inputDataChunk + '').trim().split(' ');
+function verifySudokuState(grid) {
+    for (let horizontalIndex = 0; horizontalIndex < 9; horizontalIndex++) {
+        const registeredDigits = new Set();
 
-    // Calculate the square of the sum of the first and third components.
-    let firstCoordinateSquared = Math.pow(stringComponents[0] + stringComponents[2], 2);
+        for (
+            let verticalIndex = 0;
+            verticalIndex < 9;
+            verticalIndex++
+        ) {
+            const currentDigit =
+                grid[horizontalIndex][verticalIndex];
 
-    // Calculate the square of the sum of the second and fourth components.
-    let secondCoordinateSquared = Math.pow(stringComponents[1] + stringComponents[3], 2);
+            if (currentDigit === ".") {
+                continue;
+            }
 
-    // Compute the square root of the sum of the two squared values.
-    let finalCalculatedValue = Math.sqrt(firstCoordinateSquared + secondCoordinateSquared);
+            if (registeredDigits.has(currentDigit)) {
+                return false;
+            }
 
-    // Print the final result to the console, formatted to exactly eight decimal places.
-    console.log(finalCalculatedValue.toFixed(8));
-  }
-).resume(); // Keep the standard input stream open to receive more data.
+            registeredDigits.add(currentDigit);
+        }
+    }
+
+    for (let verticalIndex = 0; verticalIndex < 9; verticalIndex++) {
+        const registeredDigits = new Set();
+
+        for (
+            let horizontalIndex = 0;
+            horizontalIndex < 9;
+            horizontalIndex++
+        ) {
+            const currentDigit =
+                grid[horizontalIndex][verticalIndex];
+
+            if (currentDigit === ".") {
+                continue;
+            }
+
+            if (registeredDigits.has(currentDigit)) {
+                return false;
+            }
+
+            registeredDigits.add(currentDigit);
+        }
+    }
+
+    for (let regionRow = 0; regionRow < 3; regionRow++) {
+        for (
+            let regionColumn = 0;
+            regionColumn < 3;
+            regionColumn++
+        ) {
+            const registeredDigits = new Set();
+
+            for (
+                let internalRow = 0;
+                internalRow < 3;
+                internalRow++
+            ) {
+                for (
+                    let internalColumn = 0;
+                    internalColumn < 3;
+                    internalColumn++
+                ) {
+                    const horizontalIndex =
+                        regionRow * 3 + internalRow;
+
+                    const verticalIndex =
+                        regionColumn * 3 + internalColumn;
+
+                    const currentDigit =
+                        grid[horizontalIndex][verticalIndex];
+
+                    if (currentDigit === ".") {
+                        continue;
+                    }
+
+                    if (registeredDigits.has(currentDigit)) {
+                        return false;
+                    }
+
+                    registeredDigits.add(currentDigit);
+                }
+            }
+        }
+    }
+
+    return true;
+}

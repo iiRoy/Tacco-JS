@@ -1,40 +1,97 @@
-const SECONDS_PER_MINUTE = 60;
-const SECONDS_PER_HOUR = 60 * SECONDS_PER_MINUTE;
-const TOTAL_SECONDS_IN_DAY = 24 * SECONDS_PER_HOUR;
+const fs = require('fs');
 
-function convertTimeToSeconds(timeString) {
-    const timeComponents = timeString.split(':').map(Number);
-    const [hours, minutes, seconds] = timeComponents;
-    return (hours * SECONDS_PER_HOUR) + (minutes * SECONDS_PER_MINUTE) + seconds;
+function readSpellBook() {
+    const values = fs
+        .readFileSync(0, 'utf8')
+        .trim()
+        .split(/\s+/)
+        .map(Number);
+
+    const totalSpells = values.shift();
+    const totalRules = values.shift();
+
+    const requirements = Array.from(
+        { length: totalSpells + 1 },
+        () => []
+    );
+
+    let rulesRead = 0;
+
+    while (rulesRead < totalRules) {
+        const sourceSpell = values.shift();
+        const destinationSpell = values.shift();
+
+        requirements[sourceSpell].push(destinationSpell);
+        rulesRead++;
+    }
+
+    return {
+        totalSpells,
+        requirements,
+    };
 }
 
-while (true) {
-    const numberOfEvents = parseInt(readline(), 10);
+function inspectSpell(
+    currentSpell,
+    requirements,
+    activePath,
+    completedSpells
+) {
+    if (activePath.has(currentSpell)) {
+        return true;
+    }
 
-    if (numberOfEvents === 0) {
+    if (completedSpells.has(currentSpell)) {
+        return false;
+    }
+
+    activePath.add(currentSpell);
+
+    for (const nextSpell of requirements[currentSpell]) {
+        const contradiction = inspectSpell(
+            nextSpell,
+            requirements,
+            activePath,
+            completedSpells
+        );
+
+        if (contradiction) {
+            return true;
+        }
+    }
+
+    activePath.delete(currentSpell);
+    completedSpells.add(currentSpell);
+
+    return false;
+}
+
+const spellBook = readSpellBook();
+
+const currentInvocation = new Set();
+const resolvedInvocations = new Set();
+
+let contradictionFound = false;
+let spellIdentifier = 1;
+
+while (spellIdentifier <= spellBook.totalSpells) {
+    if (
+        inspectSpell(
+            spellIdentifier,
+            spellBook.requirements,
+            currentInvocation,
+            resolvedInvocations
+        )
+    ) {
+        contradictionFound = true;
         break;
     }
 
-    const timePointChanges = new Array(TOTAL_SECONDS_IN_DAY + 1).fill(0);
-
-    for (let eventIndex = 0; eventIndex < numberOfEvents; eventIndex++) {
-        const eventLine = readline();
-        const timeStrings = eventLine.split(' ');
-
-        const startTimeStr = timeStrings[0];
-        const endTimeStr = timeStrings[1];
-
-        const startTotalSeconds = convertTimeToSeconds(startTimeStr);
-        const endTotalSeconds = convertTimeToSeconds(endTimeStr);
-
-        timePointChanges[startTotalSeconds]++;
-        timePointChanges[endTotalSeconds]--;
-    }
-
-    for (let currentSecondIndex = 0; currentSecondIndex < TOTAL_SECONDS_IN_DAY; currentSecondIndex++) {
-        timePointChanges[currentSecondIndex + 1] += timePointChanges[currentSecondIndex];
-    }
-
-    const maxConcurrentEvents = Math.max(...timePointChanges);
-    console.log(maxConcurrentEvents);
+    spellIdentifier++;
 }
+
+process.stdout.write(
+    contradictionFound
+        ? 'PARADOJA DETECTADA\n'
+        : 'SISTEMA ARCANO ESTABLE\n'
+);

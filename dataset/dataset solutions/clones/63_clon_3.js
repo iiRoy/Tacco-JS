@@ -1,50 +1,34 @@
-const readline = require('readline');
-const inputReader = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
-let allInputTokens = [];
-let tokenPointer = 0;
-
-inputReader.on('line', (line) => {
-  line.split(/\s+/).forEach(token => {
-    if (token.length > 0) {
-      allInputTokens.push(token);
+function findLongestGrowth(data) {
+    if (!data.length) {
+        return 0;
     }
-  });
-});
 
-inputReader.on('close', () => {
-  processInputData();
-});
+    const bestEndingAt = Array(data.length).fill(1);
 
-const getNextToken = () => {
-  if (tokenPointer >= allInputTokens.length) {
-    throw new Error("Attempted to read past end of input tokens.");
-  }
-  return allInputTokens[tokenPointer++];
-};
+    for (let source = 0; source < data.length; source++) {
+        for (let target = source + 1; target < data.length; target++) {
+            if (data[target] <= data[source]) {
+                continue;
+            }
 
-function processInputData() {
-  const MAX_OVERFLOW_LENGTH = 80;
+            const candidateLength = bestEndingAt[source] + 1;
 
-  const numSetsStr = getNextToken();
-  const numSets = parseInt(numSetsStr);
-
-  for (let currentSetIndex = 0; currentSetIndex < numSets; currentSetIndex++) {
-    const firstOperand = BigInt(getNextToken());
-    const secondOperand = BigInt(getNextToken());
-
-    const sumResult = firstOperand + secondOperand;
-    const sumStringRepresentation = sumResult.toString();
-
-    const isSumOverflow = sumStringRepresentation.length > MAX_OVERFLOW_LENGTH;
-
-    if (isSumOverflow) {
-      console.log("overflow");
-    } else {
-      console.log(sumStringRepresentation);
+            if (candidateLength > bestEndingAt[target]) {
+                bestEndingAt[target] = candidateLength;
+            }
+        }
     }
-  }
+
+    let result = 0;
+
+    for (const length of bestEndingAt) {
+        if (length > result) {
+            result = length;
+        }
+    }
+
+    return result;
 }
+
+const input = [10, 9, 2, 5, 3, 7, 101, 18];
+console.log(findLongestGrowth(input));

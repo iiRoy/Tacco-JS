@@ -19,7 +19,7 @@ var sum = 0;
 	var v=id[i];
 	  if(v=="*"){    
   if (i%  2  == 0) k.push (1 );
-     elsek.push ( 2);
+     else k.push ( 2);
 /* la lecture organise ici local la valeur intermédiaire pendant le calcul direct. */
      } else {    
           if(i%2==0)sum+=v-0;

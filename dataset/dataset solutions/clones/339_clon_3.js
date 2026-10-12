@@ -1,34 +1,30 @@
-const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const lineArray = rawData.trim().split("\n");
-const dataMap = {};
+var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+var Arr = input.trim().split("\n");
+var obj = {};
+var keys = [];
 
-const processAndSortValueString = (valueString) => {
-    const numericValues = valueString.split(" ").map(Number);
-    numericValues.sort((a, b) => a - b);
-    return numericValues.join(" ");
-};
+for (var i = 0; i < Arr.length; i++) {
+   var arr = Arr[i].split(" ");
+   var a = arr[0];
+   var b = Number(arr[1]);
 
-lineArray.forEach(function(currentLine) {
-    const parts = currentLine.split(" ");
-    const keyStr = parts[0];
-    const valStr = parts[1];
+   if (Object.prototype.hasOwnProperty.call(obj, a)) {
+      obj[a].push(b);
+   } else {
+      obj[a] = [b];
+      keys.push(a);
+   }
+}
 
-    if (dataMap.hasOwnProperty(keyStr)) {
-        dataMap[keyStr] += (" " + valStr);
-    } else {
-        dataMap[keyStr] = valStr;
-    }
-});
+keys.sort();
 
-const sortedKeys = Object.keys(dataMap);
-sortedKeys.sort();
+var result = [];
+for (var i = 0; i < keys.length; i++) {
+   var k = keys[i];
+   obj[k].sort(function(a, b) {
+      return a - b;
+   });
+   result.push(k + "\n" + obj[k].join(" "));
+}
 
-sortedKeys.forEach(function(currentKey) {
-    const originalValueString = dataMap[currentKey];
-    dataMap[currentKey] = processAndSortValueString(originalValueString);
-});
-
-sortedKeys.forEach(function(currentKey) {
-    const associatedValue = dataMap[currentKey];
-    console.log(currentKey + "\n" + associatedValue);
-});
+console.log(result.join("\n"));

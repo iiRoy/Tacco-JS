@@ -1,22 +1,60 @@
-// Global constant for seconds in a day
-m = 24 * 60 * 60
+/* Detector de ciclos en hechizos arcanos */
+const fs=require('fs');
 
-// Main loop
-while True: n = int(raw_input())
+const data=fs
+.readFileSync(0,'utf8')
+.trim()
+.split(/\s+/)
+.map(Number);
 
-    // Exit condition
-    if n == 0:
-        break dp = [0]*(m + 1)
+const spellCount=data[0];
+const dependencyCount=data[1];
 
-    // Process each event
-    for  _ in range(n):
-		a,d=raw_input().split()a, b, c = map(int,a.split(':'));
-        d, e, f = map(int,d.split(':'));
+const graph=Array.from(
+{length:spellCount+1},
+()=>[]
+);
 
-        // Update DP array
-        dp[a*3600+b*60+c]+=1
-        dp[d*3600+e*60+f]-=1
+let cursor=2;
 
-    // Calculate prefix sums
-    for  i in range(m) :
-        dp[i + 1] += dp[i]print(max(dp))
+// Registrar las dependencias mágicas
+for(let i=0;i<dependencyCount;i++){
+    const spell=data[cursor++];
+    const requiredSpell=data[cursor++];
+
+    graph[spell].push(requiredSpell);
+}
+
+const state=new Array(spellCount+1).fill(0);
+
+/* Explorar la cadena de requisitos */
+function containsCycle(spell){
+    state[spell]=1;
+
+    for(const requiredSpell of graph[spell]){
+        if(state[requiredSpell]===1){
+            return true;
+        }
+
+        if(state[requiredSpell]===0&&containsCycle(requiredSpell)){
+            return true;
+        }
+    }
+
+    state[spell]=2;
+
+    return false;
+}
+
+let paradox=false;
+
+for(let spell=1;spell<=spellCount;spell++){
+    if(state[spell]===0&&containsCycle(spell)){
+        paradox=true;
+        break;
+    }
+}
+
+console.log(paradox
+?'PARADOJA DETECTADA'
+:'SISTEMA ARCANO ESTABLE');

@@ -30,7 +30,7 @@ function   main   (    input   )
     // the product of the two input values and outputs this result to the console.
     // Note: The expression 'input ¥[1]' is preserved exactly as it appeared in
     // the original source code, adhering to the strict Type I cloning definition.
-    return  console . log (  input[0]  *  input ¥[1]  )   ;
+    return  console . log (  input[0]  *  input [   1   ]  )   ;
 }
 
 // Below, the 'main' function is invoked. It reads data from standard input.

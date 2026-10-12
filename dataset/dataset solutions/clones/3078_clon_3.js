@@ -1,12 +1,43 @@
-function generateDataString() {
-    const firstSegment = "2";
-    const delimiter = ",";
-    const secondSegment = "2";
-    const thirdSegment = "2";
-    return firstSegment + delimiter + secondSegment + delimiter + thirdSegment;
+function compareOppositeCharacters(text, left, right) {
+  if (left >= right) {
+    return true;
+  }
+
+  const charactersMatch =
+    text.charAt(left) === text.charAt(right);
+
+  if (!charactersMatch) {
+    return false;
+  }
+
+  return compareOppositeCharacters(
+    text,
+    left + 1,
+    right - 1
+  );
 }
 
-var inputDataValue = generateDataString();
+function isPalindrome(text) {
+  const firstPosition = 0;
+  const lastPosition = text.length - 1;
 
-const outputMessage = "Yes";
-print(outputMessage);
+  return compareOppositeCharacters(
+    text,
+    firstPosition,
+    lastPosition
+  );
+}
+
+const fileSystem = require("fs");
+const rawInput = fileSystem.readFileSync(
+  "/dev/stdin",
+  "utf8"
+);
+const text = rawInput.trim();
+const palindrome = isPalindrome(text);
+
+if (palindrome) {
+  console.log("PALINDROME");
+} else {
+  console.log("NOT_PALINDROME");
+}

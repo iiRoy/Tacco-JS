@@ -1,68 +1,56 @@
-function determineFeasibility(limitValue, dataSegments, maxDivisions) {
-    let isPossible = true;
-    let divisionCount = 1;
-    let currentSegmentTotal = 0;
+const fs = require("fs");
 
-    for (const segmentItem of dataSegments) {
-        if (segmentItem > limitValue) {
-            isPossible = false;
-            break;
-        }
+const data = fs.readFileSync(0, "utf8").trim().split(/\s+/).map(Number);
+let p = 0;
+const out = [];
 
-        if (currentSegmentTotal + segmentItem <= limitValue) {
-            currentSegmentTotal += segmentItem;
-        } else {
-            divisionCount++;
-            currentSegmentTotal = segmentItem;
-        }
+while (p < data.length) {
+  const m = data[p++];
+  const n = data[p++];
 
-        if (divisionCount > maxDivisions) {
-            isPossible = false;
-            break;
-        }
+  if (m === 0 && n === 0) {
+    break;
+  }
+
+  const items = data.slice(p, p + n);
+  p += n;
+
+  let low = 0;
+  let high = 0;
+
+  for (const v of items) {
+    if (v > low) low = v;
+    high += v;
+  }
+
+  const ok = capacity => {
+    let used = 1;
+    let load = 0;
+
+    for (const v of items) {
+      if (load + v <= capacity) {
+        load += v;
+      } else {
+        used++;
+        load = v;
+        if (used > m) return false;
+      }
     }
-    return isPossible;
+
+    return true;
+  };
+
+  while (low < high) {
+    const mid = Math.floor((low + high) / 2);
+
+    if (ok(mid)) {
+      high = mid;
+    } else {
+      low = mid + 1;
+    }
+  }
+
+  out.push(String(low));
 }
 
-const fileSystem = require('fs');
-const rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
-const inputLines = rawInput.trim().split("\n");
-
-let linePointer = 0;
-
-function getNextLine() {
-    return inputLines[linePointer++];
-}
-
-while (true) {
-    const dimensionsLine = getNextLine();
-    if (dimensionsLine === "0 0") {
-        break;
-    }
-
-    const dimensions = dimensionsLine.split(" ").map(Number);
-    const maxAllowedDivisions = dimensions[0];
-    let numberOfElements = dimensions[1];
-
-    const elementValues = [];
-    for (let i = 0; i < numberOfElements; i++) {
-        elementValues.push(Number(getNextLine()));
-    }
-
-    let lowerBound = 0;
-    let upperBound = 1500000;
-    let finalResult = 0;
-
-    while (lowerBound <= upperBound) {
-        const midPoint = Math.floor((lowerBound + upperBound) / 2);
-        const checkResult = determineFeasibility(midPoint, elementValues, maxAllowedDivisions);
-
-        if (checkResult) {
-            finalResult = midPoint;
-            upperBound = midPoint - 1;
-        } else {
-            lowerBound = midPoint + 1;
-        }
-    }
-    console.log(finalResult);
-}
+process.stdout.write(out.join("\n"));

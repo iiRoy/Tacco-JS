@@ -1,38 +1,40 @@
-const getEffectiveSliceResult = (sourceString, sliceArgument) => {
-    const numericEquivalent = parseInt(sliceArgument, 10);
-    const actualStartIndex = isNaN(numericEquivalent) ? 0 : numericEquivalent;
-    return sourceString.slice(actualStartIndex);
-};
+const fs = require("fs");
 
-const determineOutputPhrase = (characterToExamine, searchCriterion) => {
-    const isCriterionPresent = characterToExamine.includes(searchCriterion);
-    if (isCriterionPresent) {
-        return 'Four';
-    } else {
-        return 'Three';
-    }
-};
+function extractSecondRow(source) {
+  const rows = source.trim().split(/\r?\n/);
 
-function processInputData(rawInputContent) {
-    const NEWLINE_DELIMITER_ARG = '¥n';
-    const SPACE_DELIMITER_ARG = ' ';
-    const CHARACTER_POSITION_INDEX = 1;
-    const TARGET_CHARACTER_VALUE = 'Y';
+  if (rows.length < 2) {
+    return [];
+  }
 
-    // The original slice operation with a non-numeric argument effectively returns the original string.
-    // This step explicitly captures that behavior using a helper function.
-    let firstProcessedContent = getEffectiveSliceResult(rawInputContent, NEWLINE_DELIMITER_ARG);
-
-    // Access the character at the specified index.
-    let characterAtIndex = firstProcessedContent[CHARACTER_POSITION_INDEX];
-
-    // The second slice operation on a single character with a non-numeric argument also effectively returns the character itself.
-    let finalCharacterForEvaluation = getEffectiveSliceResult(characterAtIndex, SPACE_DELIMITER_ARG);
-
-    // Determine the appropriate message based on whether the target character is found.
-    const outputMessage = determineOutputPhrase(finalCharacterForEvaluation, TARGET_CHARACTER_VALUE);
-
-    console.log(outputMessage);
+  return rows[1].trim().split(/\s+/);
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+function containsAffirmativeValue(values) {
+  let position = 0;
+  let found = false;
+
+  while (position < values.length && !found) {
+    const currentValue = values[position];
+
+    if (currentValue === "Y") {
+      found = true;
+    }
+
+    position += 1;
+  }
+
+  return found;
+}
+
+function determineOutput(source) {
+  const values = extractSecondRow(source);
+  const containsY = containsAffirmativeValue(values);
+
+  return containsY ? "Four" : "Three";
+}
+
+const source = fs.readFileSync("/dev/stdin", "utf8");
+const output = determineOutput(source);
+
+console.log(output);

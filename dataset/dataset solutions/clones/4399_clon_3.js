@@ -1,51 +1,45 @@
-function getMissingCharacters (sourceChars, referenceChars) {
-    const charPresenceMap = {};
-    const finalDifferenceList = [];
+function main(input) {
+    const S = input.trim().split('');
+    var alphabetList = 'abcdefghijklmnopqrstuvwxyz'.split('');
 
-    // Mark characters present in the source list
-    sourceChars.forEach(charItem => {
-        charPresenceMap[charItem] = true;
-    });
-
-    // Iterate through the reference list to find differences
-    referenceChars.forEach(refCharItem => {
-        const isCharPresentInSource = charPresenceMap[refCharItem];
-        if (isCharPresentInSource) {
-            // If character is in both, remove it from the map
-            delete charPresenceMap[refCharItem];
-        } else {
-            // If character is only in reference, add it to the map
-            charPresenceMap[refCharItem] = true;
+    var arr = [];
+    for (var i = 0; i < S.length; i++) {
+        if (arr.indexOf(S[i]) === -1) {
+            arr.push(S[i]);
         }
-    });
+    }
+    arr.sort();
 
-    // Collect remaining keys from the map, which represent the difference
-    for (const keyIdentifier in charPresenceMap) {
-        finalDifferenceList.push(keyIdentifier);
+    var ans = arrDiff(arr, alphabetList);
+
+    function arrDiff(arr, alphabetList) {
+        var table = {};
+        var diff = [];
+
+        for (var i = 0; i < arr.length; i++) {
+            table[arr[i]] = true;
+        }
+
+        for (var j = 0; j < alphabetList.length; j++) {
+            if (table[alphabetList[j]]) {
+                delete table[alphabetList[j]];
+            } else {
+                table[alphabetList[j]] = true;
+            }
+        }
+
+        Object.keys(table).forEach(function(k) {
+            diff.push(k);
+        });
+
+        return diff;
     }
 
-    return finalDifferenceList;
-}
-
-function processInputString (rawDataString) {
-    const inputCharacterArray = rawDataString.split('');
-    const fullAlphabetSequence = 'abcdefghijklmnopqrstuvwxyz'.split('');
-
-    // Filter out duplicate characters and sort them
-    const distinctInputChars = inputCharacterArray.filter((charElement, charIndex, selfArray) => {
-        return selfArray.indexOf(charElement) === charIndex;
-    });
-    const sortedDistinctChars = distinctInputChars.sort();
-
-    // Calculate the difference between the full alphabet and the input characters
-    const firstMissingCharResult = getMissingCharacters(sortedDistinctChars, fullAlphabetSequence);
-
-    // Output the first missing character or 'None'
-    if (firstMissingCharResult.length !== 0) {
-        console.log(firstMissingCharResult[0]);
+    if (ans.length !== 0) {
+        console.log(ans[0]);
     } else {
         console.log('None');
     }
 }
 
-processInputString(require('fs').readFileSync('/dev/stdin', 'utf8'));
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

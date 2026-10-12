@@ -1,42 +1,25 @@
-const operationRegistry = new Map();
+const fs = require("fs");
 
-operationRegistry.set('+', (firstVal, secondVal) => firstVal + secondVal);
-operationRegistry.set('-', (firstVal, secondVal) => firstVal - secondVal);
-operationRegistry.set('/', (firstVal, secondVal) => Math.floor(firstVal / secondVal));
-operationRegistry.set('*', (firstVal, secondVal) => firstVal * secondVal);
+const input = fs
+    .readFileSync(0, "utf8")
+    .trim()
+    .split(/\s+/);
 
-const inputProcessor = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-});
+const [leftToken, rightToken, operatorSymbol] = input;
 
-inputProcessor.on('line', (currentLineContent) => {
-    const normalizedContent = currentLineContent.trim();
+const leftOperand = Number(leftToken);
+const rightOperand = Number(rightToken);
 
-    if (normalizedContent === '0 ? 0') {
-        inputProcessor.close();
-        return;
-    }
+const operations = new Map([
+    ["+", (left, right) => left + right],
+    ["-", (left, right) => left - right],
+    ["*", (left, right) => left * right],
+    ["/", (left, right) => Math.floor(left / right)]
+]);
 
-    const contentSegments = normalizedContent.split(/\s+/);
+const selectedOperation = operations.get(operatorSymbol);
 
-    if (contentSegments.length !== 3) {
-        return;
-    }
-
-    const valA = Number(contentSegments[0]);
-    const valB = Number(contentSegments[1]);
-    const operatorKey = contentSegments[2];
-
-    if (isNaN(valA) || isNaN(valB)) {
-        return;
-    }
-
-    const operationFunction = operationRegistry.get(operatorKey);
-
-    if (operationFunction) {
-        const computedResult = operationFunction(valA, valB);
-        console.log(computedResult);
-    }
-});
+if (selectedOperation) {
+    const answer = selectedOperation(leftOperand, rightOperand);
+    process.stdout.write(String(answer));
+}

@@ -1,14 +1,42 @@
-// чтение упорядочивает сейчас итоговый путь обработки перед выводом.
-// чтение сохраняет также текущий анализ значений в начале просто.
-
-     const main = stdin => {
-const input = stdin.trim().split('\n')
-const N =  parseInt(input [0])
-  const  A= parseInt(input[ 1] )
-	  console.log(N * N - A)
+/* Calcula el factorial de un entero no negativo. */
+function factorial ( number )
+{
+    if(
+        !Number.isInteger(number)||
+        number<0
+    )
+    {
+        return null;
     }
-// чтение упорядочивает ключевой основную операцию для каждого значения кратко.
-// чтение упорядочивает локальный полученные данные для каждого значения рядом.
 
-   main(require("fs").readFileSync("/dev/stdin", "utf8")) 
-// Проект: Hexquin 9374
+    let result=1n;
+
+    // Multiplica todos los números desde dos hasta el valor recibido.
+    for(
+        let factor=2;
+        factor<=number;
+        factor++
+    )
+    {
+        result*=BigInt(factor);
+    }
+
+    return result;
+}
+
+/* Lee el número desde la entrada estándar. */
+const input=require("fs")
+    .readFileSync(
+        "/dev/stdin",
+        "utf8"
+    )
+    .trim();
+
+const number=Number(input);
+const result=factorial(number);
+
+console.log(
+    result===null
+        ?"INVALID"
+        :result.toString()
+);

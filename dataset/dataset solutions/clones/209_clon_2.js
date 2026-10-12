@@ -1,18 +1,33 @@
-require("fs")
-  .readFileSync("/dev/stdin", "utf8") // Obtain content from standard input using UTF-8 encoding
-  .split('\n') // Divide the input content into an array of strings, splitting by newline characters
-  .map(function(inputStr) { // Iterate over each string element in the array
-    let numVal = +inputStr; // Convert the current input string to a numerical value
-    let resultAccumulator = 0; // Initialize a variable to accumulate the sum for the current number
+function locateLaunchPoint(supplies, consumption) {
+    const locationCount = supplies.length;
 
-    // Proceed only if the numerical value is truthy (i.e., not zero or falsy)
-    if (numVal) {
-      // Continuously perform integer division by 5 and add the result to the accumulator
-      // The loop continues as long as the result of the division is non-zero
-      while (numVal = Math.floor(numVal / 5)) { // Update numVal with its integer division by 5
-        resultAccumulator += numVal; // Add the new numVal to the running total
-      }
-      console.log(resultAccumulator); // Output the final calculated sum for the current input line
+    for (let origin = 0; origin < locationCount; origin++) {
+        let remainingPower = 0;
+        let successfulTrip = true;
+
+        for (let movement = 0; movement < locationCount; movement++) {
+            const currentLocation =
+                (origin + movement) % locationCount;
+
+            remainingPower +=
+                supplies[currentLocation] -
+                consumption[currentLocation];
+
+            if (remainingPower < 0) {
+                successfulTrip = false;
+                break;
+            }
+        }
+
+        if (successfulTrip) {
+            return origin;
+        }
     }
-    // If numVal is 0 or falsy, no action is taken, mirroring the original's ternary '0' branch.
-  });
+
+    return -1;
+}
+
+const supplies = [1, 2, 3, 4, 5];
+const consumption = [3, 4, 5, 1, 2];
+
+console.log(locateLaunchPoint(supplies, consumption)); // 3

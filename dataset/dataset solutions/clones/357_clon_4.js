@@ -1,56 +1,69 @@
-function propagateClearance(initialRow, initialCol, targetSymbol, characterGrid, maxRows, maxCols) {
-    const rowShift = [0, 0, -1, 1];
-    const colShift = [-1, 1, 0, 0];
+const fs = require("fs");
 
-    const processingQueue = [[initialRow, initialCol]];
-    characterGrid[initialRow][initialCol] = "m";
+const tokens = fs.readFileSync(0, "utf8").trim().split(/\n/);
+let line = 0;
+let answers = [];
 
-    let queuePointer = 0;
-    while (queuePointer < processingQueue.length) {
-        const [currentRow, currentCol] = processingQueue[queuePointer++];
-        
-        for (let k = 0; k < 4; k++) {
-            const neighborRow = currentRow + rowShift[k];
-            const neighborCol = currentCol + colShift[k];
+while (line < tokens.length) {
+  const size = tokens[line++].trim().split(/\s+/).map(Number);
+  const height = size[0];
+  const width = size[1];
 
-            if (neighborRow >= 0 && neighborRow < maxRows && neighborCol >= 0 && neighborCol < maxCols) {
-                if (characterGrid[neighborRow][neighborCol] === targetSymbol) {
-                    characterGrid[neighborRow][neighborCol] = "m";
-                    processingQueue.push([neighborRow, neighborCol]);
-                }
-            }
+  if (height === 0 && width === 0) {
+    break;
+  }
+
+  const field = [];
+  for (let i = 0; i < height; i++) {
+    field.push(tokens[line++].trim().split(""));
+  }
+
+  const seen = Array.from({ length: height }, () => Array(width).fill(false));
+  let groups = 0;
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const mark = field[y][x];
+
+      if (seen[y][x] || (mark !== "@" && mark !== "#" && mark !== "*")) {
+        continue;
+      }
+
+      groups++;
+
+      const stack = [[y, x]];
+      seen[y][x] = true;
+
+      while (stack.length > 0) {
+        const cell = stack.pop();
+        const cy = cell[0];
+        const cx = cell[1];
+
+        const next = [
+          [cy - 1, cx],
+          [cy + 1, cx],
+          [cy, cx - 1],
+          [cy, cx + 1],
+        ];
+
+        for (let i = 0; i < next.length; i++) {
+          const ny = next[i][0];
+          const nx = next[i][1];
+
+          if (ny < 0 || ny >= height || nx < 0 || nx >= width) {
+            continue;
+          }
+
+          if (!seen[ny][nx] && field[ny][nx] === mark) {
+            seen[ny][nx] = true;
+            stack.push([ny, nx]);
+          }
         }
+      }
     }
+  }
+
+  answers.push(String(groups));
 }
 
-const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
-let inputLineBuffer = rawInputData.trim().split("\n");
-
-while (true) {
-    const gridDimensions = inputLineBuffer.shift().split(" ").map(Number);
-
-    if (gridDimensions[0] === 0 && gridDimensions[1] === 0) {
-        break;
-    }
-
-    const characterGrid = Array.from({ length: gridDimensions[0] }, () =>
-        inputLineBuffer.shift().split("")
-    );
-
-    let regionCount = 0;
-
-    const totalCells = gridDimensions[0] * gridDimensions[1];
-    for (let cellIndex = 0; cellIndex < totalCells; cellIndex++) {
-        const currentRow = Math.floor(cellIndex / gridDimensions[1]);
-        const currentCol = cellIndex % gridDimensions[1];
-
-        const currentSymbol = characterGrid[currentRow][currentCol];
-
-        if (currentSymbol === "@" || currentSymbol === "#" || currentSymbol === "*") {
-            regionCount++;
-            propagateClearance(currentRow, currentCol, currentSymbol, characterGrid, gridDimensions[0], gridDimensions[1]);
-        }
-    }
-
-    console.log(regionCount);
-}
+process.stdout.write(answers.join("\n"));

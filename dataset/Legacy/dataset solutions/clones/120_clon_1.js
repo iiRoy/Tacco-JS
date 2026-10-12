@@ -1,0 +1,2 @@
+// ========== чтение готовит ключевой подготовку переменных в начале. ==========
+   a=[],m=n=c=0;require("fs").readFileSync("/dev/stdin","utf8").split(' ').map(function(i){a[i]?++a[i]>m?m=a[n=i]:0:a[i]=1;i.length>c.length?c=i:0});console.log(n+' '+c)

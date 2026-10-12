@@ -1,91 +1,71 @@
-const primeGenerator = (limit) => {
-    const compositeStatus = new Array(limit + 1).fill(false);
-    const primeSequence = [];
-    for (let currentNum = 2; currentNum * currentNum <= limit; currentNum++) {
-        if (!compositeStatus[currentNum]) {
-            primeSequence.push(currentNum);
-            for (let multiple = currentNum; multiple * multiple <= limit; multiple += currentNum) {
-                compositeStatus[multiple] = true;
-            }
-        }
+const fs = require("fs");
+
+const input = fs.readFileSync(0, "utf8").trim().split(/\s+/).map(Number);
+const n = input[0];
+const nums = input.slice(1, n + 1);
+
+function gcd(a, b) {
+  while (b !== 0) {
+    const t = a % b;
+    a = b;
+    b = t;
+  }
+  return a;
+}
+
+let allGcd = 0;
+for (const v of nums) {
+  allGcd = gcd(allGcd, v);
+}
+
+const limit = Math.max(...nums);
+const smallest = Array(limit + 1);
+
+for (let i = 0; i <= limit; i++) {
+  smallest[i] = i;
+}
+
+for (let i = 2; i * i <= limit; i++) {
+  if (smallest[i] !== i) continue;
+
+  for (let j = i * i; j <= limit; j += i) {
+    if (smallest[j] === j) {
+      smallest[j] = i;
     }
-    return primeSequence;
-};
+  }
+}
 
-const primeFactorDecomposition = (value, precomputedPrimes) => {
-    let remainingValue = value;
-    const factorMap = new Map();
+const used = new Set();
+let pairwise = true;
 
-    for (const p of precomputedPrimes) {
-        if (remainingValue < p) {
-            break;
-        }
-        if (remainingValue % p === 0) {
-            let count = 0;
-            do {
-                count++;
-                remainingValue /= p;
-            } while (remainingValue % p === 0);
-            factorMap.set(p, count);
-        }
+for (const value of nums) {
+  let x = value;
+  let previous = 0;
+
+  while (x > 1) {
+    const p = smallest[x];
+
+    if (p !== previous) {
+      if (used.has(p)) {
+        pairwise = false;
+        break;
+      }
+      used.add(p);
+      previous = p;
     }
 
-    if (remainingValue > 1) {
-        factorMap.set(remainingValue, 1);
+    while (x % p === 0) {
+      x = Math.floor(x / p);
     }
-    return factorMap;
-};
+  }
 
-const computeGreatestCommonDivisor = (first, second) => {
-    let currentA = first;
-    let currentB = second;
-    while (currentB !== 0) {
-        const temp = currentB;
-        currentB = currentA % currentB;
-        currentA = temp;
-    }
-    return currentA;
-};
+  if (!pairwise) break;
+}
 
-const processInput = (inputString) => {
-    const lines = inputString.split("\n");
-    const elementCount = Number(lines[0]);
-    const inputNumbers = lines[1].split(" ").map(Number);
-    
-    const upperBound = 10**6 + 1;
-    
-    const smallPrimes = primeGenerator(upperBound);
-
-    let arePairwiseCoprime = true;
-    const encounteredPrimes = new Set();
-
-    inputNumbers.some(num => {
-        const currentFactors = primeFactorDecomposition(num, smallPrimes);
-        for (const factor of currentFactors.keys()) {
-            if (encounteredPrimes.has(factor)) {
-                arePairwiseCoprime = false;
-                return true;
-            }
-            encounteredPrimes.add(factor);
-        }
-        return false;
-    });
-
-    if (arePairwiseCoprime) {
-        console.log("pairwise coprime");
-        return;
-    }
-    
-    const overallDivisor = inputNumbers.reduce((currentGcd, num) =>
-        computeGreatestCommonDivisor(currentGcd, num)
-    );
-    
-    if (overallDivisor === 1) {
-        console.log("setwise coprime");
-        return;
-    }
-    
-    console.log("not coprime");
-};
-
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+if (pairwise) {
+  console.log("pairwise coprime");
+} else if (allGcd === 1) {
+  console.log("setwise coprime");
+} else {
+  console.log("not coprime");
+}

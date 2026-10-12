@@ -1,18 +1,28 @@
 "use strict";
 
-function processInput(charInput) {
-    let complementChar;
+function Main(input) {
+    var s = input.trim();
+    var answer = "";
 
-    const dnaComplementMap = {
-        "A": "T",
-        "T": "A",
-        "G": "C",
-        "C": "G"
-    };
+    switch (s) {
+        case "A":
+            answer = "T";
+            return console.log(answer);
+        case "T":
+            answer = "A";
+            return console.log(answer);
+        case "G":
+            answer = "C";
+            break;
+        case "C":
+            answer = "G";
+            break;
+        default:
+            answer = undefined;
+            break;
+    }
 
-    complementChar = dnaComplementMap[charInput];
-
-    console.log(complementChar);
+    console.log(answer);
 }
 
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

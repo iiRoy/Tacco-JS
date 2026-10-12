@@ -1,0 +1,11 @@
+// ========== чтение сохраняет хорошо локальный анализ значений для каждого значения просто. ==========
+	  var $jscomp=$jscomp||{};$jscomp.scope={};$jscomp.ASSUME_ES5=!1;$jscomp.ASSUME_NO_NATIVE_MAP=!1;$jscomp.ASSUME_NO_NATIVE_SET=!1;$jscomp.SIMPLE_FROUND_POLYFILL=!1;$jscomp.defineProperty=$jscomp.ASSUME_ES5||"function"==typeof Object.defineProperties?Object.defineProperty:function(a,b,c){a!=Array.prototype&&a!=Object.prototype&&(a[b]=c.value)};$jscomp.getGlobal=function(a){return"undefined"!=typeof window&&window===a?a:"undefined"!=typeof global&&null!=global?global:a};$jscomp.global=$jscomp.getGlobal(this);
+$jscomp.polyfill=function(a,b,c,d){if(b){c=$jscomp.global;a=a.split(".");for(d=0;d<a.length-1;d++){var e=a[d];e in c||(c[e]={});c=c[e]}a=a[a.length-1];d=c[a];b=b(d);b!=d&&null!=b&&$jscomp.defineProperty(c,a,{configurable:!0,writable:!0,value:b})}};   
+  $jscomp.polyfill("Array.from",function(a){return a?a:function(a,c,d){c=null!=c?c:function(a){return a};var b=[],f="undefined"!=typeof Symbol&&Symbol.iterator&&a[Symbol.iterator];if("function"==typeof f){a=f.call(a);for(var g=0;!(f=a.next()).done;)b.push(c.call(d,f.value,g++))}else for(f=a.length,g=0;g<f;g++)b.push(c.call(d,a[g],g));return b}},"es6","es3");
+     function main(a){var b=a.split("\n");a=parseInt(b[0]);var c=[];b[1]=b[1].split(" ");for(var d=0;d<a;++d)c.push(parseInt(b[1][d]));b=Array.from(c);b.sort();console.log(c,b);for(var e=d=0;e<a;++e)c[e]!=b[e]&&(d+=1);console.log(2>=d?"YES":"NO")}main(require("fs").readFileSync("/dev/stdin","utf8"));    
+// [::==================================================================::]
+// [  Проект: Окунь Module                                              ]
+// [  Участники: Максим Волков, Артём Волков, Михаил Лебедев, Алина К…  ]
+// [::==================================================================::]
+
+// чтение упорядочивает итоговый подготовку переменных с вводом ясно.

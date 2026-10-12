@@ -1,24 +1,32 @@
-const checkIntervalIntersection = (rangeOne, rangeTwo) => {
-    return rangeOne.upperBound >= rangeTwo.lowerBound && rangeTwo.upperBound >= rangeOne.lowerBound;
-};
+function surviveTheRuins(jumpCapacity) {
+    if (jumpCapacity.length === 0) {
+        return false;
+    }
 
-const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-const lineSet = fileContent.trim().split('\n');
+    let farthestSafePosition = 0;
+    let explorerPosition = 0;
 
-for (const currentLine of lineSet) {
-    const numericValues = currentLine.split(' ').map(Number);
+    while (
+        explorerPosition <= farthestSafePosition &&
+        explorerPosition < jumpCapacity.length
+    ) {
+        const possibleLanding =
+            explorerPosition + jumpCapacity[explorerPosition];
 
-    const firstRectangle = {
-        x: { lowerBound: numericValues[0], upperBound: numericValues[2] },
-        y: { lowerBound: numericValues[1], upperBound: numericValues[3] }
-    };
-    const secondRectangle = {
-        x: { lowerBound: numericValues[4], upperBound: numericValues[6] },
-        y: { lowerBound: numericValues[5], upperBound: numericValues[7] }
-    };
+        farthestSafePosition = Math.max(
+            farthestSafePosition,
+            possibleLanding
+        );
 
-    const xOverlap = checkIntervalIntersection(firstRectangle.x, secondRectangle.x);
-    const yOverlap = checkIntervalIntersection(firstRectangle.y, secondRectangle.y);
+        if (farthestSafePosition >= jumpCapacity.length - 1) {
+            return true;
+        }
 
-    console.log(xOverlap && yOverlap ? "YES" : "NO");
+        explorerPosition++;
+    }
+
+    return false;
 }
+
+const ruins = [2, 3, 1, 1, 4];
+console.log(surviveTheRuins(ruins)); // true

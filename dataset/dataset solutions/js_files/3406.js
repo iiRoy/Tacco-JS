@@ -3,7 +3,7 @@ function main(input) {
    var COUNT = input[0];
    input.shift();
    var MAX = Math.max.apply(null, input);
-   vart maxIndex = input.indexOf(MAX);
+   var maxIndex = input.indexOf(MAX);
    input[maxIndex] = ( input[maxIndex] / 2 );
    
    sum = input.reduce((a,x) => a+=x,0);

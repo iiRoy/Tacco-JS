@@ -1,17 +1,13 @@
-const calculateFinalValue = (valA, valP) => {
-  const sumOfOperands = valA + valP;
-  const halfSum = sumOfOperands / 2;
-  const intermediateResult = halfSum + valA;
-  return Math.floor(intermediateResult);
-};
+const fs = require("fs");
 
-function handleInputAndOutput(sourceText) {
-  const parts = sourceText.split(" ");
-  const primaryValue = parseInt(parts[0], 10);
-  const secondaryValue = parseInt(parts[1], 10);
+const values = fs.readFileSync(0, "utf8").trim().match(/\d+/g).map(Number);
 
-  const finalScore = calculateFinalValue(primaryValue, secondaryValue);
-  console.log(finalScore);
+let pieces = 0;
+
+for (let i = 0; i < values[0]; i++) {
+  pieces += 3;
 }
 
-handleInputAndOutput(require("fs").readFileSync("/dev/stdin", "utf8"));
+pieces += values[1];
+
+process.stdout.write(String(pieces >> 1));

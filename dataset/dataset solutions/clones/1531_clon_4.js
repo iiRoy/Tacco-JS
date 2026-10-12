@@ -1,15 +1,8 @@
-function ComputeResult(sourceData) {
-    const initialValue = Number(sourceData);
-    const modulusConstant = 1000000007;
+const fs = require("fs");
 
-    const firstFactorMod = initialValue % modulusConstant;
-    
-    const secondFactorRaw = initialValue - 1;
-    const secondFactorMod = (secondFactorRaw % modulusConstant + modulusConstant) % modulusConstant;
+const n = BigInt(fs.readFileSync(0, "utf8").trim());
+const mod = 1000000007n;
 
-    const finalOutcome = (firstFactorMod * secondFactorMod) % modulusConstant;
+const answer = (n * (n - 1n)) % mod;
 
-    console.log(finalOutcome);
-}
-
-ComputeResult(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+process.stdout.write(answer.toString());

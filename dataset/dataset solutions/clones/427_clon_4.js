@@ -1,43 +1,42 @@
-const retrieveCharFromPosition = (pos) => 'ABCDE'.charAt(pos);
+const fs = require('fs');
 
-function* sumGroupProducer(allInputLines) {
-    let temporarySumCollection = [];
-    const requiredGroupSize = 5;
-    let linePointer = 0;
+const tokens = fs
+    .readFileSync(0, 'utf8')
+    .trim()
+    .split(/\s+/)
+    .map(Number);
 
-    while (linePointer < allInputLines.length) {
-        const currentLineContent = allInputLines[linePointer];
+const numberOfColumns = tokens.shift();
+const surface = tokens.slice(0, numberOfColumns);
 
-        if (temporarySumCollection.length === 0 && currentLineContent === '0 0') {
-            return;
+let westExplorer = 0;
+let eastExplorer = surface.length - 1;
+
+let westWall = 0;
+let eastWall = 0;
+let storedStardust = 0;
+
+while (westExplorer <= eastExplorer) {
+    const westHeight = surface[westExplorer];
+    const eastHeight = surface[eastExplorer];
+
+    if (westHeight <= eastHeight) {
+        if (westHeight >= westWall) {
+            westWall = westHeight;
+        } else {
+            storedStardust += westWall - westHeight;
         }
 
-        const parsedLineNumbers = currentLineContent.split(' ').map(Number);
-        const calculatedLineSum = parsedLineNumbers[0] + parsedLineNumbers[1];
-        temporarySumCollection.push(calculatedLineSum);
-
-        if (temporarySumCollection.length === requiredGroupSize) {
-            yield temporarySumCollection;
-            temporarySumCollection = [];
+        westExplorer++;
+    } else {
+        if (eastHeight >= eastWall) {
+            eastWall = eastHeight;
+        } else {
+            storedStardust += eastWall - eastHeight;
         }
-        linePointer++;
+
+        eastExplorer--;
     }
 }
 
-const processSumGroup = (fiveSumValues) => {
-    const highestSum = Math.max(...fiveSumValues);
-    const highestSumIndex = fiveSumValues.findIndex(val => val === highestSum);
-
-    const correspondingChar = retrieveCharFromPosition(highestSumIndex);
-    return `${correspondingChar} ${highestSum}`;
-};
-
-(function() {
-    const fileSystemAPI = require('fs');
-    const rawTextData = fileSystemAPI.readFileSync('/dev/stdin', 'utf8');
-    const inputDataLines = rawTextData.trim().split('\n');
-
-    for (const sumGroup of sumGroupProducer(inputDataLines)) {
-        console.log(processSumGroup(sumGroup));
-    }
-})();
+console.log(storedStardust);

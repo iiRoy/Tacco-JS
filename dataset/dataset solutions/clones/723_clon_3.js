@@ -1,50 +1,67 @@
-const readline = require('readline');
+const fs = require('fs');
 
-const CHAR_FILTER_REGEX = /[a-zA-Z/d /.]/g;
-const SQUARE_BRACKET_PRESENCE_REGEX = /.*\[\].*/;
-const ROUND_BRACKET_PRESENCE_REGEX = /.*\( \).*/;
+function readEnergyLog() {
+    const input = fs
+        .readFileSync(0, 'utf8')
+        .trim()
+        .split(/\s+/)
+        .map(Number);
 
-function processInputString(inputContent) {
-    let currentStringState = inputContent;
+    const totalMeasurements = input.shift();
+    const requiredEnergy = input.shift();
 
-    currentStringState = currentStringState.replace(CHAR_FILTER_REGEX, "");
-
-    let wasModifiedInIteration;
-    do {
-        wasModifiedInIteration = false;
-
-        if (SQUARE_BRACKET_PRESENCE_REGEX.test(currentStringState)) {
-            currentStringState = currentStringState.replace(SQUARE_BRACKET_PRESENCE_REGEX, "");
-            wasModifiedInIteration = true;
-        }
-
-        if (ROUND_BRACKET_PRESENCE_REGEX.test(currentStringState)) {
-            currentStringState = currentStringState.replace(ROUND_BRACKET_PRESENCE_REGEX, "");
-            wasModifiedInIteration = true;
-        }
-    } while (wasModifiedInIteration);
-
-    if (currentStringState.length === 0) {
-        console.log("yes");
-    } else {
-        console.log("no");
-    }
+    return {
+        requiredEnergy,
+        measurements: input.slice(0, totalMeasurements),
+    };
 }
 
-const inputReader = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
+function pulseStartsAt(measurements, origin, requiredEnergy) {
+    let energy = 0;
+    let position = origin;
 
-inputReader.on('line', (receivedLine) => {
-    const terminationSignal = ".";
-    if (receivedLine === terminationSignal) {
-        inputReader.close();
-        return;
+    while (position < measurements.length) {
+        energy += measurements[position];
+
+        if (energy === requiredEnergy) {
+            return true;
+        }
+
+        position++;
     }
-    processInputString(receivedLine);
-});
 
-inputReader.on('close', () => {
-    process.exit(0);
-});
+    return false;
+}
+
+function locatePortalPulse(measurements, requiredEnergy) {
+    let startingPosition = 0;
+
+    while (startingPosition < measurements.length) {
+        if (
+            pulseStartsAt(
+                measurements,
+                startingPosition,
+                requiredEnergy
+            )
+        ) {
+            return startingPosition;
+        }
+
+        startingPosition++;
+    }
+
+    return -1;
+}
+
+const energyLog = readEnergyLog();
+
+const pulseBeginning = locatePortalPulse(
+    energyLog.measurements,
+    energyLog.requiredEnergy
+);
+
+process.stdout.write(
+    pulseBeginning !== -1
+        ? 'PULSO ENCONTRADO\n'
+        : 'PULSO INEXISTENTE\n'
+);

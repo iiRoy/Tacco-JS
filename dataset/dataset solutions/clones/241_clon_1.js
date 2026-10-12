@@ -1,52 +1,30 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+/* Centro de observación de señales extraterrestres */
+const fs=require('fs');
 
-namespace test
-{
+const data=fs
+.readFileSync(0,'utf8')
+.trim()
+.split(/\s+/)
+.map(Number);
 
-    class Program
-    {
-        static void Main(string[] args)
-        {
-            List<string> resultList = new List<string>();
+// Frecuencia que intentamos localizar
+const target=data[0];
 
-            string input;
-            while ((input = Console.ReadLine()) != null)
-            {
-                string[] array = input.Split(' ');
-                int c1 = int.Parse(array[0]);
-                int c2 = int.Parse(array[1]);
-                int c3 = int.Parse(array[2]);
-                int sum = c1 + c2;
-                List<int> mountain = new List<int>();
-                for (int i = 1; i <= 10; i++)
-                {
-                    if (i != c1 || i != c2 || i != c3)
-                    {
-                        mountain.Add(i);
-                    }
-                }
+const signals=data.slice(1);
+let answer=null;
 
-                if (c1 + c2 + mountain[3] <= 20)
-                {
-                    resultList.Add("YES");
-                }
-                else
-                {
-                    resultList.Add("NO");
-                }
-
-            }
-
-            foreach (string a in resultList)
-            {
-                Console.WriteLine(a);
-            }
-
+for(let i=0;i<signals.length;i++){
+    for(let j=i+1;j<signals.length;j++){
+        if(signals[i]+signals[j]===target){
+            answer=[i+1,j+1];
+            break;
         }
+    }
 
-        
+    // Detener el escaneo cuando aparezca una combinación válida
+    if(answer){
+        break;
     }
 }
+
+console.log(answer?answer.join(' '):'SIN COINCIDENCIA');

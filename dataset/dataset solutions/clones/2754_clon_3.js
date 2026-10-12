@@ -1,40 +1,38 @@
-function processInputData(rawData) {
-  const inputLines = rawData.split("\n");
-  const dataElementsString = inputLines[1];
-  let numericSequence = dataElementsString.split(" ").map(Number);
+function Main(input) {
+  var lines = input.trim().split("\n");
+  var list = lines[1].split(" ").map(function(v) {
+    return parseInt(v, 10);
+  });
 
-  const findMinExcludingEnds = (sequenceArray) => {
-    if (sequenceArray.length <= 2) {
-      return [Infinity, -1];
+  while (list.length > 2) {
+    var tmpList = list.slice();
+    var edgeValue = 1e9 + 1;
+
+    tmpList[0] = edgeValue;
+    tmpList[tmpList.length - 1] = edgeValue;
+
+    var listMin = edgeValue;
+    var listMinIndex = -1;
+
+    for (var i = 1; i < tmpList.length - 1; i++) {
+      if (tmpList[i] < listMin) {
+        listMin = tmpList[i];
+        listMinIndex = i;
+      }
     }
-    
-    const temporarySequenceCopy = sequenceArray.slice(); 
-    
-    const EXCLUSION_SENTINEL_VALUE = 1e9 + 7; 
-    
-    temporarySequenceCopy[0] = EXCLUSION_SENTINEL_VALUE;
-    temporarySequenceCopy[temporarySequenceCopy.length - 1] = EXCLUSION_SENTINEL_VALUE;
-    
-    const minimumElementValue = Math.min(...temporarySequenceCopy);
-    const minimumElementIndex = temporarySequenceCopy.indexOf(minimumElementValue);
-    
-    return [minimumElementValue, minimumElementIndex];
-  };
 
-  while (numericSequence.length > 2) {
-    const [currentMinimumValue, currentMinimumIndex] = findMinExcludingEnds(numericSequence);
+    var left = list[listMinIndex - 1];
+    var center = list[listMinIndex];
+    var right = list[listMinIndex + 1];
 
-    const previousElement = numericSequence[currentMinimumIndex - 1];
-    const centralElement = numericSequence[currentMinimumIndex];
-    const subsequentElement = numericSequence[currentMinimumIndex + 1];
-    
-    numericSequence[currentMinimumIndex - 1] = previousElement + centralElement;
-    numericSequence[currentMinimumIndex + 1] = subsequentElement + centralElement;
-    
-    numericSequence.splice(currentMinimumIndex, 1);
+    list[listMinIndex - 1] = left + center;
+    list[listMinIndex + 1] = right + center;
+
+    list.splice(listMinIndex, 1);
   }
 
-  const finalResultSum = numericSequence[0] + numericSequence[1];
-  console.log(finalResultSum);
+  var output = Number(list[0]) + Number(list[1]);
+  console.log(output);
 }
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

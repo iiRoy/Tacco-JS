@@ -1,22 +1,28 @@
-"use strict";
+function aparear(unaLista, otra) {
+  const cantidadDePares = Math.min(
+    unaLista.length,
+    otra.length
+  );
 
-const processData = (rawData) => {
-    const cleanedInput = rawData.trim();
-    const inputSegments = cleanedInput.split("\n");
+  function construirPares(posicion) {
+    if (posicion === cantidadDePares) {
+      return [];
+    }
 
-    const firstInputLine = inputSegments[0];
-    const numericParts = firstInputLine.split(" ");
+    const parejaActual = [
+      unaLista[posicion],
+      otra[posicion]
+    ];
 
-    const firstValueString = numericParts[0];
-    const secondValueString = numericParts[1];
+    const parejasRestantes = construirPares(
+      posicion + 1
+    );
 
-    const numA = Number(firstValueString) | 0;
-    const numB = Number(secondValueString) | 0;
+    return [
+      parejaActual,
+      ...parejasRestantes
+    ];
+  }
 
-    const calculatedDifference = numA - numB;
-    const finalComputedResult = calculatedDifference + 1;
-    
-    console.log(finalComputedResult);
-};
-
-processData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+  return construirPares(0);
+}

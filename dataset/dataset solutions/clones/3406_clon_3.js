@@ -1,18 +1,30 @@
-function processInputData(rawInputString) {
-    const lines = rawInputString.split('\n');
-    const parseRadix = 10;
-    let numericValues = lines.map(lineContent => parseInt(lineContent, parseRadix));
+function main(input) {
+   var lines = input.trim().split('\n');
+   var COUNT = parseInt(lines.shift(), 10);
+   var values = [];
 
-    const initialCountValue = numericValues[0];
-    numericValues.shift();
+   for (var i = 0; i < COUNT; i++) {
+      values.push(parseInt(lines[i], 10));
+   }
 
-    const currentMaxValue = Math.max(...numericValues);
-    const maxElementIndex = numericValues.indexOf(currentMaxValue);
+   var MAX = values[0];
+   var maxIndex = 0;
 
-    numericValues[maxElementIndex] /= 2;
-    
-    const totalSum = numericValues.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
-    console.log(totalSum);
+   for (var j = 1; j < values.length; j++) {
+      if (values[j] > MAX) {
+         MAX = values[j];
+         maxIndex = j;
+      }
+   }
+
+   values[maxIndex] = values[maxIndex] / 2;
+
+   var sum = 0;
+   values.forEach(function(x) {
+      sum += x;
+   });
+
+   console.log(sum);
 }
- 
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

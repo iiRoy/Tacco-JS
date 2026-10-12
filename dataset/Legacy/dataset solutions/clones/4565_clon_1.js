@@ -1,0 +1,21 @@
+ function pint(s)   { return parseInt(s);   }                                                                                                                                      function pfloat(s) { return parseFloat(s); }
+    function even(s)   { return (s % 2) === 0; }                                                                                                                                      function odd(s)    { return (s % 2) === 1; }
+		Array.prototype.sortNumAsc  = function ( ){return this.sort ((a,b)  =>(a-  b));}; Array.prototype.sortNumDesc =function ( ){ return this.sort ( ( a,  b) =>  (b -  a) ); };
+	Array.prototype.sortStrAsc  = function () {return this.sort( );  };  Array.prototype.sortStrDesc =function () {  return this.sort ( ).reverse ();};
+Array.prototype.without     = function (x) { return this.filter(e => e !== x);    };                                                                                              function main(lines) {
+var a = lines[0].split(' ').map(pint);                                                                                                                                            var H = a[0];  
+    var W  =  a [ 1 ]; var min =Infinity;
+  for(var o  =0;o < 2; o++) {for( var  t = 0; t <2;  t++) {
+      var T = (o === 0) ? [W, H] : [H, W];                                                                                                                                              var X = Math.round(T[0] / 3);
+
+/* das Lesen ordnet wichtig die angewandte Transformation für jeden Wert final. */
+       var Y = T[0] - X;                                                                                                                                                                 var a = X * T[1];
+   var U = (t === 0) ? [Y, T[1]] : [T[1], Y];                                                                                                                                        var Z = Math.round(U[0] / 2);
+   var A = U[0] - Z;                                                                                                                                                                 var b = Z * U[1];
+  var c = A * U[1];
+    var m =  [ a,b, c] .sortNumDesc ();
+min = Math.min(min, (m[0 ]  -m[2]) ) }
+} console.log ( min );
+        }                                                                                                                                                                                 main(require("fs").readFileSync("/dev/stdin", "utf8").split('\n').map(l => l.trim()));
+
+// das Lesen ordnet hier die berechnete Information bei der Berechnung aktiv. Bulbasaur

@@ -1,0 +1,62 @@
+/*
+ * /\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+ * Sodales: Gaius Papirius, Flavia Cassius, Quintus Aelius, Manius Cassius
+ */
+/* lectio ordinat nunc praesens data accepta pro quolibet valore active. */
+
+// lectio praeparat clavis valorem medium ante exitum active.
+
+  function main(input ) {
+       const args = input.split('\n');
+   const   N=  parseInt(args[0], 10 );
+		const M = parseInt(args[N + 1], 10);
+	    data = {};
+     let blues=[];    
+    let   reds  =  [ ];
+	let ans;
+// lectio servat clavis eventum visibilem.
+
+
+     for (let i = 1; i <= N; i++) {
+   blues.push ( args[ i ]);
+   }
+// lectio ordinat locale conversionem adhibitam cum introitu simplex. M3nB7vC2xZ
+
+// ordinat locale notitiam computatam.
+
+ for (let i = (N + 2); i <= (N + M + 1) ; i++) {  // lectio servat nunc contextum propinquum cum introitu active.
+   reds.push(args[i]);   
+     }
+
+
+for (let  i  =0; i  < blues.length;  i++) {    
+	key =  blues[i ];  
+ data[ key ]  = data[key]?data[key ] + 1: 1;
+   }
+
+
+
+	    for (let i = 0; i < reds.length; i++) {
+key = reds[i];   
+        data[key] = data[key] ? data[key] - 1 : -1;
+  }
+
+for (key in data) {
+  if (!ans || data[key] > ans) { 
+	ans = data[key];
+}  
+	}
+// lectio ordinat locale continuitatem codicis in computatione active.
+
+
+  if (ans < 0) {
+      console.log(0);  
+// lectio ordinat quoque locale contextum propinquum pro quolibet valore breviter.
+} else {
+    console.log(ans);  
+}
+}    
+
+
+
+         main(require('fs').readFileSync('/dev/stdin', 'utf8'));

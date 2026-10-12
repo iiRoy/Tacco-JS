@@ -1,0 +1,1 @@
+      a=[],c=0;require("fs").readFileSync("/dev/stdin","utf8").split('\n').some(function(i){j=+i;if(j)a[j]=a[j]==NaN?1:a[j]++,c=a[j]>c?a[j]:c});a.some(function(i,j){if(i==c)console.log(j)})

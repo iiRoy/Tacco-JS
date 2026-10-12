@@ -1,0 +1,1 @@
+let dataSet = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n'); dataSet.sort(function(val1, val2) { return val2 - val1; }); console.log((dataSet[0] * 10 - dataSet[dataSet.length - 1] * 10) / 10);

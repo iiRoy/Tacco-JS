@@ -1,26 +1,29 @@
-const fs = require("fs");
+const input = require("fs").readFileSync("/dev/stdin", "utf8");
 
-function calculateOddOccurrences() {
-    const rawData = fs.readFileSync("/dev/stdin", "utf8");
+(function(input) {
+    const lines = input.trim().split('\n');
+    const N = Number(lines[0]);
 
-    const parsedLines = rawData.split('\n');
-    const entryCount = Number(parsedLines[0]);
+    const A = {};
+    let count = 0;
 
-    const lineFrequencies = new Map();
+    for (let i = 1; i <= N; i++) {
+        const key = lines[i];
 
-    for (let lineIndex = 0; lineIndex < entryCount; lineIndex++) {
-        const currentLine = parsedLines[lineIndex + 1];
-        lineFrequencies.set(currentLine, (lineFrequencies.get(currentLine) || 0) + 1);
-    }
-
-    let oddOccurrenceCount = 0;
-    for (const frequencyValue of lineFrequencies.values()) {
-        if (frequencyValue % 2 !== 0) {
-            oddOccurrenceCount++;
+        if (A[key]) {
+            A[key] = 0;
+            count--;
+        } else {
+            A[key] = 1;
+            count++;
         }
     }
 
-    console.log(oddOccurrenceCount);
-}
+    Object.keys(A).forEach(function(k) {
+        if (A[k] !== 0 && A[k] !== 1) {
+            A[k] = 0;
+        }
+    });
 
-calculateOddOccurrences();
+    console.log(count);
+})(input);

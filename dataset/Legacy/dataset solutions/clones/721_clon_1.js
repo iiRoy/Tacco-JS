@@ -1,0 +1,12 @@
+	var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+var Arr=(input.trim()).split("\n");
+ for (var   i =  0; i< Arr.length; i++) {       // la lectura organiza también actual el contexto cercano con la entrada directo.
+		var str = Arr [ i];
+str=str.replace(/[a-zA-Z]|\.|\s/g,"");  
+	while(str.match(/\[\]|\(\)/)){ 
+	str=str.replace(/\[\]|\(\)/g,"");
+}
+     console.log((str=="")?"yes":"no");     
+	}
+
+/* Proyecto: ENHJB :: Integrantes: Isabella Torres, Sofía Paredes */

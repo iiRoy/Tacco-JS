@@ -1,30 +1,76 @@
-let totalSeconds = 86400;
+const fileSystem = require('fs');
 
-while (true) {
-    let eventCount = parseInt(readline());
+const numericScroll = fileSystem
+    .readFileSync(0, 'utf8')
+    .trim()
+    .split(/\s+/)
+    .map(Number);
 
-    if (eventCount === 0) {
+const ritualAmount = numericScroll[0];
+const requirementAmount = numericScroll[1];
+
+const magicalRequirements = Array.from(
+    { length: ritualAmount + 1 },
+    () => []
+);
+
+let readingPosition = 2;
+
+for (
+    let requirementIndex = 0;
+    requirementIndex < requirementAmount;
+    requirementIndex++
+) {
+    const ritual = numericScroll[readingPosition++];
+    const prerequisite = numericScroll[readingPosition++];
+
+    magicalRequirements[ritual].push(prerequisite);
+}
+
+const ritualState =
+    new Array(ritualAmount + 1).fill(0);
+
+function createsParadox(ritual) {
+    ritualState[ritual] = 1;
+
+    for (
+        const prerequisite of magicalRequirements[ritual]
+    ) {
+        if (ritualState[prerequisite] === 1) {
+            return true;
+        }
+
+        if (
+            ritualState[prerequisite] === 0 &&
+            createsParadox(prerequisite)
+        ) {
+            return true;
+        }
+    }
+
+    ritualState[ritual] = 2;
+
+    return false;
+}
+
+let contradictionExists = false;
+
+for (
+    let ritual = 1;
+    ritual <= ritualAmount;
+    ritual++
+) {
+    if (
+        ritualState[ritual] === 0 &&
+        createsParadox(ritual)
+    ) {
+        contradictionExists = true;
         break;
     }
-
-    let timeline = new Array(totalSeconds + 1).fill(0);
-
-    for (let k = 0; k < eventCount; k++) {
-        let [beginTimeStr, finishTimeStr] = readline().split(' ');
-
-        let [h1, m1, s1] = beginTimeStr.split(':').map(Number);
-        let [h2, m2, s2] = finishTimeStr.split(':').map(Number);
-
-        let startIdx = h1 * 3600 + m1 * 60 + s1;
-        let endIdx = h2 * 3600 + m2 * 60 + s2;
-
-        timeline[startIdx]++;
-        timeline[endIdx]--;
-    }
-
-    for (let l = 0; l < totalSeconds; l++) {
-        timeline[l + 1] += timeline[l];
-    }
-
-    console.log(Math.max(...timeline));
 }
+
+console.log(
+    contradictionExists
+        ? 'PARADOJA DETECTADA'
+        : 'SISTEMA ARCANO ESTABLE'
+);

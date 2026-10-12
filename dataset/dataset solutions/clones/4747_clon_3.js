@@ -1,26 +1,25 @@
-function processInputData(rawData) {
-  const inputLines = rawData.split("\n");
+function Main(input) {
+  var lines = input.trim().split("\n");
+  var n = parseInt(lines[0], 10);
+  var array = lines[1].split(" ");
 
-  const initialNumericValue = parseInt(inputLines[0], 10);
+  var memo = [];
+  var counter = 0;
 
-  const elementTokens = inputLines[1].split(" ");
+  for (var i = 0; i < array.length; i++) {
+    var e = array[i];
 
-  const uniqueElementSet = new Set();
-
-  let duplicateOccurrencesCount = 0;
-
-  for (const currentToken of elementTokens) {
-    if (uniqueElementSet.has(currentToken)) {
-      duplicateOccurrencesCount++;
+    if (memo.indexOf(e) !== -1) {
+      counter = counter + 1;
     } else {
-      uniqueElementSet.add(currentToken);
+      memo.push(e);
     }
   }
 
-  const adjustmentForDuplicates = duplicateOccurrencesCount + (duplicateOccurrencesCount % 2);
+  var remove = Math.ceil(counter / 2) * 2;
+  var answer = n - remove;
 
-  const finalResult = initialNumericValue - adjustmentForDuplicates;
-  console.log(finalResult);
+  console.log(answer);
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

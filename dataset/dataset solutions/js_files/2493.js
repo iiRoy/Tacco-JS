@@ -18,4 +18,4 @@ function Main(input) {
 xxzaffeeeeddfkkkkllq`;
 Main(input);
  */ 
-Main(require("fs").readFileSync("/dev/stdin", "utf8")); */
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

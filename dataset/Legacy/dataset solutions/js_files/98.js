@@ -1,0 +1,1 @@
+for(j=0,k=require("fs").readFileSync("/dev/stdin","utf8").split(/\n/);i=+k[j++];)console.log(~~(i*i/98+2))

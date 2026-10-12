@@ -1,50 +1,35 @@
-'use strict';
+const fs = require("fs");
 
-const source = require('fs').readFileSync('/dev/stdin', 'utf8');
+const [a, b] = fs.readFileSync(0, "utf8").trim().split(/\n/);
+const height = a.length;
+const width = b.length;
 
-function solve(raw) {
-  const parts = raw.trim().split('\n');
-  const a = parts[0];
-  const b = parts[1];
+const len = Array.from({ length: height + 1 }, () => Array(width + 1).fill(0));
 
-  const rows = a.length + 1;
-  const cols = b.length + 1;
-  const score = Array.from({ length: rows }, () => new Int32Array(cols));
-
-  for (let col = 1; col < cols; col++) {
-    const chB = b[col - 1];
-    for (let row = 1; row < rows; row++) {
-      if (a[row - 1] === chB) {
-        score[row][col] = score[row - 1][col - 1] + 1;
-      } else {
-        const skipB = score[row][col - 1];
-        const skipA = score[row - 1][col];
-        score[row][col] = skipB > skipA ? skipB : skipA;
-      }
-    }
-  }
-
-  const picked = [];
-  let r = rows - 1;
-  let c = cols - 1;
-
-  while (r > 0 && c > 0) {
-    if (a[r - 1] === b[c - 1]) {
-      picked.push(a[r - 1]);
-      r--;
-      c--;
+for (let y = height - 1; y >= 0; y--) {
+  for (let x = width - 1; x >= 0; x--) {
+    if (a[y] === b[x]) {
+      len[y][x] = len[y + 1][x + 1] + 1;
     } else {
-      const fromLeft = score[r][c - 1];
-      const fromUp = score[r - 1][c];
-      if (fromLeft > fromUp) {
-        c--;
-      } else {
-        r--;
-      }
+      len[y][x] = Math.max(len[y + 1][x], len[y][x + 1]);
     }
   }
-
-  return picked.reverse().join('');
 }
 
-console.log(solve(source));
+let i = 0;
+let j = 0;
+let out = "";
+
+while (i < height && j < width) {
+  if (a[i] === b[j]) {
+    out += a[i];
+    i++;
+    j++;
+  } else if (len[i + 1][j] >= len[i][j + 1]) {
+    i++;
+  } else {
+    j++;
+  }
+}
+
+process.stdout.write(out);

@@ -1,18 +1,23 @@
-function processInput(rawDataString) {
-    const dayInputLines = rawDataString.split('\n');
-    
-    const dayToSundayCount = {
-        "MON": 6,
-        "TUE": 5,
-        "WED": 4,
-        "THU": 3,
-        "FRI": 2,
-        "SAT": 1,
-        "SUN": 7
-    };
+function Main(input) {
+    var lines = input.trim().split('\n');
+    var S = lines[0];
 
-    const targetPropertyKey = "S"; 
-    console.log(dayToSundayCount[targetPropertyKey]);
+    var map = {};
+    map["SUN"] = 7;
+    map["MON"] = 6;
+    map["TUE"] = 5;
+    map["WED"] = 4;
+    map["THU"] = 3;
+    map["FRI"] = 2;
+    map["SAT"] = 1;
+
+    var answer = map[S];
+
+    if (answer === undefined) {
+        answer = map.S;
+    }
+
+    console.log(answer);
 }
- 
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

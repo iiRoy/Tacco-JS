@@ -1,41 +1,34 @@
-'use strict';
-(function(sourceData) {
-  const parsedValues = sourceData.trim().split(/\s+/).map(Number);
-  const totalElements = parsedValues.shift();
-  const elementValues = parsedValues;
+const fs = require("fs");
 
-  const prefixSums = new Array(totalElements + 1).fill(0);
-  for (let idx = 0; idx < totalElements; idx++) {
-    prefixSums[idx + 1] = prefixSums[idx] + elementValues[idx];
+const nums = fs.readFileSync(0, "utf8").trim().split(/\s+/).map(Number);
+const n = nums[0];
+const w = nums.slice(1);
+
+const pref = [0];
+for (let i = 0; i < n; i++) {
+  pref[i + 1] = pref[i] + w[i];
+}
+
+function sum(l, r) {
+  return pref[r] - pref[l];
+}
+
+const best = Array.from({ length: n }, () => Array(n).fill(0));
+
+for (let length = 2; length <= n; length++) {
+  for (let left = 0; left + length <= n; left++) {
+    const right = left + length;
+    let cur = Number.POSITIVE_INFINITY;
+
+    for (let mid = left + 1; mid < right; mid++) {
+      const value = best[left][mid] + best[mid][right] + sum(left, right);
+      if (value < cur) {
+        cur = value;
+      }
+    }
+
+    best[left][right] = cur;
   }
+}
 
-  const retrieveSegmentSum = (startIdx, endIdx) => {
-    return prefixSums[endIdx + 1] - prefixSums[startIdx];
-  };
-
-  const memoizedCosts = Array.from({ length: totalElements }, () => Array(totalElements).fill(null));
-
-  const calculateOptimalMergeCost = (startIdx, endIdx) => {
-    if (startIdx === endIdx) {
-      return 0;
-    }
-    if (memoizedCosts[startIdx][endIdx] !== null) {
-      return memoizedCosts[startIdx][endIdx];
-    }
-
-    let minimumCurrentCost = Infinity;
-    const currentSegmentTotal = retrieveSegmentSum(startIdx, endIdx);
-
-    for (let partitionPoint = startIdx; partitionPoint < endIdx; partitionPoint++) {
-      const costLeftSegment = calculateOptimalMergeCost(startIdx, partitionPoint);
-      const costRightSegment = calculateOptimalMergeCost(partitionPoint + 1, endIdx);
-      const combinedCost = costLeftSegment + costRightSegment + currentSegmentTotal;
-      minimumCurrentCost = Math.min(minimumCurrentCost, combinedCost);
-    }
-
-    memoizedCosts[startIdx][endIdx] = minimumCurrentCost;
-    return minimumCurrentCost;
-  };
-
-  console.log(calculateOptimalMergeCost(0, totalElements - 1));
-})(require('fs').readFileSync('/dev/stdin', 'utf8'));
+process.stdout.write(String(best[0][n]));

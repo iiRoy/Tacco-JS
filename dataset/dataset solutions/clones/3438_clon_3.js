@@ -1,19 +1,20 @@
-function formatNumberSequence(numbersArray) {
-  let outputString = "";
-  const arrayLength = numbersArray.length;
+function reverseNumber(number) {
+    const sign = number < 0 ? -1 : 1;
+    let remainingNumber = Math.abs(number);
+    const extractedDigits = [];
 
-  for (let i = 0; i < arrayLength; i++) {
-    outputString += numbersArray[i];
-    if (i < arrayLength - 1) {
-      outputString += " ";
+    if (remainingNumber === 0) {
+        return 0;
     }
-  }
-  return outputString;
+
+    while (remainingNumber > 0) {
+        const digit = remainingNumber % 10;
+
+        extractedDigits.push(digit);
+        remainingNumber = Math.floor(remainingNumber / 10);
+    }
+
+    const reversed = Number(extractedDigits.join(""));
+
+    return sign * reversed;
 }
-
-const firstLineValue = 4;
-const secondLineComponents = [2, 5, 2, 5];
-
-console.log(firstLineValue);
-const formattedSecondLine = formatNumberSequence(secondLineComponents);
-console.log(formattedSecondLine);

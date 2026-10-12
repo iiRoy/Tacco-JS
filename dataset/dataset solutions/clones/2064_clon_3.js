@@ -1,39 +1,17 @@
-var fs = require("fs");
+function countDigits(number) {
+    const absoluteNumber = Math.abs(number);
 
-const getAbsDifference = function(pairValues) {
-  return Math.abs(pairValues[0] - pairValues[1]);
-};
+    if (absoluteNumber < 10) {
+        return 1;
+    }
 
-const buildNextSequence = function(sequenceValues) {
-  const reducedValues = [];
+    let count = 1;
+    let decimalLimit = 10;
 
-  for (let position = 0; position < sequenceValues.length - 1; position++) {
-    const leftValue = sequenceValues[position];
-    const rightValue = sequenceValues[position + 1];
+    while (decimalLimit <= absoluteNumber) {
+        decimalLimit *= 10;
+        count += 1;
+    }
 
-    reducedValues.push(getAbsDifference([leftValue, rightValue]));
-  }
-
-  return reducedValues;
-};
-
-const runReductionProcess = function(rawInput) {
-  const inputRows = rawInput.split("\n");
-
-  const unusedLengthValue = inputRows[0];
-
-  let currentSequence = inputRows[1].split("").map(function(characterDigit) {
-    return characterDigit - 0;
-  });
-
-  let lastReduction = [];
-
-  while (lastReduction.length !== 1) {
-    lastReduction = buildNextSequence(currentSequence);
-    currentSequence = Array.from(lastReduction);
-  }
-
-  console.log(lastReduction[0]);
-};
-
-runReductionProcess(fs.readFileSync("/dev/stdin", "utf8"));
+    return count;
+}

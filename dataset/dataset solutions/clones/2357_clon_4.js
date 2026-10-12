@@ -1,117 +1,61 @@
-var inputReader = require('readline').createInterface({
-  input: process.stdin, output: process.stdout
-});
-var inputSource;
-var rawInputLines = [];
-inputReader.on('line', function(lineContent){rawInputLines.push(lineContent);});
-inputReader.on('close', function(){
-  inputSource = createInputProcessor(rawInputLines);
-  console.error('\n↑入力 ↓出力');
-  computeMinAbsoluteSum();
-});
+const fs = require("fs");
 
-const createDeepCopy = (item) => (item instanceof Set) ? new Set(Array.from(item)) : JSON.parse(JSON.stringify(item));
+const nums = fs.readFileSync(0, "utf8").trim().split(/\s+/).map(Number);
+let p = 0;
 
-const parseInputToken = (token, conversionType) => {
-  const conversionMap = {
-    1: (val) => parseInt(val),
-    2: (val) => val.split(' '),
-    4: (val) => val.split(' ').map(Number),
-    6: (val) => val.split(''),
-    7: (val) => val.split('').map(Number),
-    8: (val) => val.join(' '),
-    9: (val) => val.join('\n'),
-    0: (val) => val.join('')
-  };
-  try {
-    return conversionMap[conversionType] ? conversionMap[conversionType](token) : token;
-  } catch (e) {
-    return token;
+const h = nums[p++];
+const w = nums[p++];
+
+const a = Array.from({ length: h }, () => Array(w));
+
+for (let y = 0; y < h; y++) {
+  for (let x = 0; x < w; x++) {
+    a[y][x] = nums[p++];
   }
-};
+}
 
-const getInteger = () => parseInputToken(retrieveNext(), 1);
-const getStringArray = () => parseInputToken(retrieveNext(), 2);
-const getIntegerArray = () => parseInputToken(retrieveNext(), 4);
-const getCharacterArray = () => parseInputToken(retrieveNext(), 6);
+const diff = Array.from({ length: h }, () => Array(w));
 
-const retrieveNext = () => inputSource.pullNext();
-const checkAvailability = () => inputSource.hasMore();
+for (let y = 0; y < h; y++) {
+  for (let x = 0; x < w; x++) {
+    diff[y][x] = Math.abs(a[y][x] - nums[p++]);
+  }
+}
 
-const createInputProcessor = (lines) => {  
-  let currentLineIndex = 0;
-  const totalLines = lines.length;
-  return {
-    linesList : lines,
-    currentPosition : 0,
-    totalCount : lines.length,
-    hasMore : function(){return (this.currentPosition < this.totalCount);},
-    pullNext : function(){
-      if(this.hasMore()){
-        return this.linesList[this.currentPosition++];
-      }else{
-        throw 'EndOfInputException: No more input available';
+const states = Array.from({ length: h }, () =>
+  Array.from({ length: w }, () => new Set())
+);
+
+states[0][0].add(diff[0][0]);
+
+for (let y = 0; y < h; y++) {
+  for (let x = 0; x < w; x++) {
+    const current = states[y][x];
+
+    if (y + 1 < h) {
+      const value = diff[y + 1][x];
+      for (const s of current) {
+        states[y + 1][x].add(Math.abs(s + value));
+        states[y + 1][x].add(Math.abs(s - value));
       }
     }
-  };
-};
 
-const displayResult = (outputValue) => {console.log(outputValue);};
-const logDebug = (debugInfo) => {console.error('debug:' + require('util').inspect(debugInfo,false,null));};
-
-function computeMinAbsoluteSum(){
-  const dimensions = getIntegerArray();
-  const gridHeight = dimensions[0];
-  const gridWidth = dimensions[1];
-
-  const firstMatrix = Array.from({ length: gridHeight }, () => getIntegerArray());
-  const secondMatrix = Array.from({ length: gridHeight }, () => getIntegerArray());
-
-  const differenceMatrix = Array.from({ length: gridHeight }, (_, r) =>
-    Array.from({ length: gridWidth }, (_, c) =>
-      Math.abs(firstMatrix[r][c] - secondMatrix[r][c])
-    )
-  );
-
-  const maximumPossibleSum = 13000;
-  
-  const dpState = Array.from({ length: gridHeight }, () =>
-    Array.from({ length: gridWidth }, () => new Set())
-  );
-  
-  dpState[0][0].add(differenceMatrix[0][0]);
-
-  for (let r = 0; r < gridHeight; r++) {
-    for (let c = 0; c < gridWidth; c++) {
-      if (r === 0 && c === 0) {
-        continue;
+    if (x + 1 < w) {
+      const value = diff[y][x + 1];
+      for (const s of current) {
+        states[y][x + 1].add(Math.abs(s + value));
+        states[y][x + 1].add(Math.abs(s - value));
       }
-
-      const currentCellValue = differenceMatrix[r][c];
-      const reachableSumsForCurrentCell = new Set();
-
-      if (r > 0) { // Can come from the cell above
-        for (const previousSum of dpState[r - 1][c]) {
-          reachableSumsForCurrentCell.add(Math.abs(previousSum + currentCellValue));
-          reachableSumsForCurrentCell.add(Math.abs(previousSum - currentCellValue));
-        }
-      }
-
-      if (c > 0) { // Can come from the cell to the left
-        for (const previousSum of dpState[r][c - 1]) {
-          reachableSumsForCurrentCell.add(Math.abs(previousSum + currentCellValue));
-          reachableSumsForCurrentCell.add(Math.abs(previousSum - currentCellValue));
-        }
-      }
-      dpState[r][c] = reachableSumsForCurrentCell;
-    }
-  }
-
-  const finalCellSums = dpState[gridHeight - 1][gridWidth - 1];
-  for (let s = 0; s < maximumPossibleSum; s++) {
-    if (finalCellSums.has(s)) {
-      displayResult(s);
-      return;
     }
   }
 }
+
+let answer = Infinity;
+
+for (const value of states[h - 1][w - 1]) {
+  if (value < answer) {
+    answer = value;
+  }
+}
+
+console.log(answer);

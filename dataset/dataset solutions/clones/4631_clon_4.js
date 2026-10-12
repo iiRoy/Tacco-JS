@@ -1,32 +1,21 @@
-'use strict'
-const fileSystem = require("fs");
+const fs = require("fs");
 
-let sourceData = fileSystem.readFileSync("/dev/stdin", "utf8");
-let lines = sourceData.split('\n');
+const nums = fs.readFileSync(0, "utf8").trim().split(/\s+/).map(Number);
+const n = nums[0];
+const a = nums.slice(1, n + 1);
 
-let numericSeries = lines[1].split(' ').map(val => parseInt(val));
+let blocks = 1;
+let trend = 0;
 
-const finalState = numericSeries.slice(1).reduce((stateAccumulator, presentValue) => {
-    const momentaryDirection = Math.sign(stateAccumulator.previousValue - presentValue);
-    let updatedCount = stateAccumulator.segmentCounter;
-    let nextDirection = stateAccumulator.currentTrend;
+for (let i = 0; i + 1 < a.length; i++) {
+  const d = a[i] === a[i + 1] ? 0 : (a[i] > a[i + 1] ? 1 : -1);
 
-    if (momentaryDirection * stateAccumulator.currentTrend < 0) {
-        updatedCount++;
-        nextDirection = 0;
-    } else if (stateAccumulator.currentTrend === 0) {
-        nextDirection = momentaryDirection;
-    }
+  if (trend !== 0 && d !== 0 && trend !== d) {
+    blocks++;
+    trend = 0;
+  } else if (trend === 0) {
+    trend = d;
+  }
+}
 
-    return {
-        segmentCounter: updatedCount,
-        currentTrend: nextDirection,
-        previousValue: presentValue
-    };
-}, {
-    segmentCounter: 1,
-    currentTrend: 0,
-    previousValue: numericSeries[0]
-});
-
-console.log(finalState.segmentCounter);
+process.stdout.write(String(blocks));

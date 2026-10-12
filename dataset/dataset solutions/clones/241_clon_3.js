@@ -1,40 +1,57 @@
-const readline = require('readline');
-const inputReader = readline.createInterface({
-    input: process.stdin,
-    terminal: false
-});
+const fs = require('fs');
 
-let outputCollection = [];
+function readMissionData() {
+    const tokens = fs
+        .readFileSync(0, 'utf8')
+        .trim()
+        .split(/\s+/)
+        .map(Number);
 
-function checkSumThreshold(currentPairSum, sequenceValue) {
-    const comparisonThreshold = 20;
-    const totalValue = currentPairSum + sequenceValue;
-    return totalValue <= comparisonThreshold;
+    return {
+        target: tokens.shift(),
+        signals: tokens,
+    };
 }
 
-inputReader.on('line', (currentLine) => {
-    const parsedValues = currentLine.split(' ');
+function searchPartner(signals, start, requiredValue) {
+    let cursor = start;
 
-    const valA = parseInt(parsedValues[0], 10);
-    const valB = parseInt(parsedValues[1], 10);
-    const valC = parseInt(parsedValues[2], 10);
+    while (cursor < signals.length) {
+        if (signals[cursor] === requiredValue) {
+            return cursor;
+        }
 
-    const intermediateSum = valA + valB;
-
-    const sequenceMax = 10;
-    const numberSequence = Array.from({ length: sequenceMax }, (_, index) => index + 1);
-
-    const relevantSequenceElement = numberSequence[3];
-
-    if (checkSumThreshold(intermediateSum, relevantSequenceElement)) {
-        outputCollection.push("YES");
-    } else {
-        outputCollection.push("NO");
+        cursor++;
     }
-});
 
-inputReader.on('close', () => {
-    for (const resultItem of outputCollection) {
-        console.log(resultItem);
+    return -1;
+}
+
+function locateSignalPair(signals, target) {
+    for (let i = 0; i < signals.length; i++) {
+        const missingEnergy = target - signals[i];
+        const partnerIndex = searchPartner(
+            signals,
+            i + 1,
+            missingEnergy
+        );
+
+        if (partnerIndex !== -1) {
+            return [i + 1, partnerIndex + 1];
+        }
     }
-});
+
+    return null;
+}
+
+const mission = readMissionData();
+const coordinates = locateSignalPair(
+    mission.signals,
+    mission.target
+);
+
+if (coordinates === null) {
+    console.log('SIN COINCIDENCIA');
+} else {
+    console.log(`${coordinates[0]} ${coordinates[1]}`);
+}

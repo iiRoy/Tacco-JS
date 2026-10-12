@@ -1,19 +1,51 @@
-function processInputData(sourceContent) {
-  const characterAtSecondPosition = sourceContent.at(1);
+function Main(input) {
+  const source = input.trim();
+  const completeSource = source + "\n";
 
-  let finalCharacter;
-  if (characterAtSecondPosition === undefined) {
-    throw new TypeError("Cannot read properties of undefined (reading 'slice')");
-  } else {
-    finalCharacter = characterAtSecondPosition.slice(' ');
+  let lineNumber = 0;
+  let currentToken = "";
+  let foundY = false;
+  let position = 0;
+
+  while (position < completeSource.length) {
+    const character = completeSource[position];
+
+    const isHorizontalSeparator =
+      character === " " ||
+      character === "\t" ||
+      character === "\r";
+
+    if (
+      isHorizontalSeparator ||
+      character === "\n"
+    ) {
+      if (
+        lineNumber === 1 &&
+        currentToken === "Y"
+      ) {
+        foundY = true;
+      }
+
+      currentToken = "";
+
+      if (character === "\n") {
+        if (lineNumber === 1) {
+          break;
+        }
+
+        lineNumber += 1;
+      }
+    } else if (lineNumber === 1) {
+      currentToken += character;
+    }
+
+    position += 1;
   }
 
-  const outcomeMapping = new Map([
-    ['Y', 'Four']
-  ]);
-
-  const resultString = outcomeMapping.get(finalCharacter) || 'Three';
-  console.log(resultString);
+  console.log(foundY ? "Four" : "Three");
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+const fs = require("fs");
+const source = fs.readFileSync("/dev/stdin", "utf8");
+
+Main(source);

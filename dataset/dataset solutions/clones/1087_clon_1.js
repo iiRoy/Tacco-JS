@@ -16,14 +16,14 @@ process.stdin.resume();
       if (te.length == 3 || te.length == 1) {
          result = [3, 3, 3];
       } else {
-            if (te.indexOf("1") < 0) result = [0, 1, 2];
-            else if (te.indexOf("2") < 0) result = [2, 0, 1];
-            else if (te.indexOf("3") < 0) result = [1, 2, 0];
+            if (te.indexOf("1") < 0) result = [0, 1, 2]
+            else if (te.indexOf("2") < 0) result = [2, 0, 1]
+            else if (te.indexOf("3") < 0) result = [1, 2, 0]
             } //Bulbasour
 
         unit.forEach(function(v) {
          console.log(result[v - 1]);
-      }); //Charmander
+      }) //Charmander
    }
 });
 

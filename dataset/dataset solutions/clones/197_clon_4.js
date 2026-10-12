@@ -1,27 +1,42 @@
-const lineBreak = '\n';
+function identifyPartyStar(connectionTable) {
+    const size = connectionTable.length;
 
-const sourceTokens = require("fs").readFileSync("/dev/stdin", "utf8").split(/\s|,/);
+    if (size === 0) {
+        return -1;
+    }
 
-const finalTally = sourceTokens.reduce((accumulator, currentToken, currentIndex) => {
-    if (currentIndex % 2 !== 0) {
-        console.log(currentIndex, currentToken);
+    let survivor = 0;
 
-        switch (currentToken) {
-            case 'A':
-                accumulator.alphaCount++;
-                break;
-            case 'B':
-                accumulator.bravoCount++;
-                break;
-            case 'O':
-                accumulator.charlieCount++;
-                break;
-            default:
-                accumulator.deltaCount++;
-                break;
+    for (let challenger = 1; challenger < size; challenger++) {
+        if (connectionTable[survivor][challenger]) {
+            survivor = challenger;
         }
     }
-    return accumulator;
-}, { alphaCount: 0, bravoCount: 0, charlieCount: 0, deltaCount: 0 });
 
-console.log(finalTally.alphaCount + lineBreak + finalTally.bravoCount + lineBreak + finalTally.deltaCount + lineBreak + finalTally.charlieCount);
+    for (let member = 0; member < size; member++) {
+        if (member === survivor) {
+            continue;
+        }
+
+        const starKnowsMember =
+            connectionTable[survivor][member];
+
+        const memberKnowsStar =
+            connectionTable[member][survivor];
+
+        if (starKnowsMember || !memberKnowsStar) {
+            return -1;
+        }
+    }
+
+    return survivor;
+}
+
+const connections = [
+    [false, true,  true,  false],
+    [false, false, true,  false],
+    [false, false, false, false],
+    [true,  false, true,  false]
+];
+
+console.log(identifyPartyStar(connections)); // 2

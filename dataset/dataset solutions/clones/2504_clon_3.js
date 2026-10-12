@@ -1,159 +1,216 @@
-const INF = 9999999999;
-
-class TokenQueue {
-  constructor(tokens = []) {
-    this.items = tokens;
-    this.index = 0;
-    this.size = tokens.length;
+module.exports = (function (mods) {
+  var cache = {};
+  function req(id) {
+    if (cache[id]) return cache[id].exports;
+    var mod = (cache[id] = { i: id, l: !1, exports: {} });
+    mods[id].call(mod.exports, mod, mod.exports, req);
+    mod.l = !0;
+    return mod.exports;
   }
-
-  deq() {
-    const value = this.items[this.index];
-    this.index += 1;
-    this.size -= 1;
-    return value;
-  }
-
-  enq(value) {
-    this.items.push(value);
-    this.size += 1;
-  }
-
-  clear() {
-    this.items = [];
-    this.index = 0;
-    this.size = 0;
-  }
-}
-
-class InputReader {
-  constructor(rawInput) {
-    const tokens = rawInput.trim().split(/\s+/g);
-    this.inp = new TokenQueue(tokens);
-  }
-
-  inr() {
-    return this.inp.deq();
-  }
-
-  in() {
-    return parseInt(this.inp.deq(), 10);
-  }
-
-  fin() {
-    this.inp.clear();
-  }
-}
-
-function cloneMatrix(matrix) {
-  const copied = [];
-
-  for (let rowIndex = 0; rowIndex < matrix.length; rowIndex++) {
-    copied.push(matrix[rowIndex].concat());
-  }
-
-  return copied;
-}
-
-function createOriginalStyleMatrix(size) {
-  const matrix = new Array(size);
-
-  for (let rowIndex = 0; rowIndex < size; rowIndex++) {
-    matrix[rowIndex] = new Array(size).fill(INF);
-  }
-
-  return matrix;
-}
-
-function floydWarshallLikeOriginal(matrix) {
-  const nodeCount = matrix.length;
-  const distances = cloneMatrix(matrix);
-
-  for (let middle = 0; middle < nodeCount; middle++) {
-    for (let from = 0; from < nodeCount; from++) {
-      for (let to = 0; to < nodeCount; to++) {
-        const candidate = distances[from][middle] + distances[middle][to];
-
-        if (distances[from][to] > candidate) {
-          distances[from][to] = candidate;
+  return (
+    (req.m = mods),
+    (req.c = cache),
+    (req.d = function (obj, key, get) {
+      if (!req.o(obj, key)) {
+        Object.defineProperty(obj, key, { enumerable: !0, get: get });
+      }
+    }),
+    (req.r = function (obj) {
+      if ("undefined" != typeof Symbol && Symbol.toStringTag) {
+        Object.defineProperty(obj, Symbol.toStringTag, { value: "Module" });
+      }
+      Object.defineProperty(obj, "__esModule", { value: !0 });
+    }),
+    (req.t = function (val, mode) {
+      if (1 & mode) val = req(val);
+      if (8 & mode) return val;
+      if (4 & mode && "object" == typeof val && val && val.__esModule) return val;
+      var ns = Object.create(null);
+      req.r(ns);
+      Object.defineProperty(ns, "default", { enumerable: !0, value: val });
+      if (2 & mode && "string" != typeof val) {
+        for (var k in val) {
+          req.d(
+            ns,
+            k,
+            function (x) {
+              return val[x];
+            }.bind(null, k),
+          );
         }
       }
-    }
-  }
-
-  return distances;
-}
-
-function readInitialGraph(reader, nodeCount, edgeCount) {
-  const graph = createOriginalStyleMatrix(nodeCount);
-
-  for (let edgeIndex = 0; edgeIndex < edgeCount; edgeIndex++) {
-    const fromNode = reader.in();
-    const toNode = reader.in();
-    const cost = reader.in();
-
-    graph[fromNode - 1][toNode - 1] = cost;
-    graph[toNode - 1][fromNode - 1] = cost;
-  }
-
-  return graph;
-}
-
-function overwriteReachablePairsOnOriginalMatrix(graph, shortestDistances, limitCost) {
-  const nodeCount = graph.length;
-
-  for (let from = 0; from < nodeCount; from++) {
-    for (let to = 0; to < nodeCount; to++) {
-      if (shortestDistances[from][to] <= limitCost) {
-        graph[from][to] = 1;
-        graph[to][from] = 1;
-      }
-    }
-  }
-
-  return graph;
-}
-
-function answerQueries(reader, finalDistances) {
-  const queryCount = reader.in();
-
-  for (let queryIndex = 0; queryIndex < queryCount; queryIndex++) {
-    const startNode = reader.in();
-    const endNode = reader.in();
-
-    const distance = finalDistances[startNode - 1][endNode - 1];
-
-    if (distance == INF) {
-      console.log(-1);
-    } else {
-      console.log(distance - 1);
-    }
-  }
-}
-
-function solve(reader) {
-  const nodeCount = reader.in();
-  const edgeCount = reader.in();
-  const limitCost = reader.in();
-
-  const originalMatrix = readInitialGraph(reader, nodeCount, edgeCount);
-
-  const firstShortestDistances = floydWarshallLikeOriginal(originalMatrix);
-
-  const reusedMatrix = overwriteReachablePairsOnOriginalMatrix(
-    originalMatrix,
-    firstShortestDistances,
-    limitCost
+      return ns;
+    }),
+    (req.n = function (val) {
+      var get =
+        val && val.__esModule
+          ? function () {
+              return val.default;
+            }
+          : function () {
+              return val;
+            };
+      req.d(get, "a", get);
+      return get;
+    }),
+    (req.o = function (obj, key) {
+      return Object.prototype.hasOwnProperty.call(obj, key);
+    }),
+    (req.p = ""),
+    req((req.s = 0))
   );
+})([
+  function (module, exports, req) {
+    "use strict";
+    var fs = req(1);
+    var runner = req(2);
+    var text = fs.readFileSync("/dev/stdin", "utf8");
+    runner(text);
+  },
+  function (module, exports) {
+    module.exports = require("fs");
+  },
+  function (module, exports, req) {
+    "use strict";
+    var Scanner = req(3);
+    var solve = req(5);
+    module.exports = function (src) {
+      var input = new Scanner(src);
+      solve(input);
+      input.fin();
+    };
+  },
+  function (module, exports, req) {
+    "use strict";
+    var Queue = req(4);
+    module.exports = class {
+      constructor(src) {
+        var arr = src.trim().split(/\s+/g);
+        this.inp = new Queue(arr);
+      }
+      inr() {
+        return this.inp.deq();
+      }
+      in() {
+        var v = this.inp.deq();
+        return parseInt(v, 10);
+      }
+      fin() {
+        this.inp.clear();
+      }
+    };
+  },
+  function (module, exports, req) {
+    "use strict";
+    module.exports = class {
+      constructor(list) {
+        list = list || [];
+        this.items = list;
+        this.ind = 0;
+        this.size = list.length;
+      }
+      enq(v) {
+        this.items[this.items.length] = v;
+        this.size++;
+      }
+      deq() {
+        if (this.ind >= this.items.length) return void 0;
+        var v = this.items[this.ind];
+        this.ind++;
+        this.size--;
+        return v;
+      }
+      clear() {
+        this.items.length = 0;
+        this.ind = 0;
+        this.size = 0;
+      }
+    };
+  },
+  function (module, exports, req) {
+    "use strict";
+    var warshall = req(6);
+    module.exports = function (sc) {
+      var n = sc.in(),
+        m = sc.in(),
+        limit = sc.in(),
+        INF = 9999999999,
+        dist = new Array(n),
+        i,
+        j;
 
-  const secondShortestDistances = floydWarshallLikeOriginal(reusedMatrix);
+      for (i = 0; i < n; i++) {
+        dist[i] = new Array(n);
+        for (j = 0; j < n; j++) {
+          dist[i][j] = i === j ? 0 : INF;
+        }
+      }
 
-  answerQueries(reader, secondShortestDistances);
-}
+      for (i = 0; i < m; i++) {
+        var a = sc.in() - 1,
+          b = sc.in() - 1,
+          c = sc.in();
+        if (c < dist[a][b]) {
+          dist[a][b] = c;
+          dist[b][a] = c;
+        }
+      }
 
-function main(rawInput) {
-  const reader = new InputReader(rawInput);
-  solve(reader);
-}
+      var shortest = warshall(dist);
 
-main(require("fs").readFileSync("/dev/stdin", "utf8"));
+      for (i = 0; i < n; i++) {
+        for (j = 0; j < n; j++) {
+          if (i === j) {
+            dist[i][j] = 0;
+          } else if (shortest[i][j] <= limit) {
+            dist[i][j] = 1;
+          } else {
+            dist[i][j] = INF;
+          }
+        }
+      }
+
+      var fuel = warshall(dist);
+      var q = sc.in();
+      var out = [];
+
+      for (i = 0; i < q; i++) {
+        var s = sc.in() - 1,
+          t = sc.in() - 1,
+          ans = fuel[s][t];
+        if (ans >= INF) {
+          out.push("-1");
+        } else {
+          out.push(String(ans - 1));
+        }
+      }
+
+      console.log(out.join("\n"));
+    };
+  },
+  function (module, exports, req) {
+    "use strict";
+    module.exports = function (mat) {
+      var n = mat.length;
+      var res = new Array(n);
+
+      for (var y = 0; y < n; y++) {
+        res[y] = mat[y].slice();
+      }
+
+      for (var k = 0; k < n; k++) {
+        for (var i = 0; i < n; i++) {
+          if (res[i][k] >= 9999999999) continue;
+          for (var j = 0; j < n; j++) {
+            var nd = res[i][k] + res[k][j];
+            if (res[i][j] > nd) {
+              res[i][j] = nd;
+            }
+          }
+        }
+      }
+
+      return res;
+    };
+  },
+]);

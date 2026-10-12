@@ -1,22 +1,27 @@
-console.log((inputData => {
-    const processedString = inputData.trim();
-    const stringLength = processedString.length;
+const fs = require("fs");
 
-    const leftPropagatedValues = processedString.split('').reduce((valueList, currentChar) => {
-        const previousValue = valueList[valueList.length - 1];
-        valueList.push(currentChar === '<' ? previousValue + 1 : 0);
-        return valueList;
-    }, [0]);
+const s = fs.readFileSync(0, "utf8").trim();
+let total = 0;
+let pos = 0;
 
-    const rightPropagatedValues = Array(stringLength + 1).fill(0);
-    for (let i = stringLength - 1; i >= 0; i--) {
-        const charAtCurrentPosition = processedString[i];
-        rightPropagatedValues[i] = charAtCurrentPosition === '>' ? rightPropagatedValues[i + 1] + 1 : 0;
-    }
+function tri(n) {
+  return n * (n + 1) / 2;
+}
 
-    const finalValues = leftPropagatedValues.map((leftScore, index) => Math.max(leftScore, rightPropagatedValues[index]));
+while (pos < s.length) {
+  let up = 0;
+  while (s[pos] === "<") {
+    up++;
+    pos++;
+  }
 
-    const overallSum = finalValues.reduce((accumulator, currentScore) => accumulator + currentScore, 0);
+  let down = 0;
+  while (s[pos] === ">") {
+    down++;
+    pos++;
+  }
 
-    return `${overallSum}`;
-})(require('fs').readFileSync('/dev/stdin', 'utf8')));
+  total += tri(up) + tri(down) - Math.min(up, down);
+}
+
+process.stdout.write(String(total));

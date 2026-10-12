@@ -1,59 +1,71 @@
-const inputReader = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
+const fs = require('fs');
 
-let storedLines = [];
-inputReader.on('line', (currentLine) => {
-    storedLines.push(currentLine);
-});
+const transmission = fs
+    .readFileSync(0, 'utf8')
+    .trim()
+    .split(/\s+/)
+    .map(Number);
 
-inputReader.on('close', () => {
-    processAllEntries(storedLines);
-});
+const totalIncantations = transmission.shift();
+const totalRelations = transmission.shift();
 
-function processAllEntries(allInputLines) {
-    let currentLineIndex = 0;
-    const totalDaySeconds = 24 * 60 * 60;
+const dependents = Array.from(
+    { length: totalIncantations + 1 },
+    () => []
+);
 
-    const convertTimeToSeconds = (timeString) => {
-        const [hourStr, minuteStr, secondStr] = timeString.split(':');
-        return parseInt(hourStr) * 3600 + parseInt(minuteStr) * 60 + parseInt(secondStr);
-    };
+const pendingRequirements =
+    new Array(totalIncantations + 1).fill(0);
 
-    while (true) {
-        const numberOfActivities = parseInt(allInputLines[currentLineIndex++]);
-        if (numberOfActivities === 0) {
-            break;
-        }
+for (
+    let relation = 0;
+    relation < totalRelations;
+    relation++
+) {
+    const incantation = transmission.shift();
+    const prerequisite = transmission.shift();
 
-        let activityEvents = [];
+    dependents[prerequisite].push(incantation);
+    pendingRequirements[incantation]++;
+}
 
-        for (let activityIndex = 0; activityIndex < numberOfActivities; activityIndex++) {
-            const [startString, endString] = allInputLines[currentLineIndex++].split(' ');
-            const startSecond = convertTimeToSeconds(startString);
-            const endSecond = convertTimeToSeconds(endString);
+const availableIncantations = [];
 
-            activityEvents.push({ moment: startSecond, type: 1 });
-            activityEvents.push({ moment: endSecond, type: -1 });
-        }
-
-        activityEvents.sort((eventA, eventB) => {
-            if (eventA.moment !== eventB.moment) {
-                return eventA.moment - eventB.moment;
-            }
-            return eventB.type - eventA.type;
-        });
-
-        let currentConcurrentCount = 0;
-        let maximumConcurrentCount = 0;
-
-        for (const eventItem of activityEvents) {
-            currentConcurrentCount += eventItem.type;
-            if (currentConcurrentCount > maximumConcurrentCount) {
-                maximumConcurrentCount = currentConcurrentCount;
-            }
-        }
-        console.log(maximumConcurrentCount);
+for (
+    let incantation = 1;
+    incantation <= totalIncantations;
+    incantation++
+) {
+    if (pendingRequirements[incantation] === 0) {
+        availableIncantations.push(incantation);
     }
+}
+
+let queuePosition = 0;
+let resolvedCount = 0;
+
+while (queuePosition < availableIncantations.length) {
+    const resolvedSpell =
+        availableIncantations[queuePosition++];
+
+    resolvedCount++;
+
+    for (
+        const dependentSpell of dependents[resolvedSpell]
+    ) {
+        pendingRequirements[dependentSpell]--;
+
+        if (pendingRequirements[dependentSpell] === 0) {
+            availableIncantations.push(dependentSpell);
+        }
+    }
+}
+
+const paradoxExists =
+    resolvedCount !== totalIncantations;
+
+if (paradoxExists) {
+    console.log('PARADOJA DETECTADA');
+} else {
+    console.log('SISTEMA ARCANO ESTABLE');
 }

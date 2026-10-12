@@ -1,22 +1,38 @@
-const parseNumericValue = (strValue) => {
-  return parseInt(strValue, 10);
-};
+function isValidFactorialInput(value) {
+  return (
+    Number.isInteger(value) &&
+    value >= 0
+  );
+}
 
-const computeResult = (numOne, numTwo) => {
-  const squaredNumOne = numOne * numOne;
-  return squaredNumOne - numTwo;
-};
+function multiplyDescending(currentValue) {
+  if (currentValue <= 1) {
+    return 1n;
+  }
 
-const processInputData = (inputBuffer) => {
-  const trimmedContent = inputBuffer.trim();
-  const lineSegments = trimmedContent.split('\n');
+  const currentFactor = BigInt(currentValue);
+  const remainingProduct = multiplyDescending(
+    currentValue - 1
+  );
 
-  const valueN = parseNumericValue(lineSegments[0]);
-  const valueA = parseNumericValue(lineSegments[1]);
+  return currentFactor * remainingProduct;
+}
 
-  const finalOutput = computeResult(valueN, valueA);
+function obtainFactorial(value) {
+  if (!isValidFactorialInput(value)) {
+    return null;
+  }
 
-  console.log(finalOutput);
-};
+  return multiplyDescending(value);
+}
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+const fs = require("fs");
+const source = fs.readFileSync("/dev/stdin", "utf8");
+const requestedValue = Number(source.trim());
+const factorialValue = obtainFactorial(requestedValue);
+
+if (factorialValue === null) {
+  console.log("INVALID");
+} else {
+  console.log(factorialValue.toString());
+}

@@ -1,18 +1,14 @@
-const fileData = require("fs").readFileSync("/dev/stdin", "utf8");
+const data = require("fs").readFileSync(0, "utf8").trim().split(/\n/);
 
-const { sumVal, sumQty, numEntries } = fileData.trim().split('\n').reduce((acc, currentEntry) => {
-    const parts = currentEntry.split(',');
-    const itemPrice = Number(parts[0]);
-    const itemQuantity = Number(parts[1]);
+let weightedTotal = 0;
+let amountTotal = 0;
 
-    acc.sumVal += itemPrice * itemQuantity;
-    acc.sumQty += itemQuantity;
-    acc.numEntries++;
+for (const row of data) {
+  const parts = row.split(",");
+  weightedTotal += Number(parts[0]) * Number(parts[1]);
+  amountTotal += Number(parts[1]);
+}
 
-    return acc;
-}, { sumVal: 0, sumQty: 0, numEntries: 0 });
+const roundedAverage = Math.trunc(amountTotal / data.length + 0.5);
 
-const averageResult = sumQty / numEntries;
-const roundedAverage = ~~ (averageResult + 0.5);
-
-console.log(`${sumVal}\n${roundedAverage}`);
+process.stdout.write(String(weightedTotal) + "\n" + String(roundedAverage));

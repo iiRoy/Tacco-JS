@@ -1,18 +1,14 @@
-'use strict';
+function transformDecimalIntoBits(decimalValue) {
+    if (decimalValue === 0) {
+        return "0";
+    }
 
-/**
- * Primary function to handle incoming data.
- * @param {string} rawData - The raw input string.
- */
-function processInput(rawData) {
-    // This function currently does nothing with the input.
-    // Its structure is preserved as per Type II cloning rules.
+    let bitSequence = "";
+
+    while (decimalValue > 0) {
+        bitSequence = (decimalValue % 2) + bitSequence;
+        decimalValue = Math.floor(decimalValue / 2);
+    }
+
+    return bitSequence;
 }
-
-// A numerical variable, initialized to zero.
-// This variable's purpose is not defined by the original code's logic.
-let totalOccurrences = 0;
-
-// Execute the main processing function.
-// It reads content from standard input using Node.js file system module.
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,129 +1,148 @@
-const createInputReader = () => {
-  const fileContentLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
-  let currentIndex = 0;
-  const totalLines = fileContentLines.length;
+var obj = init();
+Main();
 
-  const hasMoreLines = () => currentIndex < totalLines;
-  const getNextLine = () => {
-    if (!hasMoreLines()) {
-      throw new Error("ArrayIndexOutOfBoundsException: No more lines to read.");
+function nextInt(){return myconv(next(),1);}
+function nextStrArray(){return myconv(next(),2);}
+function nextIntArray(){return myconv(next(),4);}
+function nextCharArray(){return myconv(next(),6);}
+function next(){return obj.next();}
+function hasNext(){return obj.hasNext();}
+
+function myin(){
+  return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+}
+
+function init(){
+  var inputFile = myin();
+  var returnObj = {
+    "list" : inputFile,
+    "index" : 0,
+    "max" : inputFile.length,
+    "hasNext" : function(){
+      return this.index < this.max;
+    },
+    "next" : function(){
+      if(!this.hasNext()){
+        throw "ArrayIndexOutOfBoundsException";
+      }
+      var returnInput = this.list[this.index++];
+      return returnInput;
     }
-    return fileContentLines[currentIndex++];
   };
+  return returnObj;
+}
 
-  return { hasMoreLines, getNextLine };
-};
+function myout(t){console.log(t);}
+function myerr(t){console.error(t);}
 
-const inputReader = createInputReader();
-
-const dataConverters = {
-  1: (val) => parseInt(val, 10),
-  2: (val) => val.split(" "),
-  4: (val) => val.split(" ").map(Number),
-  6: (val) => val.split(""),
-  7: (val) => val.split("").map(Number),
-  8: (arr) => arr.join(" "),
-  9: (arr) => arr.join("\n"),
-  0: (arr) => arr.join(""),
-};
-
-const processInputData = (inputVal, conversionType) => {
-  try {
-    const converter = dataConverters[conversionType];
-    return converter ? converter(inputVal) : inputVal;
-  } catch (e) {
-    return inputVal;
-  }
-};
-
-const readInt = () => processInputData(inputReader.getNextLine(), 1);
-const readStrArr = () => processInputData(inputReader.getNextLine(), 2);
-const readIntArr = () => processInputData(inputReader.getNextLine(), 4);
-const readCharArr = () => processInputData(inputReader.getNextLine(), 6);
-
-const printOutput = (data) => console.log(data);
-const printError = (data) => console.error(data);
-
-const create3DArray = (dim1, dim2, dim3, initialValue = undefined) => {
-  const arr = new Array(dim1);
-  for (let i = 0; i < dim1; i++) {
-    arr[i] = new Array(dim2);
-    for (let j = 0; j < dim2; j++) {
-      arr[i][j] = new Array(dim3).fill(initialValue);
+function myconv(i,no){
+  try{
+    switch(no){
+      case 1:
+        return parseInt(i,10);
+      case 2:
+        return i.split(" ");
+      case 4:
+        return i.split(" ").map(function(a){return Number(a);});
+      case 6:
+        return i.split("");
+      case 7:
+        return i.split("").map(function(a){return Number(a);});
+      case 8:
+        return i.join(" ");
+      case 9:
+        return i.join("\n");
+      case 0:
+        return i.join("");
+      default:
+        return i;
     }
+  }catch(e){
+    return i;
   }
-  return arr;
-};
+}
 
-const solveProblem = () => {
-  const [numItems, targetA, targetB] = readIntArr();
+function Main(){
+  var one = nextIntArray();
+  var N = one[0];
+  var MA = one[1];
+  var MB = one[2];
+  var list = [];
 
-  const itemDataList = [];
-  for (let i = 0; i < numItems; i++) {
-    itemDataList.push(readIntArr());
+  for(var i = 0; i < N; i++){
+    list.push(nextIntArray());
   }
 
-  const maxDimensionVal = 151;
-  const memoTable = create3DArray(numItems + 1, maxDimensionVal, maxDimensionVal);
-  memoTable[0][0][0] = 0;
+  var maxValue = 151;
+  var dp = new Array(N + 1);
 
-  for (let i = 1; i <= numItems; i++) {
-    const currentItem = itemDataList[i - 1];
-    const [itemA, itemB, itemCost] = currentItem;
-
-    for (let j = 0; j < maxDimensionVal; j++) {
-      for (let k = 0; k < maxDimensionVal; k++) {
-        if (memoTable[i - 1][j][k] !== undefined) {
-          memoTable[i][j][k] = memoTable[i - 1][j][k];
-        }
-      }
-    }
-
-    for (let j = 0; j < maxDimensionVal; j++) {
-      for (let k = 0; k < maxDimensionVal; k++) {
-        const prevCost = memoTable[i - 1][j][k];
-        if (prevCost !== undefined) {
-          const newA = j + itemA;
-          const newB = k + itemB;
-
-          if (newA >= maxDimensionVal || newB >= maxDimensionVal) {
-            continue;
-          }
-
-          const potentialNewCost = prevCost + itemCost;
-          const existingCost = memoTable[i][newA][newB];
-
-          if (existingCost === undefined) {
-            memoTable[i][newA][newB] = potentialNewCost;
-          } else {
-            memoTable[i][newA][newB] = Math.min(potentialNewCost, existingCost);
-          }
-        }
+  for(var i = 0; i <= N; i++){
+    dp[i] = new Array(maxValue);
+    for(var j = 0; j < maxValue; j++){
+      dp[i][j] = new Array(maxValue);
+      for(var k = 0; k < maxValue; k++){
+        dp[i][j][k] = null;
       }
     }
   }
 
-  let minCostResult = Infinity;
+  dp[0][0][0] = 0;
 
-  for (let ratioMultiplier = 1; ; ratioMultiplier++) {
-    const currentTargetA = targetA * ratioMultiplier;
-    const currentTargetB = targetB * ratioMultiplier;
+  for(var i = 1; i <= N; i++){
+    var item = list[i - 1];
 
-    if (currentTargetA >= maxDimensionVal || currentTargetB >= maxDimensionVal) {
-      break;
+    for(var j = 0; j < maxValue; j++){
+      for(var k = 0; k < maxValue; k++){
+        if(dp[i - 1][j][k] != null){
+          if(dp[i][j][k] == null){
+            dp[i][j][k] = dp[i - 1][j][k];
+          }else{
+            dp[i][j][k] = Math.min(dp[i][j][k], dp[i - 1][j][k]);
+          }
+        }
+      }
     }
 
-    const finalCost = memoTable[numItems][currentTargetA][currentTargetB];
-    if (finalCost !== undefined) {
-      minCostResult = Math.min(minCostResult, finalCost);
+    for(var j = 0; j < maxValue; j++){
+      for(var k = 0; k < maxValue; k++){
+        var before = dp[i - 1][j][k];
+
+        if(before != null){
+          var nextA = j + item[0];
+          var nextB = k + item[1];
+
+          if(nextA < maxValue && nextB < maxValue){
+            var nextCost = before + item[2];
+
+            if(dp[i][nextA][nextB] == null){
+              dp[i][nextA][nextB] = nextCost;
+            }else if(nextCost < dp[i][nextA][nextB]){
+              dp[i][nextA][nextB] = nextCost;
+            }
+          }
+        }
+      }
     }
   }
 
-  if (minCostResult === Infinity) {
-    printOutput(-1);
-  } else {
-    printOutput(minCostResult);
-  }
-};
+  var count = 1;
+  var output = 10000;
 
-solveProblem();
+  while(count * MA < maxValue && count * MB < maxValue){
+    var getMA = MA * count;
+    var getMB = MB * count;
+    var candidate = dp[N][getMA][getMB];
+
+    if(candidate != null){
+      output = Math.min(output, candidate);
+    }
+
+    count++;
+  }
+
+  if(output === 10000){
+    myout(-1);
+  }else{
+    myout(output);
+  }
+}

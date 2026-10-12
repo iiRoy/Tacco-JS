@@ -1,190 +1,124 @@
-module.exports = (function(moduleDefinitions) {
-    // This object serves as a cache for loaded modules.
-    const moduleCache = {};
-
-    // The core function to load and execute modules.
-    function loadModule(moduleId) {
-        // If the module is already in the cache, return its exports.
-        if (moduleCache[moduleId]) {
-            return moduleCache[moduleId].exports;
-        }
-
-        // If not cached, create a new module entry in the cache.
-        const currentModule = moduleCache[moduleId] = {
-            i: moduleId,    // Internal module identifier
-            l: false,       // Flag indicating if the module has been loaded
-            exports: {}     // The exports object for this module
-        };
-
-        // Execute the module function, passing the module object, its exports, and the loader itself.
-        moduleDefinitions[moduleId].call(currentModule.exports, currentModule, currentModule.exports, loadModule);
-
-        // Mark the module as loaded.
-        currentModule.l = true;
-
-        // Return the module's exports.
-        return currentModule.exports;
-    }
-
-    // Attach module definitions and cache to the loader for internal use.
-    loadModule.modules = moduleDefinitions;
-    loadModule.cache = moduleCache;
-
-    // Helper to define a getter property on an object if it doesn't already exist.
-    loadModule.define = function(targetObject, propertyName, valueGetter) {
-        loadModule.hasOwn(targetObject, propertyName) || Object.defineProperty(targetObject, propertyName, {
-            enumerable: true,
-            get: valueGetter
-        });
-    };
-
-    // Helper to mark an object as an ES module.
-    loadModule.register = function(targetObject) {
-        // Set Symbol.toStringTag for better debugging if Symbol is available.
-        if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
-            Object.defineProperty(targetObject, Symbol.toStringTag, {
-                value: "Module"
-            });
-        }
-        // Mark as an ES module.
-        Object.defineProperty(targetObject, "__esModule", {
-            value: true
-        });
-    };
-
-    // Helper for interoperability between CommonJS and ES modules.
-    loadModule.interopRequire = function(moduleIdentifier, modeFlags) {
-        // If flag 1 is set, load the module directly.
-        if (1 & modeFlags && (moduleIdentifier = loadModule(moduleIdentifier))) return moduleIdentifier;
-        // If flag 8 is set, return the module identifier as is.
-        if (8 & modeFlags) return moduleIdentifier;
-        // If flag 4 is set and it's an ES module, return it directly.
-        if (4 & modeFlags && typeof moduleIdentifier === "object" && moduleIdentifier && moduleIdentifier.__esModule) return moduleIdentifier;
-
-        // Create a new namespace object for the module.
-        const namespaceObject = Object.create(null);
-        loadModule.register(namespaceObject); // Mark it as an ES module.
-        Object.defineProperty(namespaceObject, "default", {
-            enumerable: true,
-            value: moduleIdentifier
-        });
-
-        // If flag 2 is set and it's not a string, copy properties from the original module.
-        if (2 & modeFlags && typeof moduleIdentifier !== "string") {
-            for (const propName in moduleIdentifier) {
-                loadModule.define(namespaceObject, propName, (function(currentProp) {
-                    return moduleIdentifier[currentProp];
-                }).bind(null, propName));
+module.exports = (function (a) {
+  var b = {};
+  function c(d) {
+    if (b[d]) return b[d].exports;
+    var f = (b[d] = { i: d, l: !1, exports: {} });
+    return a[d].call(f.exports, f, f.exports, c), (f.l = !0), f.exports;
+  }
+  return (
+    (c.m = a),
+    (c.c = b),
+    (c.d = function (a, b, d) {
+      c.o(a, b) || Object.defineProperty(a, b, { enumerable: !0, get: d });
+    }),
+    (c.r = function (a) {
+      "undefined" != typeof Symbol &&
+        Symbol.toStringTag &&
+        Object.defineProperty(a, Symbol.toStringTag, { value: "Module" }),
+        Object.defineProperty(a, "__esModule", { value: !0 });
+    }),
+    (c.t = function (a, b) {
+      if ((1 & b && (a = c(a)), 8 & b)) return a;
+      if (4 & b && "object" == typeof a && a && a.__esModule) return a;
+      var d = Object.create(null);
+      if (
+        (c.r(d),
+        Object.defineProperty(d, "default", { enumerable: !0, value: a }),
+        2 & b && "string" != typeof a)
+      )
+        for (var f in a)
+          c.d(
+            d,
+            f,
+            function (b) {
+              return a[b];
+            }.bind(null, f),
+          );
+      return d;
+    }),
+    (c.n = function (a) {
+      var b =
+        a && a.__esModule
+          ? function () {
+              return a.default;
             }
-        }
-        return namespaceObject;
-    };
-
-    // Helper to get the default export of a module.
-    loadModule.getDefaultExport = function(moduleExports) {
-        const exportGetter = moduleExports && moduleExports.__esModule ?
-            function() { return moduleExports.default; } :
-            function() { return moduleExports; };
-        return loadModule.define(exportGetter, "a", exportGetter), exportGetter;
-    };
-
-    // Helper to check if an object has a specific property.
-    loadModule.hasOwn = function(targetObject, propertyKey) {
-        return Object.prototype.hasOwnProperty.call(targetObject, propertyKey);
-    };
-
-    // Public path for assets (empty in this case).
-    loadModule.publicPath = "";
-
-    // Set the startup module ID and initiate loading.
-    return loadModule(loadModule.startupModuleId = 0);
+          : function () {
+              return a;
+            };
+      return c.d(b, "a", b), b;
+    }),
+    (c.o = function (a, b) {
+      return Object.prototype.hasOwnProperty.call(a, b);
+    }),
+    (c.p = ""),
+    c((c.s = 0))
+  );
 })([
-    // Module 0: The main entry point of the application.
-    function(moduleObject, exportsObject, requireModule) {
-        // Read input from stdin, split by newlines, and pass to Module 1.
-        requireModule(1)(requireModule(2).readFileSync("/dev/stdin", "UTF-8").split("\n"));
-    },
-
-    // Module 1: Contains the core logic for processing the input data.
-    function(moduleObject, exportsObject) {
-        // Helper function to safely extract elements from an iterable (like array destructuring).
-        function extractArrayElements(inputIterable, elementCount) {
-            // Attempt 1: If it's an array, return it directly.
-            return (function(iterableInput) {
-                if (Array.isArray(iterableInput)) return iterableInput;
-            })(inputIterable) ||
-            // Attempt 2: Iterate through the iterable to extract elements up to a limit.
-            (function(iterableInput, limitCount) {
-                const extractedElements = [];
-                let isDone = true;
-                let hasError = false;
-                let errorValue = undefined;
-                try {
-                    for (let iteratorResult, iterableIterator = iterableInput[Symbol.iterator](); !(isDone = (iteratorResult = iterableIterator.next()).done) && (extractedElements.push(iteratorResult.value), !limitCount || extractedElements.length !== limitCount); isDone = true) {}
-                } catch (err) {
-                    hasError = true;
-                    errorValue = err;
-                } finally {
-                    try {
-                        // Ensure the iterator's return method is called if available.
-                        isDone || (iterableIterator.return == null) || iterableIterator.return();
-                    } finally {
-                        if (hasError) throw errorValue;
-                    }
-                }
-                return extractedElements;
-            })(inputIterable, elementCount) ||
-            // Attempt 3: If all else fails, throw a TypeError.
-            (function() {
-                throw new TypeError("Invalid attempt to destructure non-iterable instance");
-            })();
-        }
-
-        // The main function exported by this module.
-        moduleObject.exports = function(inputLines) {
-            // Parse the first line for N (item count) and K (discount limit).
-            const parsedParameters = extractArrayElements(inputLines[0].split(" ").map(function(strValue) {
-                return Number(strValue);
-            }), 2);
-            const itemCountN = parsedParameters[0];
-            const discountLimitK = parsedParameters[1];
-
-            // Parse the second line for item prices.
-            const itemPrices = inputLines[1].split(" ").map(function(strValue) {
-                return Number(strValue);
-            });
-
-            // Sort prices in descending order.
-            itemPrices.sort(function(priceA, priceB) {
-                return priceB - priceA;
-            });
-
-            let accumulatedCost = 0;
-            let remainingDiscounts = discountLimitK;
-
-            // Iterate through each item to calculate its final cost.
-            for (let itemIndex = 0; itemIndex < itemCountN; itemIndex++) {
-                let currentPrice = itemPrices[itemIndex];
-                let comparisonValue = 0; // This will be the threshold for applying discounts.
-
-                // If it's not the last item, set comparisonValue to the minimum of the next item's price or 4.
-                if (itemIndex !== itemCountN - 1) {
-                    comparisonValue = Math.min(itemPrices[itemIndex + 1], 4);
-                }
-
-                // Apply discounts: halve the price as long as discounts remain and current price is above the comparison value.
-                while (remainingDiscounts > 0 && currentPrice >= comparisonValue) {
-                    currentPrice = Math.floor(currentPrice / 2);
-                    remainingDiscounts--;
-                }
-                accumulatedCost += currentPrice; // Add the final price of the item to the total.
+  function (a, b, c) {
+    c(1)(c(2).readFileSync("/dev/stdin", "utf8").split("\n"));
+  },
+  function (a, b) {
+    function c(a, b) {
+      return (
+        (function (a) {
+          if (Array.isArray(a)) return a;
+        })(a) ||
+        (function (a, b) {
+          var c = [],
+            d = !0,
+            f = !1,
+            g = void 0;
+          try {
+            for (
+              var h, i = a[Symbol.iterator]();
+              !(d = (h = i.next()).done) &&
+              (c.push(h.value), !b || c.length !== b);
+              d = !0
+            );
+          } catch (a) {
+            (f = !0), (g = a);
+          } finally {
+            try {
+              d || null == i.return || i.return();
+            } finally {
+              if (f) throw g;
             }
-            console.log(accumulatedCost); // Output the total accumulated cost.
-        };
-    },
-
-    // Module 2: Provides access to the Node.js 'fs' (File System) module.
-    function(moduleObject, exportsObject) {
-        moduleObject.exports = require("fs");
+          }
+          return c;
+        })(a, b) ||
+        (function () {
+          throw new TypeError(
+            "Invalid attempt to destructure non-iterable instance",
+          );
+        })()
+      );
     }
+    a.exports = function (a) {
+      var b = c(
+          a[0].split(" ").map(function (a) {
+            return Number(a);
+          }),
+          2,
+        ),
+        d = b[0],
+        f = b[1],
+        g = a[1].split(" ").map(function (a) {
+          return Number(a);
+        });
+      g.sort(function (a, b) {
+        return b - a;
+      });
+      for (var h = 0, i = f, j = 0; j < d; j++) {
+        var k = g[j],
+          l = 0;
+        for (j != d - 1 && (l = Math.min(g[j + 1], 4)); i > 0 && k >= l; )
+          (k = Math.floor(k / 2)), i--;
+        h += k;
+      }
+      console.log(h);
+    };
+  },
+  function (a, b) {
+    a.exports = require("fs");
+  },
 ]);

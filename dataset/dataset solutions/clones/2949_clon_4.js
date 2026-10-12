@@ -1,18 +1,9 @@
-function processInputData(rawData) {
-  const inputLines = rawData.split('\n');
-  const firstLineSegments = inputLines[0].split(' ');
-  const targetPosition = parseInt(firstLineSegments[1], 10);
-  const sourceString = inputLines[1];
+const fs = require("fs");
 
-  const zeroBasedIndex = targetPosition - 1;
-  const characterToModify = sourceString.charAt(zeroBasedIndex);
-  const modifiedCharacter = characterToModify.toLowerCase();
+const lines = fs.readFileSync(0, "utf8").trimEnd().split(/\n/);
+const pos = Number(lines[0].trim().split(/\s+/)[1]) - 1;
+const text = lines[1];
 
-  const resultString = sourceString.substring(0, zeroBasedIndex) +
-                       modifiedCharacter +
-                       sourceString.substring(zeroBasedIndex + 1);
-
-  console.log(resultString);
-}
-
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+process.stdout.write(
+  text.slice(0, pos) + text.charAt(pos).toLowerCase() + text.slice(pos + 1)
+);

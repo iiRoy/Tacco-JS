@@ -1,1 +1,41 @@
-for(i=require("fs").readFileSync("/dev/stdin","utf8").split(/\s/),j=0;a=i[j++],b=i[j++],c=i[j++];){for(r=0;c--;)r+=~~((a=a%b*10)/b);console.log(r)}
+function countConnectedComponents(nodeCount, edges) {
+    const adjacencyList = Array.from(
+        { length: nodeCount },
+        () => []
+    );
+
+    for (const [firstNode, secondNode] of edges) {
+        adjacencyList[firstNode].push(secondNode);
+        adjacencyList[secondNode].push(firstNode);
+    }
+
+    const visitedNodes = new Set();
+    let componentCount = 0;
+
+    for (let node = 0; node < nodeCount; node++) {
+        if (visitedNodes.has(node)) {
+            continue;
+        }
+
+        componentCount++;
+
+        const pendingNodes = [node];
+        visitedNodes.add(node);
+
+        while (pendingNodes.length > 0) {
+            const currentNode = pendingNodes.pop();
+            const neighbors = adjacencyList[currentNode];
+
+            for (const neighbor of neighbors) {
+                if (visitedNodes.has(neighbor)) {
+                    continue;
+                }
+
+                visitedNodes.add(neighbor);
+                pendingNodes.push(neighbor);
+            }
+        }
+    }
+
+    return componentCount;
+}

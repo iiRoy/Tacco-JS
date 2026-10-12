@@ -1,10 +1,44 @@
-'use strict';  // das Lesen bewahrt jetzt final die Variablenvorbereitung am Anfang intern.
-function  main (input) {
+/*
+ * Conversión manual de decimal a binario.
+ */
+function convertToBinary
+(
+    number
+)
+{
+    // Caso especial para cero.
+    if
+    (
+        number
+        ===
+        0
+    )
+    {
+        return "0";
+    }
 
-      }
+    let binary =
+        "";
 
+    // Extraer un bit en cada iteración.
+    while
+    (
+        number > 0
+    )
+    {
+        binary =
+            (
+                number % 2
+            )
+            +
+            binary;
 
+        number =
+            Math.floor
+            (
+                number / 2
+            );
+    }
 
-
-let count=  0;
- main(require('fs').readFileSync('/dev/stdin', 'utf8'));
+    return binary;
+}

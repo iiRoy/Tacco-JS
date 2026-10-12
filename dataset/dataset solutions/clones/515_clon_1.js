@@ -14,16 +14,14 @@ while (true) {
     var max = sum * n;
     /*
      * This loop calculates the maximum possible value.
-     */
-    */
-   while (true) {
+    
+    while (true) {
         if (j.length == 0) break;
         n--;
         max = Math.max(max, (sum + j.shift()) * n);
     }
-    /*
+
      * End of calculation loop.
      */
-    */
    console.log(max);
 }

@@ -1,58 +1,18 @@
-(function() {
-    const InputGatherer = require('readline').createInterface({
-        input: process.stdin,
-        output: process.stdout,
-        terminal: false
-    });
+const ventas = [
+  ["Ana", 0.10, 120, 80, 50],
+  ["Luis", 0.15, 200, 150],
+  ["Marta", 0.05, 90, 60, 40]
+];
 
-    const computeBinaryGreatestCommonDivisor = (firstValueArgument, secondValueArgument) => {
-        if (firstValueArgument === 0) return secondValueArgument;
-        if (secondValueArgument === 0) return firstValueArgument;
+const salida = ventas.map(registro => {
+  const nombre = registro[0];
+  const descuento = registro[1];
+  const precios = registro.slice(2);
 
-        let powerOfTwoFactor = 0;
-        while (((firstValueArgument | secondValueArgument) & 1) === 0) {
-            firstValueArgument >>= 1;
-            secondValueArgument >>= 1;
-            powerOfTwoFactor++;
-        }
+  const subtotal = precios.reduce((acumulado, precio) => acumulado + precio, 0);
+  const total = subtotal * (1 - descuento);
 
-        while ((firstValueArgument & 1) === 0) {
-            firstValueArgument >>= 1;
-        }
+  return `${nombre} | Subtotal: $${subtotal.toFixed(2)} | Descuento: ${descuento * 100}% | Total: $${total.toFixed(2)}`;
+});
 
-        while (secondValueArgument !== 0) {
-            while ((secondValueArgument & 1) === 0) {
-                secondValueArgument >>= 1;
-            }
-            if (firstValueArgument > secondValueArgument) {
-                let interchangedValue = firstValueArgument;
-                firstValueArgument = secondValueArgument;
-                secondValueArgument = interchangedValue;
-            }
-            secondValueArgument = secondValueArgument - firstValueArgument;
-        }
-        return firstValueArgument << powerOfTwoFactor;
-    };
-
-    const calculateLeastCommonMultiple = (valueX, valueY) => {
-        if (valueX === 0 || valueY === 0) {
-            return 0;
-        }
-        const productOfNumbers = Math.abs(valueX * valueY);
-        const commonDivisor = computeBinaryGreatestCommonDivisor(valueX, valueY);
-        return productOfNumbers / commonDivisor;
-    };
-
-    InputGatherer.on('line', (receivedLine) => {
-        const stringFragments = receivedLine.split(' ');
-        const numericalElements = stringFragments.map(Number);
-
-        if (numericalElements.length >= 2) {
-            const firstNumericInput = numericalElements[0];
-            const secondNumericInput = numericalElements[1];
-            const finalCalculatedOutcome = calculateLeastCommonMultiple(firstNumericInput, secondNumericInput);
-            process.stdout.write(finalCalculatedOutcome.toString() + '\n');
-        }
-        InputGatherer.close();
-    });
-})();
+console.log(salida.join("\n"));

@@ -1,56 +1,39 @@
-let rawData = "";
+const fs = require("fs");
 
-process.stdin.resume();
-process.stdin.setEncoding('utf-8');
+const records = fs.readFileSync(0, "utf8").trimEnd().split(/\n/);
+const grades = [];
 
-process.stdin.on('data', (segment) => {
-  rawData += segment;
-});
+for (const record of records) {
+  if (Number(record) === 0) break;
 
-const evaluateScores = (primaryScore, secondaryScore, makeupScore) => {
-  const aggregateScore = primaryScore + secondaryScore;
+  const scores = record.trim().split(/\s+/).map(Number);
+  if (scores[0] === -1 && scores[1] === -1 && scores[2] === -1) break;
 
+  const written = (scores[0] < 0 ? 0 : scores[0]) + (scores[1] < 0 ? 0 : scores[1]);
+  const retry = scores[2];
+
+  let rank;
   switch (true) {
-    case aggregateScore >= 80:
-      return "A";
-    case aggregateScore >= 65:
-      return "B";
-    case aggregateScore >= 50:
-      return "C";
-    case aggregateScore >= 30:
-      return makeupScore >= 50 ? "C" : "D";
-    default:
-      return "F";
-  }
-};
-
-process.stdin.on('end', () => {
-  const allLines = rawData.split("\n");
-  let currentLineIndex = 0;
-
-  while (allLines[currentLineIndex] != 0) {
-    const currentLineContent = allLines[currentLineIndex];
-
-    const scoreStrings = currentLineContent.split(" ");
-
-    if (scoreStrings[0] === "-1" && scoreStrings[1] === "-1" && scoreStrings[2] === "-1") {
+    case written >= 80:
+      rank = "A";
       break;
-    }
-
-    let firstExam = parseInt(scoreStrings[0], 10);
-    let secondExam = parseInt(scoreStrings[1], 10);
-    let thirdExam = parseInt(scoreStrings[2], 10);
-
-    if (firstExam === -1) {
-      firstExam = 0;
-    }
-    if (secondExam === -1) {
-      secondExam = 0;
-    }
-
-    const finalGrade = evaluateScores(firstExam, secondExam, thirdExam);
-    console.log(finalGrade);
-
-    currentLineIndex++;
+    case written >= 65:
+      rank = "B";
+      break;
+    case written >= 50:
+      rank = "C";
+      break;
+    case written >= 30 && retry >= 50:
+      rank = "C";
+      break;
+    case written >= 30:
+      rank = "D";
+      break;
+    default:
+      rank = "F";
   }
-});
+
+  grades.push(rank);
+}
+
+process.stdout.write(grades.join("\n"));

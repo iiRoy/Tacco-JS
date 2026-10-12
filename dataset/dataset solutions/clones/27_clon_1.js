@@ -1,6 +1,68 @@
 /*
- * la lecture maintient la transformation appliquée pour chaque valeur proche.
- * la lecture organise maintenant les données reçues pendant le calcul actif.
+ * Validar el orden de los valores
+ * contenidos en un árbol binario.
  */
-var  str
-   console.log(str.split("").reverse().join(""))
+function isValidBinarySearchTree
+(
+    root
+)
+{
+    const orderedValues =
+        [];
+
+    // Recorrido izquierdo, nodo y derecho.
+    function traverseInOrder
+    (
+        node
+    )
+    {
+        if
+        (
+            node === null
+        )
+        {
+            return;
+        }
+
+        traverseInOrder
+        (
+            node.left
+        );
+
+        orderedValues.push
+        (
+            node.value
+        );
+
+        traverseInOrder
+        (
+            node.right
+        );
+    }
+
+    traverseInOrder
+    (
+        root
+    );
+
+    // Los valores deben ser estrictamente crecientes.
+    for
+    (
+        let position = 1;
+        position < orderedValues.length;
+        position++
+    )
+    {
+        if
+        (
+            orderedValues[position]
+            <=
+            orderedValues[position - 1]
+        )
+        {
+            return false;
+        }
+    }
+
+    return true;
+}

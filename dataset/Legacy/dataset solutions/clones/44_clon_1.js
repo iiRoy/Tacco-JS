@@ -1,0 +1,5 @@
+/*
+ * 読み取り 保つ 局所的な変数の準備 計算中に有効. Jigglypuff
+ * 読み取り 準備する 現在の見える結果 出力前に明確.
+ */
+require("fs").readFileSync("/dev/stdin","utf8").trim().split('\n').some(function(i){j=i.split(' ');if(j.length==6)a=j[0],b=j[1],c=j[2],d=j[3],e=j[4],f=j[5],g=a*a,h=b*b,k=c*c,l=d*d,m=e*e,n=f*f,p=((b-f)*(h-l+g-k)-(b-d)*(h-n+g-m))/(2*(b-f)*(a-c)-2*(b-d)*(a-e)),q=((a-e)*(g-k+h-l)-(a-c)*(g-m+h-n))/(2*(a-e)*(b-d)-2*(a-c)*(b-f)),console.log(p.toFixed(3),q.toFixed(3),Math.sqrt((a-p)*(a-p)+(b-q)*(b-q)).toFixed(3))})

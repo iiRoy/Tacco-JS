@@ -1,0 +1,1 @@
+a=b=0;require("fs").readFileSync("/dev/stdin","utf8").split('\n').map(function(i){c=i.split(',').sort();c[2]==c[1]?0:c[1]==c[2]?a++:b++});console.log(b+'\n'+a)

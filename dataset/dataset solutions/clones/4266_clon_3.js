@@ -1,100 +1,47 @@
-function readLineAsIntegers(lineText) {
-  var parts = lineText.split(' ');
-  var values = [];
-
-  for (var index = 0; index < parts.length; index++) {
-    values.push(parseInt(parts[index]));
-  }
-
-  return values;
-}
-
-function extractProblemArrays(rawInput) {
-  var lines = rawInput.split('\n');
-
-  return {
-    firstGroup: readLineAsIntegers(lines[1]),
-    secondGroup: readLineAsIntegers(lines[2]),
-    thirdGroup: readLineAsIntegers(lines[3])
-  };
-}
-
-function isStrictlySmaller(leftValue, rightValue) {
-  return leftValue < rightValue;
-}
-
-function countValuesBeforeMiddleValue(leftValues, middleValue) {
-  var amount = 0;
-
-  for (var leftIndex = 0; leftIndex < leftValues.length; leftIndex++) {
-    if (isStrictlySmaller(leftValues[leftIndex], middleValue)) {
-      amount++;
-    }
-  }
-
-  return amount;
-}
-
-function createMiddleContributionTable(leftValues, middleValues) {
-  var contributionTable = [];
-
-  for (var middleIndex = 0; middleIndex < middleValues.length; middleIndex++) {
-    var middleValue = middleValues[middleIndex];
-
-    contributionTable[middleIndex] = countValuesBeforeMiddleValue(
-      leftValues,
-      middleValue
-    );
-  }
-
-  return contributionTable;
-}
-
-function contributionForRightValue(rightValue, middleValues, contributionTable) {
-  var subtotal = 0;
-
-  for (var middleIndex = 0; middleIndex < middleValues.length; middleIndex++) {
-    var middleValue = middleValues[middleIndex];
-
-    if (isStrictlySmaller(middleValue, rightValue)) {
-      subtotal += contributionTable[middleIndex];
-    }
-  }
-
-  return subtotal;
-}
-
-function calculateFinalTotal(rightValues, middleValues, contributionTable) {
-  var total = 0;
-
-  for (var rightIndex = 0; rightIndex < rightValues.length; rightIndex++) {
-    total += contributionForRightValue(
-      rightValues[rightIndex],
-      middleValues,
-      contributionTable
-    );
-  }
-
-  return total;
-}
-
 function Main(input) {
-  var data = extractProblemArrays(input);
+  var lines = input.trim().split('\n');
 
-  var possibles = createMiddleContributionTable(
-    data.firstGroup,
-    data.secondGroup
-  );
+  var as = lines[1].split(' ').map(function (i) {
+    return parseInt(i, 10);
+  });
+  var bs = lines[2].split(' ').map(function (i) {
+    return parseInt(i, 10);
+  });
+  var cs = lines[3].split(' ').map(function (i) {
+    return parseInt(i, 10);
+  });
+
+  var possibles = [];
+
+  for (var i = 0; i < bs.length; i++) {
+    var b = bs[i];
+    var count = as.filter(function (a) {
+      if (a < b) {
+        return true;
+      }
+      return false;
+    }).length;
+    possibles.push(count);
+  }
 
   console.log(possibles);
 
-  var answer = calculateFinalTotal(
-    data.thirdGroup,
-    data.secondGroup,
-    possibles
-  );
+  var result = cs.map(function (c) {
+    var subtotal = bs.map(function (b, i) {
+      if (b < c) {
+        return possibles[i];
+      }
+      return 0;
+    }).reduce(function (p, a) {
+      return p + a;
+    }, 0);
 
-  console.log(answer);
+    return subtotal;
+  }).reduce(function (p, a) {
+    return p + a;
+  }, 0);
+
+  console.log(result);
 }
 
 Main(require('fs').readFileSync('/dev/stdin', 'utf8'));

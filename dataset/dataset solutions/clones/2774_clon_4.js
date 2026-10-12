@@ -1,206 +1,53 @@
-var inputHandler = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
+const fs = require("fs");
 
-var inputSource;
-var rawLines = [];
+const input = fs.readFileSync(0, "utf8").trim().split(/\s+/).map(Number);
+let p = 0;
 
-inputHandler.on('line', function(inputLine) {
-  rawLines.push(inputLine);
-});
+const n = input[p++];
+const k = input[p++];
 
-inputHandler.on('close', function() {
-  inputSource = initializeInput(rawLines);
-  console.error('\n↑入力 ↓出力');
-  executeProgram();
-});
+const graph = Array.from({ length: n }, () => []);
 
-function readInt() {
-  return dataTransformer(readNext(), 1);
+for (let i = 0; i < n - 1; i++) {
+  const a = input[p++] - 1;
+  const b = input[p++] - 1;
+  graph[a].push(b);
+  graph[b].push(a);
 }
 
-function readStrArr() {
-  return dataTransformer(readNext(), 2);
-}
+const mod = 1000000007;
+const parent = Array(n).fill(-1);
+const order = [0];
+parent[0] = -2;
 
-function readIntArr() {
-  return dataTransformer(readNext(), 4);
-}
+for (let i = 0; i < order.length; i++) {
+  const v = order[i];
 
-function readCharArr() {
-  return dataTransformer(readNext(), 6);
-}
-
-function readNext() {
-  return inputSource.readNextLine();
-}
-
-function hasMore() {
-  return inputSource.hasMoreLines();
-}
-
-function initializeInput(inputData) {
-  return {
-    lineList: inputData,
-    currentIdx: 0,
-    maxLines: inputData.length,
-
-    hasMoreLines: function() {
-      return this.currentIdx < this.maxLines;
-    },
-
-    readNextLine: function() {
-      if (this.hasMoreLines()) {
-        return this.lineList[this.currentIdx++];
-      } else {
-        throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
-      }
-    }
-  };
-}
-
-function outputResult(s) {
-  console.log(s);
-}
-
-function debugLog(s) {
-  console.error('debug:' + require('util').inspect(s, false, null));
-}
-
-function dataTransformer(inputVal, transformType) {
-  try {
-    switch (transformType) {
-      case 1:
-        return parseInt(inputVal);
-      case 2:
-        return inputVal.split(' ');
-      case 4:
-        return inputVal.split(' ').map(Number);
-      case 6:
-        return inputVal.split('');
-      case 7:
-        return inputVal.split('').map(Number);
-      case 8:
-        return inputVal.join(' ');
-      case 9:
-        return inputVal.join('\n');
-      case 0:
-        return inputVal.join('');
-      default:
-        return inputVal;
-    }
-  } catch (e) {
-    return inputVal;
+  for (const to of graph[v]) {
+    if (parent[to] !== -1) continue;
+    parent[to] = v;
+    order.push(to);
   }
 }
 
-function createGraph(nodeCount) {
-  var graph = new Array(nodeCount);
+let answer = 1;
 
-  for (var nodeId = 0; nodeId < nodeCount; nodeId++) {
-    graph[nodeId] = [];
-  }
+for (let i = 0; i < order.length; i++) {
+  const v = order[i];
+  const forbidden = v === 0 ? 0 : parent[v] === 0 ? 1 : 2;
+  let available = k - forbidden;
 
-  return graph;
-}
+  answer = (answer * available) % mod;
 
-function addUndirectedEdge(graph, leftNode, rightNode) {
-  graph[leftNode].push(rightNode);
-  graph[rightNode].push(leftNode);
-}
+  let used = 0;
 
-function multiplyLikeOriginal(currentValue, factorValue, moduloValue) {
-  currentValue *= factorValue;
-  currentValue %= moduloValue;
-  return currentValue;
-}
-
-function countAvailableColorsForChild(parentNode, childOrder, colorLimit) {
-  if (parentNode === -1) {
-    return colorLimit - childOrder;
-  }
-
-  return colorLimit - 1 - childOrder;
-}
-
-function calculateColoringProduct(graph, colorLimit) {
-  var moduloValue = 1000000007;
-  var answer = 1;
-
-  var stack = [];
-  stack.push({
-    node: 0,
-    parent: -1
-  });
-
-  var visited = new Array(graph.length).fill(false);
-  visited[0] = true;
-
-  answer = multiplyLikeOriginal(answer, colorLimit, moduloValue);
-
-  while (stack.length > 0) {
-    var current = stack.pop();
-    var currentNode = current.node;
-    var parentNode = current.parent;
-
-    var childOrder = 1;
-
-    for (var edgeIndex = 0; edgeIndex < graph[currentNode].length; edgeIndex++) {
-      var nextNode = graph[currentNode][edgeIndex];
-
-      if (nextNode === parentNode) {
-        continue;
-      }
-
-      if (visited[nextNode]) {
-        continue;
-      }
-
-      visited[nextNode] = true;
-
-      var availableColorCount = countAvailableColorsForChild(
-        parentNode,
-        childOrder,
-        colorLimit
-      );
-
-      answer = multiplyLikeOriginal(
-        answer,
-        availableColorCount,
-        moduloValue
-      );
-
-      stack.push({
-        node: nextNode,
-        parent: currentNode
-      });
-
-      childOrder++;
+  for (const to of graph[v]) {
+    if (parent[to] === v) {
+      const choices = k - (v === 0 ? 1 : 2) - used;
+      answer = (answer * choices) % mod;
+      used++;
     }
   }
-
-  return answer;
 }
 
-function executeProgram() {
-  var firstLineData = readIntArr();
-
-  var nodeCount = firstLineData[0];
-  var colorLimit = firstLineData[1];
-
-  var graph = createGraph(nodeCount);
-
-  for (var edgeIndex = 0; edgeIndex < nodeCount - 1; edgeIndex++) {
-    var edgeData = readIntArr();
-
-    var leftNode = edgeData[0] - 1;
-    var rightNode = edgeData[1] - 1;
-
-    addUndirectedEdge(graph, leftNode, rightNode);
-  }
-
-  var result = calculateColoringProduct(graph, colorLimit);
-
-  outputResult(result);
-}
+console.log(answer % mod);

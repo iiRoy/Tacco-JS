@@ -1,11 +1,26 @@
-const main = stdin => {
-  const input = stdin.trim().split('\n')
-  const N = parseInt(input[0])
-  const A = parseInt(input[1])
+function factorial(number) {
+  if (!Number.isInteger(number) || number < 0) {
+    return null;
+  }
 
-  console.log(N * N - A)
+  let result = 1n;
+
+  for (let factor = 2; factor <= number; factor++) {
+    result *= BigInt(factor);
+  }
+
+  return result;
 }
 
+const input = require("fs")
+  .readFileSync("/dev/stdin", "utf8")
+  .trim();
 
-// 標準入力
-main(require("fs").readFileSync("/dev/stdin", "utf8"))
+const number = Number(input);
+const result = factorial(number);
+
+console.log(
+  result === null
+    ? "INVALID"
+    : result.toString()
+);

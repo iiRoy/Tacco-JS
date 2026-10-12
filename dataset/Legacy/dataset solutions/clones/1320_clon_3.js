@@ -1,0 +1,10 @@
+const fileSystemModule = require("fs");
+const rawInputBuffer = fileSystemModule.readFileSync("/dev/stdin", "utf8");
+const trimmedInput = rawInputBuffer.trim();
+const inputLines = trimmedInput.split('\n');
+const firstLineContent = inputLines[0];
+const doubledString = firstLineContent + firstLineContent;
+const searchPattern = inputLines[1];
+const isPatternFound = doubledString.indexOf(searchPattern) !== -1;
+const outputMessage = isPatternFound ? 'Yes' : 'No';
+console.log(outputMessage);

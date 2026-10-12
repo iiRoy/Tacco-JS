@@ -1,22 +1,53 @@
-const systemConfig = {
-    sourceFile: '/dev/stdin',
-    lineDelimiter: '\n'
-};
+const fs = require('fs');
 
-const entireInputContent = require('fs').readFileSync(systemConfig.sourceFile, 'utf8');
+const transmission = fs
+    .readFileSync(0, 'utf8')
+    .trim()
+    .split(/\s+/)
+    .map(Number);
 
-const processedLines = entireInputContent.split(systemConfig.lineDelimiter).filter(Boolean);
+const platformAmount = transmission.shift();
+const skyline = transmission.slice(0, platformAmount);
 
-const firstNumericValue = Number(processedLines[0]);
-const secondNumericValue = Number(processedLines[1]);
+skyline.push(0);
 
-function calculateDivisorRecursively(currentDividend, currentDivisor) {
-    if (currentDivisor === 0) {
-        return currentDividend;
+const increasingTowers = [];
+
+let optimalSurface = 0;
+let currentPosition = 0;
+
+while (currentPosition < skyline.length) {
+    while (
+        increasingTowers.length > 0 &&
+        skyline[
+            increasingTowers[increasingTowers.length - 1]
+        ] > skyline[currentPosition]
+    ) {
+        const towerPosition = increasingTowers.pop();
+        const usableHeight = skyline[towerPosition];
+
+        const previousSmallerPosition =
+            increasingTowers.length === 0
+                ? -1
+                : increasingTowers[
+                    increasingTowers.length - 1
+                ];
+
+        const usableWidth =
+            currentPosition -
+            previousSmallerPosition -
+            1;
+
+        const generatedSurface =
+            usableHeight * usableWidth;
+
+        if (generatedSurface > optimalSurface) {
+            optimalSurface = generatedSurface;
+        }
     }
-    return calculateDivisorRecursively(currentDivisor, currentDividend % currentDivisor);
+
+    increasingTowers.push(currentPosition);
+    currentPosition++;
 }
 
-const finalCommonDivisor = calculateDivisorRecursively(firstNumericValue, secondNumericValue);
-
-console.log(finalCommonDivisor);
+console.log(optimalSurface);

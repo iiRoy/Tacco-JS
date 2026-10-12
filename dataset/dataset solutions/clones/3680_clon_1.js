@@ -1,6 +1,35 @@
-// This is a comment
-a = 4;
-b = 11; // Assigning another value
+/*
+ * Contador de vocales
+ */
+function countVowels
+(
+    text
+)
+{
+    let count =
+        0;
 
-// Print the sum
-print “a+b”;
+    // Examinar cada carácter.
+    for
+    (
+        let i = 0;
+        i < text.length;
+        i++
+    )
+    {
+        if
+        (
+            "aeiouAEIOU"
+                .includes
+                (
+                    text[i]
+                )
+        )
+        {
+            // Se encontró una vocal.
+            count++;
+        }
+    }
+
+    return count;
+}

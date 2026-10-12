@@ -1,13 +1,13 @@
-function Main (input) {
-    var lines = input.split("\n");
-    lines.forEach(function(arr){
-        if(arr == "0 0") break;
-        var r = arr.split(" ").map(Number);
-        h = r[0]; w = r[1];
-        console.log(Array(w+1).join("#") + "\n" +
-                    Array(h-1).join("#" + Array(w-1).join(".") + "#\n") +
-                    Array(w+1).join("#") + "\n"
-                    );
-    });
+function findMissingNumber(numbers) {
+    const orderedNumbers = numbers
+        .slice()
+        .sort((a, b) => a - b);
+
+    for (let i = 0; i < orderedNumbers.length; i++) {
+        if (orderedNumbers[i] !== i) {
+            return i;
+        }
+    }
+
+    return orderedNumbers.length;
 }
-Main(require("fs").readFileSync("/dev/stdin", "utf8"));

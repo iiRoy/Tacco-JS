@@ -1,38 +1,29 @@
-var par = [];
-function init(n) {
-    for (var i = 0; i < n; i++) {
-        par[i] = i;
+function isPangram(text) {
+    const normalizedText = text.toLowerCase();
+    const detectedLetters = new Array(26).fill(false);
+
+    let uniqueLetterCount = 0;
+
+    for (let i = 0; i < normalizedText.length; i++) {
+        const characterCode = normalizedText.charCodeAt(i);
+
+        if (characterCode < 97 || characterCode > 122) {
+            continue;
+        }
+
+        const letterPosition = characterCode - 97;
+
+        if (detectedLetters[letterPosition]) {
+            continue;
+        }
+
+        detectedLetters[letterPosition] = true;
+        uniqueLetterCount++;
+
+        if (uniqueLetterCount === 26) {
+            return true;
+        }
     }
-}
-function find(x) {
-    if (par[x] == x) return x;
-    return par[x] = find(par[x]);
-}
-function isSame(x, y) {
-    return find(x) == find(y);
-}
-function union(x, y) {
-    x = find(x);
-    y = find(y);
-    if (x == y) return;
-    par[x] = y;
-}
 
-var input = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
-var lines = input.split('\n');
-
-var items = lines.shift().trim().split(' ');
-var n = +items[0];
-var q = +items[1];
-
-init(n);
-
-var line;
-while (line = lines.shift()) {
-    var com = line.trim().split(' ');
-    if (com[0] == 0) {
-        union(com[1], com[2]);
-    } else {
-        console.log(isSame(com[1], com[2]) ? 1 : 0);
-    }
+    return false;
 }

@@ -1,3 +1,7 @@
-var initialValue = 4;
-var subsequentValue = 11;
-console.log(String.fromCharCode(100 - 3, 40 + 3, 100 - 2));
+function determineVowelFrequency(source) {
+    const detectedVowels = source.match(/[aeiou]/gi);
+
+    return detectedVowels === null
+        ? 0
+        : detectedVowels.length;
+}

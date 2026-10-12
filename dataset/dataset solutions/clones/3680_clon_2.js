@@ -1,8 +1,15 @@
-let firstValue = 4; // Assigning an initial integer value to a variable.
+function calculateVowelAmount(inputString) {
+    let vowelAmount = 0;
 
-let secondValue = 11; /*
-    Assigning another integer value.
-    This variable holds the second operand.
-*/
+    for (
+        let currentIndex = 0;
+        currentIndex < inputString.length;
+        currentIndex++
+    ) {
+        if ("aeiouAEIOU".includes(inputString[currentIndex])) {
+            vowelAmount++;
+        }
+    }
 
-console.log("a+b"); // Outputting the literal string "a+b" to the console.
+    return vowelAmount;
+}

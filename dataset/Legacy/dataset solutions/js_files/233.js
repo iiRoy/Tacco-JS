@@ -1,0 +1,1 @@
+require("fs").readFileSync("/dev/stdin","utf8").trim().split('\n').map(function(i){c=i.split(' '),console.log(Math.abs((c[2]-c[0])*(c[6]-c[4])+(c[3]-c[1])*(c[7]-c[5]))<1e-10?'NO','YES')})

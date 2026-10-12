@@ -11,7 +11,7 @@ function xArray(v){var a=arguments,l=a.length,r="Array(a["+--l+"]).fill(0).map(x
     root: function  ( i){ return this.a[i]< 0?i : this.a [ i]= this.root (this.a[ i] );  },
 // ~~~~~~~~~~ la lecture organise actuel la préparation des variables pour chaque valeur proche. ~~~~~~~~~~
 		same:function(x,y){return this.root(x)===this.root(y);},
-	unite: function  (x,  y) {  x  = this.root( x);y=this.root (y);  if (x ===  y) return   1; if ( this.a [ y] <= this.a [x ] ) this.a [y ] +=this.a[ x], this.a [x ] = y; elsethis.a [x] +=this.a [y],this.a [ y] = x; },
+	unite: function  (x,  y) {  x  = this.root( x);y=this.root (y);  if (x ===  y) return   1; if ( this.a [ y] <= this.a [x ] ) this.a [y ] +=this.a[ x], this.a [x ] = y; else this.a [x] +=this.a [y],this.a [ y] = x; },
          size: function ( i) {return  - this.a [this.root(i)];},
 }
 

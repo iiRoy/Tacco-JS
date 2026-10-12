@@ -1,163 +1,73 @@
-const createInputReader = (function() {
-    function InputState(rawContent) {
-        this.inputLines = rawContent.trim().split('\n');
-        this.currentLineIndex = 0;
+const fs = require("fs");
+
+const [s, rawT] = fs.readFileSync(0, "utf8").trim().split(/\s+/);
+
+function primitiveInfo(str) {
+  for (let len = 1; len <= str.length; len++) {
+    if (str.length % len !== 0) continue;
+
+    const unit = str.slice(0, len);
+    let ok = true;
+
+    for (let i = 0; i < str.length; i += len) {
+      if (str.slice(i, i + len) !== unit) {
+        ok = false;
+        break;
+      }
     }
 
-    InputState.prototype.fetchNextValue = function(returnAsString) {
-        if (this.currentLineIndex >= this.inputLines.length) {
-            throw new Error("Input exhausted for token extraction.");
-        }
+    if (ok) {
+      return [unit, str.length / len];
+    }
+  }
 
-        if (typeof this.inputLines[this.currentLineIndex] === 'string') {
-            this.inputLines[this.currentLineIndex] = this.inputLines[this.currentLineIndex].split(' ').reverse();
-        }
-
-        const value = this.inputLines[this.currentLineIndex].pop();
-
-        if (this.inputLines[this.currentLineIndex].length === 0) {
-            this.currentLineIndex++;
-        }
-        return returnAsString ? value : Number(value);
-    };
-
-    InputState.prototype.fetchLineValues = function(returnAsStrings) {
-        if (this.currentLineIndex >= this.inputLines.length) {
-            throw new Error("Input exhausted for line consumption.");
-        }
-        const lineContent = this.inputLines[this.currentLineIndex++];
-        const tokens = (typeof lineContent === 'string' ? lineContent : lineContent.join(' ')).split(' ');
-        return returnAsStrings ? tokens : tokens.map(Number);
-    };
-
-    InputState.prototype.fetchMatrixValues = function(numRows, returnAsStrings) {
-        const resultMatrix = [];
-        for (let i = 0; i < numRows; i++) {
-            if (this.currentLineIndex >= this.inputLines.length) {
-                throw new Error("Input exhausted prematurely for matrix.");
-            }
-            const lineContent = this.inputLines[this.currentLineIndex++];
-            const tokens = (typeof lineContent === 'string' ? lineContent : lineContent.join(' ')).split(' ');
-            resultMatrix.push(returnAsStrings ? tokens : tokens.map(Number));
-        }
-        return resultMatrix;
-    };
-
-    InputState.prototype.fetchRawLines = function(numLines, returnAsStrings) {
-        const resultLines = [];
-        for (let i = 0; i < numLines; i++) {
-            if (this.currentLineIndex >= this.inputLines.length) {
-                throw new Error("Input exhausted prematurely for raw lines.");
-            }
-            const lineContent = this.inputLines[this.currentLineIndex++];
-            resultLines.push(returnAsStrings ? lineContent : Number(lineContent));
-        }
-        return resultLines;
-    };
-
-    return function(inputString) {
-        return new InputState(inputString);
-    };
-})();
-const inputSource = createInputReader(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-function multiDimArrayCreator(initialValue, ...dimensions) {
-    const createRecursive = (dims, val) => {
-        if (dims.length === 0) {
-            return val;
-        }
-        const currentDimSize = dims[0];
-        const remainingDims = dims.slice(1);
-        return Array(currentDimSize).fill(0).map(() => createRecursive(remainingDims, val));
-    };
-    return createRecursive(dimensions, initialValue);
+  return [str, 1];
 }
 
-function processStrings() {
-    const primaryString = inputSource.fetchNextValue(true);
-    let targetString = inputSource.fetchNextValue(true);
+const info = primitiveInfo(rawT);
+const piece = info[0];
+const ratio = info[1];
 
-    const targetRepetitions = findMinRepetitions(targetString);
-    if (targetRepetitions > 1) {
-        targetString = targetString.slice(0, targetString.length / targetRepetitions);
+const doubled = s.repeat(2);
+const tripled = s.repeat(3);
+const step = piece.length;
+
+let best = 0;
+let run = 0;
+let cursor = doubled.indexOf(piece);
+
+if (cursor < 0) {
+  process.stdout.write("0");
+} else {
+  cursor += step;
+
+  while (cursor < doubled.length) {
+    const found = doubled.indexOf(piece, cursor);
+
+    if (found < 0) {
+      break;
     }
 
-    const doublePrimary = primaryString + primaryString;
-    const triplePrimary = doublePrimary + primaryString;
-    const targetLength = targetString.length;
-
-    let maximumSequence = 0;
-    let currentSequence = 0;
-    let lastMatchEnd = -targetLength; // Initialize to ensure first match is considered consecutive
-
-    const allMatchIndices = [];
-    let searchStart = 0;
-    while (true) {
-        const nextMatchPos = doublePrimary.indexOf(targetString, searchStart);
-        if (nextMatchPos === -1) break;
-        allMatchIndices.push(nextMatchPos);
-        searchStart = nextMatchPos + 1;
+    if (found === cursor) {
+      run++;
+    } else {
+      if (run > best) best = run;
+      run = 1;
     }
 
-    for (const currentMatchStart of allMatchIndices) {
-        if (currentMatchStart === lastMatchEnd) {
-            currentSequence++;
-        } else {
-            maximumSequence = Math.max(maximumSequence, currentSequence);
-            currentSequence = 1;
-        }
-        lastMatchEnd = currentMatchStart + targetLength;
+    cursor = found + step;
+  }
+
+  if (run > best) best = run;
+
+  const extended = tripled.indexOf(piece, cursor);
+  if (extended === cursor) {
+    run++;
+    if (run > best) {
+      process.stdout.write("-1");
+      process.exit(0);
     }
-    maximumSequence = Math.max(maximumSequence, currentSequence); // Update for the last sequence
+  }
 
-    // Check for infinite repetition extending into the third primary string
-    if (lastMatchEnd === doublePrimary.length && triplePrimary.startsWith(targetString, doublePrimary.length)) {
-        if (currentSequence + 1 > maximumSequence) {
-            return -1;
-        }
-    }
-
-    return Math.floor(maximumSequence / targetRepetitions);
-}
-
-function findMinRepetitions(inputStr) {
-    const stringLength = inputStr.length;
-    if (stringLength === 1) return 1;
-
-    const factors = factorFinder(stringLength);
-    for (const unitLength of factors) {
-        const repetitionCount = stringLength / unitLength;
-        const unit = inputStr.substring(0, unitLength);
-        
-        let testString = '';
-        for(let i = 0; i < repetitionCount; i++) {
-            testString += unit;
-        }
-
-        if (testString === inputStr) {
-            return repetitionCount;
-        }
-    }
-    return 1;
-}
-
-function factorFinder(numberToFactor) {
-    const resultList = [1];
-    const limit = Math.floor(Math.sqrt(numberToFactor));
-
-    if (limit * limit === numberToFactor) {
-        resultList.push(limit);
-    }
-
-    for (let currentDivisor = 2; currentDivisor < limit; currentDivisor++) {
-        if (numberToFactor % currentDivisor === 0) {
-            resultList.push(currentDivisor, 1 / currentDivisor); // Replicating the original bug: 1/currentDivisor instead of numberToFactor/currentDivisor
-        }
-    }
-    return resultList.sort((a, b) => a - b);
-}
-
-if (process.argv.length <= 2) require("child_process").fork("Main.js", ["1"], { execArgv: ["--stack-size=240000"] });
-else {
-  console.log(processStrings());
+  process.stdout.write(String((best / ratio) | 0));
 }

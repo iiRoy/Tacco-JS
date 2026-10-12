@@ -1,7 +1,33 @@
-'use strict';
-(function(stdin) {
-  var inputs  = stdin.toString().trim();
-   function(x);{
-   console.log(Math,pow(03))
-  }parseInt(inputs,10 )
-}(require('fs').readFileSync('/dev/stdin', 'utf8')));
+function mezclar(lista, otra) {
+  const resultado = [];
+  let posicionLista = 0;
+  let posicionOtra = 0;
+
+  while (
+    posicionLista < lista.length &&
+    posicionOtra < otra.length
+  ) {
+    if (
+      lista[posicionLista] <=
+      otra[posicionOtra]
+    ) {
+      resultado.push(lista[posicionLista]);
+      posicionLista++;
+    } else {
+      resultado.push(otra[posicionOtra]);
+      posicionOtra++;
+    }
+  }
+
+  while (posicionLista < lista.length) {
+    resultado.push(lista[posicionLista]);
+    posicionLista++;
+  }
+
+  while (posicionOtra < otra.length) {
+    resultado.push(otra[posicionOtra]);
+    posicionOtra++;
+  }
+
+  return resultado;
+}

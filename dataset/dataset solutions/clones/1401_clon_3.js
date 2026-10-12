@@ -1,17 +1,9 @@
-const fileSystemModule = require("fs");
-const inputFilePath = "/dev/stdin";
-const encodingType = "utf8";
+function calcularTotalConDescuento(precio, cantidad) {
+    let total = precio * cantidad;
 
-const rawInputContent = fileSystemModule.readFileSync(inputFilePath, encodingType);
-const inputLines = rawInputContent.split("\n");
+    if (cantidad >= 10) {
+        total = total - 20;
+    }
 
-const targetLineIndex = 1;
-const targetLine = inputLines[targetLineIndex];
-
-const lineSegments = targetLine.split(" ");
-
-const reversedSegments = lineSegments.reverse();
-
-const finalOutputString = reversedSegments.join(' ');
-
-console.log(finalOutputString);
+    return total;
+}

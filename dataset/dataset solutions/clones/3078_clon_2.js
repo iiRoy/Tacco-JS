@@ -1,11 +1,25 @@
-/*
- * This JavaScript snippet performs a simple data assignment
- * and then outputs a specific status message.
- * It's a demonstration of basic variable usage and direct console output.
- */
+function verifySymmetry(value) {
+  let start = 0;
+  let end = value.length - 1;
 
-// Declare and initialize a variable to hold a sequence of textual elements.
-let   sequentialDataEntry   =   "alpha,beta,gamma"   ;
+  while (start < end) {
+    if (value[start] !== value[end]) {
+      return false;
+    }
 
-// Utilize a standard output mechanism to convey a positive outcome.
-console.info(   "VerificationSuccessful"   )   ;
+    start++;
+    end--;
+  }
+
+  return true;
+}
+
+const receivedText = require("fs")
+  .readFileSync("/dev/stdin", "utf8")
+  .trim();
+
+console.log(
+  verifySymmetry(receivedText)
+    ? "PALINDROME"
+    : "NOT_PALINDROME"
+);

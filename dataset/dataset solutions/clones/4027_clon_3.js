@@ -1,25 +1,27 @@
 "use strict";
-var processInput = function(rawData) {
-    const NEWLINE_DELIMITER = "\n";
-    const SPACE_DELIMITER = " ";
-    const TARGET_LINE_INDEX = 1;
-    const numberLine = rawData.split(NEWLINE_DELIMITER)[TARGET_LINE_INDEX];
-    const sortedNumbers = numberLine
-        .split(SPACE_DELIMITER)
-        .map(currentVal => parseInt(currentVal, 10))
-        .sort((valA, valB) => valB - valA);
-    let playerOneScore = 0;
-    let playerTwoScore = 0;
-    for (let idx = 0; idx < sortedNumbers.length; idx++) {
-        const currentNumber = sortedNumbers[idx];
-        if (idx % 2 === 0) {
-            playerOneScore += currentNumber;
+
+var main = function(input) {
+    var lines = input.trim().split("\n");
+    var params = lines[0];
+    var cards = lines[1]
+        .split(" ")
+        .map(function(x) { return parseInt(x, 10); })
+        .sort(function(a, b) { return b - a; });
+
+    var alice = 0;
+    var bob = 0;
+
+    cards.forEach(function(x, i) {
+        if (i % 2 === 0) {
+            alice += x;
         } else {
-            playerTwoScore += currentNumber;
+            bob += x;
         }
-    }
-    const scoreDifference = playerOneScore - playerTwoScore;
-    return scoreDifference;
+    });
+
+    var result = alice - bob;
+    return result;
 };
-const finalResult = processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
-console.log(finalResult);
+
+var output = main(require("fs").readFileSync("/dev/stdin", "utf8"));
+console.log(output);

@@ -14,7 +14,7 @@ const temp = input.split("\n")[0].split(" ");
 
 
      if(a_max < b_min || b_max < a_min) console.log(-1)  
-	elseconsole.log ( Math.max ( a_min,  b_min ))
+	else console.log ( Math.max ( a_min,  b_min ))
       }
 
 

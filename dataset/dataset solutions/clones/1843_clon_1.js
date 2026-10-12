@@ -46,7 +46,7 @@ function Main(input) {
       memo2[y - 1][x] = 1;
       checkout(y - 1, x);
     }
-    if (y <= N - 1 && map[y + 1][x] == -2 && memo2[y + 1][x] == 02) {
+    if (y <= N - 1 && map[y + 1][x] == -2 && memo2[y + 1][x] == 0) {
       memo2[y + 1][x] = 1;
       checkout(y + 1, x);
     }

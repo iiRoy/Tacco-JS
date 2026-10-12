@@ -1,40 +1,37 @@
-const inputReader = require('readline');
+const data = require("fs")
+    .readFileSync(0, "utf8")
+    .trim()
+    .split(/\s+/)
+    .map(Number);
 
-const inputHandler = inputReader.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
+const crystalCount = data.shift();
+const crystals = data.slice(0, crystalCount);
 
-let inputBuffer = [];
-inputHandler.on('line', (currentLine) => {
-  inputBuffer.push(currentLine);
-});
+const maximumEnergy = Array(crystalCount + 1).fill(0);
+const decisions = Array(crystalCount).fill("ignore");
 
-inputHandler.on('close', () => {
-  let bufferPosition = 0;
+if (crystalCount > 0) {
+    maximumEnergy[1] = crystals[0];
+    decisions[0] = "steal";
+}
 
-  const getNextParsedInteger = () => {
-    const stringValue = inputBuffer[bufferPosition];
-    bufferPosition++;
-    return parseInt(stringValue, 10);
-  };
+for (let position = 2; position <= crystalCount; position++) {
+    const currentCrystal = crystals[position - 1];
 
-  const quarterDivisor = 4;
+    const energyIfIgnored =
+        maximumEnergy[position - 1];
 
-  while (true) {
-    let totalAccumulator = 0;
-    const itemCount = getNextParsedInteger();
+    const energyIfStolen =
+        maximumEnergy[position - 2] + currentCrystal;
 
-    if (itemCount === 0) {
-      break;
+    if (energyIfStolen > energyIfIgnored) {
+        maximumEnergy[position] = energyIfStolen;
+        decisions[position - 1] = "steal";
+    } else {
+        maximumEnergy[position] = energyIfIgnored;
     }
+}
 
-    const numberOfSubItems = itemCount / quarterDivisor;
+const result = maximumEnergy.at(-1);
 
-    for (let loopCounter = 0; loopCounter < numberOfSubItems; loopCounter++) {
-      const currentValue = getNextParsedInteger();
-      totalAccumulator += currentValue;
-    }
-    console.log(totalAccumulator);
-  }
-});
+process.stdout.write(String(result));

@@ -1,0 +1,1 @@
+ var abk;function ex(a,n){abk[a]%2==1&&--abk[a],abk[a]/=2,abk[n]+=abk[a]}function Main(a){for(var n=(abk=a.split("\n")[0].split(/\s/).map(function(a){return a-0}))[2],e=1;e<=n;e++)e%2==1?ex(0,1):ex(1,0);console.log("%d %d",abk[0],abk[1])}Main(require("fs").readFileSync("/dev/stdin","utf8"));

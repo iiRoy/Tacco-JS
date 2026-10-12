@@ -1,66 +1,43 @@
-function readInputDataFromStdin() {
-    return require("fs").readFileSync("/dev/stdin", "utf8");
-}
-
-function processInputData(rawDataString) {
-    const allInputLines = rawDataString.split('\n');
-
-    const firstLineTokens = allInputLines.shift().split(' ');
-    const initialCardCount = Number(firstLineTokens[0]);
-    const operationCount = Number(firstLineTokens[1]);
-
-    let currentCardValues = allInputLines.shift().split(' ').map(Number);
-    currentCardValues.sort((a, b) => a - b);
-
-    if (allInputLines.length > 0 && allInputLines[allInputLines.length - 1] === '') {
-        allInputLines.pop();
-    }
-
-    const modifierOperations = allInputLines.map(line => {
-        const parts = line.split(' ');
-        return {
-            count: Number(parts[0]),
-            value: Number(parts[1])
-        };
+function Main(input) {
+    var lines = input.trim().split('\n');
+    var first = lines.shift().split(' ');
+    var n = Number(first[0]);
+    var m = Number(first[1]);
+    var cs = lines.shift().split(' ').map(function(v){ return Number(v); }).sort(function (a, b) { return a - b; });
+    var ls = lines.slice(0, m).sort(function(a, b) {
+        return Number(b.split(' ')[1]) - Number(a.split(' ')[1]);
     });
 
-    modifierOperations.sort((opA, opB) => opB.value - opA.value);
+    var idx = 0;
 
-    let cardValueIndex = 0;
-    const totalCardsInDeck = currentCardValues.length;
+    for (var i = 0; i < ls.length; i++) {
+        var l = ls[i].split(' ');
+        var b = Number(l[0]);
+        var c = Number(l[1]);
 
-    for (const currentOperation of modifierOperations) {
-        let blocksToModify = currentOperation.count;
-        const replacementCandidateValue = currentOperation.value;
+        for (var j = 0; j < b; j++) {
+            if (idx >= n) {
+                break;
+            }
+            if (cs[idx] < c) {
+                cs[idx] = c;
+                idx++;
+            } else {
+                j = b;
+            }
+        }
 
-        if (cardValueIndex >= totalCardsInDeck) {
+        if (idx >= n) {
             break;
         }
-
-        while (blocksToModify > 0) {
-            if (cardValueIndex >= totalCardsInDeck) {
-                break;
-            }
-
-            const cardAtIndex = currentCardValues[cardValueIndex];
-
-            if (cardAtIndex < replacementCandidateValue) {
-                currentCardValues[cardValueIndex] = replacementCandidateValue;
-            } else {
-                break;
-            }
-
-            cardValueIndex++;
-            blocksToModify--;
-        }
     }
 
-    let finalCalculatedSum = 0;
-    for (const cardVal of currentCardValues) {
-        finalCalculatedSum += cardVal;
+    var ans = 0;
+    for (var i = 0; i < cs.length; i++) {
+        ans += cs[i];
     }
 
-    console.log(finalCalculatedSum);
+    console.log(ans);
 }
 
-processInputData(readInputDataFromStdin());
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

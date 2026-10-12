@@ -1,12 +1,14 @@
-function reverseText(sourceString) {
-  const characters = sourceString.split('');
-  const reversedCharacters = characters.reverse();
-  const finalReversedString = reversedCharacters.join('');
-  return finalReversedString;
+function calculateFactorial(number) {
+    if (number === 0 || number === 1) {
+        return 1;
+    }
+
+    let result = number;
+
+    for (let factor = number - 1; factor > 1; factor--) {
+        const previousResult = result;
+        result = previousResult * factor;
+    }
+
+    return result;
 }
-
-const standardInputPath = '/dev/stdin';
-const fileSystemModule = require('fs');
-const rawInputContent = fileSystemModule.readFileSync(standardInputPath, 'utf8');
-
-console.log(reverseText(rawInputContent));

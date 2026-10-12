@@ -1,31 +1,23 @@
-process.stdin.on("data", function(inputBuffer) {
-    const rawInputString = inputBuffer.toString();
-    const trimmedInputContent = rawInputString.trim();
-    const inputLinesArray = trimmedInputContent.split("\n");
+process.stdin.on("data", function(k){
+	k = String(k).trim().split("\n");
 
-    const elementPresenceMap = {};
-    let totalMatchCount = 0;
+	var o = {};
+	var c = 0;
+	var first = k[1].split(" ");
+	var second = k[3].split(" ");
 
-    const PRESENCE_MARKER = 1;
+	first.forEach(function(a){
+		if(a !== ""){
+			o[a] = (o[a] || 0) + 1;
+		}
+	});
 
-    const populateMapFromLine = (lineContent, targetMap, markerValue) => {
-        const elementsInLine = lineContent.split(" ");
-        for (const currentElement of elementsInLine) {
-            targetMap[currentElement] = markerValue;
-        }
-    };
+	second.forEach(function(a){
+		if(o[a]){
+			c += o[a];
+			o[a] = 0;
+		}
+	});
 
-    const firstSetSourceLine = inputLinesArray[1];
-    populateMapFromLine(firstSetSourceLine, elementPresenceMap, PRESENCE_MARKER);
-
-    const secondSetCheckLine = inputLinesArray[3];
-    const elementsToVerify = secondSetCheckLine.split(" ");
-
-    for (const itemToMatch of elementsToVerify) {
-        if (elementPresenceMap[itemToMatch]) {
-            totalMatchCount++;
-        }
-    }
-
-    console.log(totalMatchCount);
+	console.log(c);
 }).resume();

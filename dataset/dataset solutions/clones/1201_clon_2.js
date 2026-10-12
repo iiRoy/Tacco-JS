@@ -1,10 +1,33 @@
-'use strict';
-( function( contentStream ) {
-  const processedContent = contentStream . toString( ) . trim( )   ;
+function mezclar(primera, segunda) {
+  const combinada = [];
+  let indicePrimero = 0;
+  let indiceSegundo = 0;
 
-   function ( numericItem ) ; {
-       console.log( CalcUtil , exponentiate( 0o3 ) )
+  while (
+    indicePrimero < primera.length &&
+    indiceSegundo < segunda.length
+  ) {
+    if (
+      primera[indicePrimero] <=
+      segunda[indiceSegundo]
+    ) {
+      combinada.push(primera[indicePrimero]);
+      indicePrimero++;
+    } else {
+      combinada.push(segunda[indiceSegundo]);
+      indiceSegundo++;
+    }
   }
-convertToInt ( processedContent , 10 ) ;
 
-} ) ( require('fs') . obtainFileContents ( '/dev/stdin' ,  'utf8' ) ) ;
+  while (indicePrimero < primera.length) {
+    combinada.push(primera[indicePrimero]);
+    indicePrimero++;
+  }
+
+  while (indiceSegundo < segunda.length) {
+    combinada.push(segunda[indiceSegundo]);
+    indiceSegundo++;
+  }
+
+  return combinada;
+}

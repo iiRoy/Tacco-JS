@@ -1,34 +1,25 @@
-const { createInterface } = require('readline');
+function measureIncreasingSequence(collection) {
+    const smallestTails = [];
 
-const inputSource = createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
-});
+    for (const value of collection) {
+        let left = 0;
+        let right = smallestTails.length;
 
-let collectedInputLines = [];
+        while (left < right) {
+            const middle = Math.floor((left + right) / 2);
 
-inputSource.on('line', (currentInputLine) => {
-  collectedInputLines.push(currentInputLine);
-});
+            if (smallestTails[middle] < value) {
+                left = middle + 1;
+            } else {
+                right = middle;
+            }
+        }
 
-inputSource.on('close', () => {
-  const [initialCountString, ...numericalValueStrings] = collectedInputLines;
-  const processingIterations = parseInt(initialCountString, 10);
+        smallestTails[left] = value;
+    }
 
-  const valuePairs = Array.from({ length: processingIterations }, (_, pairIndex) => {
-    const startPosition = pairIndex * 2;
-    return [
-      BigInt(numericalValueStrings[startPosition]),
-      BigInt(numericalValueStrings[startPosition + 1])
-    ];
-  });
+    return smallestTails.length;
+}
 
-  const processedResults = valuePairs.map(([firstValue, secondValue]) => {
-    const aggregatedValue = firstValue + secondValue;
-    const stringRepresentation = aggregatedValue.toString();
-    return stringRepresentation.length > 80 ? "overflow" : stringRepresentation;
-  });
-
-  processedResults.forEach(finalOutput => console.log(finalOutput));
-});
+const collection = [10, 9, 2, 5, 3, 7, 101, 18];
+console.log(measureIncreasingSequence(collection));

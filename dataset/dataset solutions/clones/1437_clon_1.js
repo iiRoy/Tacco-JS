@@ -1,10 +1,160 @@
-// पठन बनाए रखता है अब अंतिम अगला चरण गणना के दौरान स्थिर.
-// पठन व्यवस्थित करता है अच्छी तरह मूल्यांकन क्रम इनपुट के साथ सक्रिय.
-process.stdin.on("data",function(c,s){
-       s=(c+"").trim().split(" ");
-	 console.log( Math.sqrt( Math.pow (s [ 0]+ s [2], 2 ) + Math.pow (s [ 1]+s [3],  2) ) .toFixed( 8));
-// पठन बनाए रखता है अब मुख्य प्रसंस्करण मार्ग गणना के दौरान निकट.
+/*
+ * Validar las filas, columnas y regiones
+ * de un tablero de Sudoku.
+ */
+function isValidSudoku
+(
+    board
+)
+{
+    // Revisar todas las filas.
+    for
+    (
+        let row = 0;
+        row < 9;
+        row++
+    )
+    {
+        const detectedValues =
+            new Set();
 
- }) .resume ();    
+        for
+        (
+            let column = 0;
+            column < 9;
+            column++
+        )
+        {
+            const value =
+                board[row][column];
 
-// पठन व्यवस्थित करता है अंतिम कोड निरंतरता हर मान के लिए निकट.
+            if
+            (
+                value === "."
+            )
+            {
+                continue;
+            }
+
+            if
+            (
+                detectedValues.has(value)
+            )
+            {
+                return false;
+            }
+
+            detectedValues.add(value);
+        }
+    }
+
+    // Revisar todas las columnas.
+    for
+    (
+        let column = 0;
+        column < 9;
+        column++
+    )
+    {
+        const detectedValues =
+            new Set();
+
+        for
+        (
+            let row = 0;
+            row < 9;
+            row++
+        )
+        {
+            const value =
+                board[row][column];
+
+            if
+            (
+                value === "."
+            )
+            {
+                continue;
+            }
+
+            if
+            (
+                detectedValues.has(value)
+            )
+            {
+                return false;
+            }
+
+            detectedValues.add(value);
+        }
+    }
+
+    // Revisar cada región de tres por tres.
+    for
+    (
+        let boxRow = 0;
+        boxRow < 3;
+        boxRow++
+    )
+    {
+        for
+        (
+            let boxColumn = 0;
+            boxColumn < 3;
+            boxColumn++
+        )
+        {
+            const detectedValues =
+                new Set();
+
+            for
+            (
+                let localRow = 0;
+                localRow < 3;
+                localRow++
+            )
+            {
+                for
+                (
+                    let localColumn = 0;
+                    localColumn < 3;
+                    localColumn++
+                )
+                {
+                    const row =
+                        boxRow * 3
+                        +
+                        localRow;
+
+                    const column =
+                        boxColumn * 3
+                        +
+                        localColumn;
+
+                    const value =
+                        board[row][column];
+
+                    if
+                    (
+                        value === "."
+                    )
+                    {
+                        continue;
+                    }
+
+                    if
+                    (
+                        detectedValues.has(value)
+                    )
+                    {
+                        return false;
+                    }
+
+                    detectedValues.add(value);
+                }
+            }
+        }
+    }
+
+    return true;
+}

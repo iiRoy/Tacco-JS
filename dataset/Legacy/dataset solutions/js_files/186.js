@@ -1,0 +1,1 @@
+x=require('fs').readFileSync('/dev/stdin','utf8').split("\n");x.sort(function(a,b){return b-a;});console.log((x[0].replace('.', '')-x[x.length-1].replace('.', ''))/10);

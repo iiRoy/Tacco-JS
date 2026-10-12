@@ -1,38 +1,19 @@
-var outputWriter = console.log;
-if (typeof process != "undefined") {
-    var rawInputBuffer = "";
-    process.stdin.resume();
-    process.stdin.setEncoding('utf8');
-    process.stdin.on('data', function (chunkData) {
-        rawInputBuffer += chunkData;
-    });
-    process.stdin.on('end', function () {
-        initializeProcessing(rawInputBuffer);
-    });
-}
+const fs = require("fs");
 
-function initializeProcessing(fullInputString) {
-    const segmentCollection = fullInputString.split("\n");
-    const intermediateSegments = segmentCollection.slice(1, segmentCollection.length - 1);
-    const targetSegment = intermediateSegments.pop();
-    processLineAndSort(targetSegment);
-}
+const rows = fs.readFileSync(0, "utf8").split(/\n/);
+const useful = rows.slice(1).filter((_, i, a) => i < a.length - 1 || a[i] !== "");
 
-function processLineAndSort(inputSegment) {
-    const finalNumericSequence = inputSegment.split(" ").reduce((accumulator, currentElementStr) => {
-        accumulator.push(Number(currentElementStr));
-        return accumulator;
-    }, []);
+const target = useful[useful.length - 1] || "";
+const nums = target.trim().split(/\s+/).filter(Boolean).map(Number);
 
-    for (let currentIdx = 1; currentIdx < finalNumericSequence.length; currentIdx++) {
-        let valueToInsert = finalNumericSequence[currentIdx];
-        let comparisonIdx = currentIdx - 1;
-        while (comparisonIdx >= 0 && finalNumericSequence[comparisonIdx] > valueToInsert) {
-            finalNumericSequence[comparisonIdx + 1] = finalNumericSequence[comparisonIdx];
-            comparisonIdx--;
-        }
-        finalNumericSequence[comparisonIdx + 1] = valueToInsert;
+for (let i = 0; i < nums.length; i++) {
+  for (let j = i + 1; j < nums.length; j++) {
+    if (nums[j] < nums[i]) {
+      const tmp = nums[i];
+      nums[i] = nums[j];
+      nums[j] = tmp;
     }
-
-    outputWriter(finalNumericSequence.join(" "));
+  }
 }
+
+process.stdout.write(nums.join(" "));

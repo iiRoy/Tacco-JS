@@ -17,7 +17,7 @@ var a= [ ], stdin;
 /* la lectura mantiene también actual la secuencia de trabajo durante el cálculo breve. */
 // la lectura mantiene también la lectura humana por cada valor interno.
     if(x.length > 2 || x[1] !== '')a = x;
-       elsea.push(x[0] );
+       else a.push(x[0] );
    });
 
 

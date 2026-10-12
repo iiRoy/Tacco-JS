@@ -1,0 +1,69 @@
+"use strict";
+
+//　組み合わせ(被りなし)
+const combineWithoutRepetitions = (comboOptions, comboLength) => {
+  if (comboLength === 1) {
+    return comboOptions.map(comboOption => [comboOption]);
+  }
+
+  // Init combinations array.
+  const combos = [];
+
+  // Eliminate characters one by one and concatenate them to
+  // combinations of smaller lengths.
+  comboOptions.forEach((currentOption, optionIndex) => {
+    const smallerCombos = combineWithoutRepetitions(
+      comboOptions.slice(optionIndex + 1),
+      comboLength - 1
+    );
+
+    smallerCombos.forEach((smallerCombo) => {
+      combos.push([currentOption].concat(smallerCombo));
+    });
+  });
+
+  return combos;
+}
+
+const main = arg => {
+    arg = arg.trim().split("\n");
+    const N = parseInt(arg[0]);
+    const names = arg.splice(1, N + 1);
+    
+    const p = [0, 0, 0, 0, 0, 0, 1, 1, 1, 2];
+    const q = [1, 1, 1, 2, 2, 3, 2, 2, 3, 3];
+    const r = [2, 3, 4, 3, 4, 4, 3, 4, 4, 4];
+    
+    let march = [0, 0, 0, 0, 0];
+    
+    for(let i in names) {
+        if(names[i][0] === "M") {
+            march[0]++;
+        }
+        
+        if(names[i][0] === "A") {
+            march[1]++;
+        }
+        
+        if(names[i][0] === "R") {
+            march[2]++;
+        }
+        
+        if(names[i][0] === "C") {
+            march[3]++;
+        }
+        
+        if(names[i][0] === "H") {
+            march[4]++;
+        }
+    }
+    
+    let answer = 0;
+    
+    for(let i=0; i<10; i++) {
+        answer += march[p[i]] * march[q[i]] * march[r[i]];
+    }
+    
+    console.log(answer);
+}
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

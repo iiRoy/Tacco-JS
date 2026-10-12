@@ -1,38 +1,50 @@
-function main(inputLines) {
-    const [initialParameters, ...monsterDataLines] = inputLines;
-    const [numMonsters, bombRange, bombDamage] = initialParameters.split(" ").map(Number);
+const fs = require("fs");
 
-    const targets = monsterDataLines.slice(0, numMonsters).map(line => line.split(" ").map(Number));
+const data = fs.readFileSync(0, "utf8").trim().split(/\s+/).map(Number);
+let p = 0;
 
-    targets.sort((a, b) => a[0] - b[0]);
+const n = data[p++];
+const d = data[p++];
+const a = data[p++];
 
-    let totalBombsDeployed = 0;
-    const activeBombEffects = []; // Stores [effect_end_x_coordinate, damage_amount_from_this_bomb_wave]
-    let currentCumulativeDamage = 0;
+const monsters = [];
 
-    for (let i = 0; i < numMonsters; i++) {
-        let [targetX, targetHealth] = targets[i];
-
-        while (activeBombEffects.length > 0 && activeBombEffects[0][0] < targetX) {
-            const [_, expiredDamage] = activeBombEffects.shift();
-            currentCumulativeDamage -= expiredDamage;
-        }
-
-        targetHealth -= currentCumulativeDamage;
-
-        if (targetHealth > 0) {
-            const bombsToDrop = Math.ceil(targetHealth / bombDamage);
-            totalBombsDeployed += bombsToDrop;
-
-            const newBombWaveDamage = bombsToDrop * bombDamage;
-            const bombEffectEndCoordinate = targetX + 2 * bombRange + 1;
-
-            activeBombEffects.push([bombEffectEndCoordinate, newBombWaveDamage]);
-            currentCumulativeDamage += newBombWaveDamage;
-        }
-    }
-
-    console.log(totalBombsDeployed);
+for (let i = 0; i < n; i++) {
+  monsters.push([data[p++], data[p++]]);
 }
 
-main(require('fs').readFileSync('/dev/stdin', 'utf8').split("\n"));
+monsters.sort((u, v) => u[0] - v[0]);
+
+const cancel = Array(n + 1).fill(0);
+let active = 0;
+let answer = 0;
+let right = 0;
+
+for (let i = 0; i < n; i++) {
+  active += cancel[i];
+
+  const hp = monsters[i][1] - active;
+
+  if (hp <= 0) {
+    continue;
+  }
+
+  const count = Math.ceil(hp / a);
+  const damage = count * a;
+  const limit = monsters[i][0] + d * 2 + 1;
+
+  answer += count;
+  active += damage;
+
+  if (right < i) {
+    right = i;
+  }
+
+  while (right < n && monsters[right][0] <= limit) {
+    right++;
+  }
+
+  cancel[right] -= damage;
+}
+
+process.stdout.write(String(answer));

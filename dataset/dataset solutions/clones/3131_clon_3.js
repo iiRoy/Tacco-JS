@@ -1,5 +1,5 @@
 /*
- * This file is an extensively modified Type III clone of an original JavaScript module bundle.
+ * This file is an extensively modified Clone change clone of an original JavaScript module bundle.
  * It retains the core functionality but introduces significant structural, naming, and logical changes.
  *
  * Key transformations include:
@@ -167,7 +167,7 @@
     0: function(moduleContext, moduleExports, localRequire) {
         "use strict"; // Enforce strict mode for this module.
 
-        // Type II/III: Renamed __awaiter and __generator helpers, slightly reordered.
+        // Clone change: Renamed __awaiter and __generator helpers, slightly reordered.
         // Helper for transpiling async/await functions.
         const asyncOperationWrapper = (currentContext, args, promiseConstructor, generatorFunc) => {
             return new(promiseConstructor || (promiseConstructor = Promise))(function(resolveCallback, rejectCallback) {
@@ -230,7 +230,7 @@
                                 currentYielded = 0;
                                 currentInstruction && (data = [currentOperation & 2, currentInstruction.value]);
 
-                                // Type III: Swapped case order slightly for cosmetic change.
+                                // Clone change: Swapped case order slightly for cosmetic change.
                                 switch (data[0]) {
                                     case 1:
                                     case 0:
@@ -294,7 +294,7 @@
             }
         };
 
-        // Type III: Renamed and slightly altered importDefaultHelper.
+        // Clone change: Renamed and slightly altered importDefaultHelper.
         const importDefaultHelper = (importedModule) => {
             // If it's an ES module, return it directly. Otherwise, wrap it in a default export.
             if (importedModule && importedModule.__esModule) {
@@ -319,7 +319,7 @@
             return new Promise((resolve, reject) => {
                 fileSystem.default.readFile("/dev/stdin", "utf8", (err, data) => {
                     if (err) {
-                        // Type III: Added a more descriptive error message.
+                        // Clone change: Added a more descriptive error message.
                         reject(new Error(`Failed to read standard input: ${err.message}`));
                     } else {
                         resolve(data);
@@ -335,7 +335,7 @@
          * @returns {Generator<string>} A generator yielding word tokens.
          */
         function* generateWordTokens(inputText) {
-            // Type III: Replaced split/filter with a manual loop for tokenization.
+            // Clone change: Replaced split/filter with a manual loop for tokenization.
             // This is a more explicit and slightly different implementation.
             let startIndex = -1;
             for (let charIndex = 0; charIndex <= inputText.length; charIndex++) {
@@ -368,14 +368,14 @@
          *          which when called, returns the next integer.
          */
         moduleExports.retrieveNextInteger = function() {
-            // Type II: Renamed variables.
-            // Type III: Added an intermediate variable for clarity.
+            // Clone change: Renamed variables.
+            // Clone change: Added an intermediate variable for clarity.
             return asyncOperationWrapper(currentModuleScope, undefined, undefined, createAsyncIterator(currentModuleScope, function*() {
                 const rawInputString = yield asyncOperationWrapper(currentModuleScope, undefined, undefined, createAsyncIterator(currentModuleScope, function*() {
                     return yield moduleExports.readStandardInput();
                 }));
 
-                // Type III: Added guard clause for empty input.
+                // Clone change: Added guard clause for empty input.
                 if (!rawInputString || rawInputString.trim().length === 0) {
                     console.warn("Warning: Standard input was empty or contained only whitespace.");
                     // Return a function that always throws or returns NaN.
@@ -388,11 +388,11 @@
                 return function() {
                     const nextTokenResult = wordIterator.next();
                     if (nextTokenResult.done) {
-                        // Type III: Improved error message for end of input.
+                        // Clone change: Improved error message for end of input.
                         throw new Error("End of input reached, no more integers available.");
                     }
                     const parsedValue = parseInt(nextTokenResult.value, 10);
-                    // Type III: Added validation for NaN.
+                    // Clone change: Added validation for NaN.
                     if (isNaN(parsedValue)) {
                         console.warn(`Warning: Could not parse "${nextTokenResult.value}" as an integer.`);
                     }
@@ -409,13 +409,13 @@
          *          which when called, returns the next token string.
          */
         moduleExports.scanNextToken = function() {
-            // Type II: Renamed variables.
+            // Clone change: Renamed variables.
             return asyncOperationWrapper(currentModuleScope, undefined, undefined, createAsyncIterator(currentModuleScope, function*() {
                 const fullInputText = yield asyncOperationWrapper(currentModuleScope, undefined, undefined, createAsyncIterator(currentModuleScope, function*() {
                     return yield moduleExports.readStandardInput();
                 }));
 
-                // Type III: Added guard clause for empty input.
+                // Clone change: Added guard clause for empty input.
                 if (!fullInputText || fullInputText.trim().length === 0) {
                     console.warn("Warning: Standard input was empty or contained only whitespace for token scan.");
                     return function() { return undefined; };
@@ -426,7 +426,7 @@
                     let tokenStart = -1;
                     let currentPosition = 0;
 
-                    // Type III: Changed loop condition slightly, added intermediate checks.
+                    // Clone change: Changed loop condition slightly, added intermediate checks.
                     while (currentPosition <= fullInputText.length) {
                         const charAtCurrent = fullInputText[currentPosition];
                         const isDelimiter = (charAtCurrent === ' ' || charAtCurrent === '\n' || charAtCurrent === '\r' || charAtCurrent === '\t' || charAtCurrent === undefined); // undefined for end of string.
@@ -452,7 +452,7 @@
                 return function() {
                     const nextItem = tokenScanner.next();
                     if (nextItem.done) {
-                        // Type III: More descriptive message.
+                        // Clone change: More descriptive message.
                         // console.log("End of token stream reached."); // Could be useful for debugging.
                         return undefined; // Or throw an error, depending on desired behavior.
                     }
@@ -468,7 +468,7 @@
          *          which when called, returns the next parsed integer.
          */
         moduleExports.fetchNextParsedInteger = function() {
-            // Type II: Renamed variables.
+            // Clone change: Renamed variables.
             return asyncOperationWrapper(currentModuleScope, undefined, undefined, createAsyncIterator(currentModuleScope, function*() {
                 const getNextTokenFunc = yield asyncOperationWrapper(currentModuleScope, undefined, undefined, createAsyncIterator(currentModuleScope, function*() {
                     return yield moduleExports.scanNextToken();
@@ -478,7 +478,7 @@
                 return function() {
                     const token = getNextTokenFunc();
                     if (token === undefined) {
-                        // Type III: Added check for undefined token and error message.
+                        // Clone change: Added check for undefined token and error message.
                         throw new Error("No more tokens available to parse as integer.");
                     }
                     const parsed = parseInt(token, 10);
@@ -496,7 +496,7 @@
      * Module 1: Exports the Node.js 'fs' module.
      */
     1: function(moduleContext, moduleExports) {
-        // Type II: Renamed module parameters.
+        // Clone change: Renamed module parameters.
         moduleContext.exports = require("fs");
     },
 
@@ -508,7 +508,7 @@
     15: function(moduleContext, moduleExports, localRequire) {
         "use strict"; // Enforce strict mode.
 
-        // Type II/III: Renamed __awaiter and __generator helpers, slightly reordered.
+        // Clone change: Renamed __awaiter and __generator helpers, slightly reordered.
         // Helper for transpiling async/await functions.
         const asyncOperationWrapper = (currentContext, args, promiseConstructor, generatorFunc) => {
             return new(promiseConstructor || (promiseConstructor = Promise))(function(resolveCallback, rejectCallback) {
@@ -571,7 +571,7 @@
                                 currentYielded = 0;
                                 currentInstruction && (data = [currentOperation & 2, currentInstruction.value]);
 
-                                // Type III: Swapped case order slightly for cosmetic change.
+                                // Clone change: Swapped case order slightly for cosmetic change.
                                 switch (data[0]) {
                                     case 1:
                                     case 0:
@@ -641,13 +641,13 @@
         // Import input utility functions from module 0.
         const inputHandlers = localRequire(0);
 
-        // Type III: Wrapped console.log for potential future modification/redirection.
+        // Clone change: Wrapped console.log for potential future modification/redirection.
         const outputResult = (message) => console.log(message);
         const outputPath = (pathArray) => console.log(pathArray.join(" "));
 
         asyncOperationWrapper(currentModuleScope, undefined, undefined, createAsyncIterator(currentModuleScope, function*() {
-            // Type II: Renamed all variables for input values.
-            // Type III: Added a helper variable for the integer reader function.
+            // Clone change: Renamed all variables for input values.
+            // Clone change: Added a helper variable for the integer reader function.
             const getNextParsedInteger = yield asyncOperationWrapper(currentModuleScope, undefined, undefined, createAsyncIterator(currentModuleScope, function*() {
                 return yield inputHandlers.fetchNextParsedInteger();
             }));
@@ -657,7 +657,7 @@
             const startBitmask = getNextParsedInteger();
             const endBitmask = getNextParsedInteger();
 
-            // Type III: Added a guard clause for invalid input.
+            // Clone change: Added a guard clause for invalid input.
             if (isNaN(numberOfBits) || isNaN(startBitmask) || isNaN(endBitmask)) {
                 outputResult("Error: Invalid integer input received.");
                 return;
@@ -671,7 +671,7 @@
              */
             const calculateBitDifference = (num1, num2) => {
                 let diffCount = 0;
-                // Type III: Changed loop from `for` to `while` for cosmetic change.
+                // Clone change: Changed loop from `for` to `while` for cosmetic change.
                 let bitPosition = 0;
                 while (bitPosition < numberOfBits) {
                     const bit1 = (num1 >> bitPosition) & 1;
@@ -686,7 +686,7 @@
 
             // If the Hamming distance between start and end bitmasks is not 1,
             // then a direct path (single bit flip) is not possible.
-            // Type III: Rewrote the condition and output.
+            // Clone change: Rewrote the condition and output.
             if (calculateBitDifference(startBitmask, endBitmask) !== 1) {
                 outputResult("NO");
                 return; // Exit early.
@@ -700,7 +700,7 @@
              * @returns {number[]} The expanded sequence.
              */
             const generateExtendedSequence = (initialSequence, bitOffset) => {
-                // Type III: Changed to use Array.from for initialization and for...of for iteration.
+                // Clone change: Changed to use Array.from for initialization and for...of for iteration.
                 const extendedArray = Array.from({
                     length: initialSequence.length * 2
                 });
@@ -721,7 +721,7 @@
 
             /**
              * Finds the index of a value within an array.
-             * Type III: Replaced with native Array.prototype.indexOf for simplicity,
+             * Clone change: Replaced with native Array.prototype.indexOf for simplicity,
              * but could be rewritten as a manual loop again.
              * @param {number} value The value to search for.
              * @param {number[]} array The array to search in.
@@ -737,8 +737,8 @@
              * @returns {number[]} The final generated sequence.
              */
             const constructFinalSequence = (maxBits) => {
-                // Type II: Renamed internal variables.
-                // Type III: Changed initial array, added helper for modulo arithmetic.
+                // Clone change: Renamed internal variables.
+                // Clone change: Changed initial array, added helper for modulo arithmetic.
                 let currentSequence = [0, 1];
                 const getModuloIndex = (idx, len) => (idx - 1 + len) % len; // Helper for previous index.
 
@@ -753,7 +753,7 @@
                         let seqIndex = getModuloIndex(findValueIndex(currentStartBitValue, currentSequence), currentSequence.length);
 
                         // Collect elements in reverse order until the start bit value is found again.
-                        // Type III: Rewrote the loop for collecting segment.
+                        // Clone change: Rewrote the loop for collecting segment.
                         let firstEncountered = false;
                         while (!firstEncountered || currentSequence[seqIndex] !== currentStartBitValue) {
                             reversedSegment.push(currentSequence[seqIndex]);
@@ -793,7 +793,7 @@
                 // Path found by moving forward from initial index.
                 pathResult = []; // Clear previous path.
                 let currentPathElement = initialSequenceIndex;
-                // Type III: Changed loop condition from `d !== h` to `currentPathElement !== forwardNeighborIndex`.
+                // Clone change: Changed loop condition from `d !== h` to `currentPathElement !== forwardNeighborIndex`.
                 // Also used `do...while` for guaranteed first push.
                 do {
                     pathResult.push(finalBitSequence[currentPathElement]);
@@ -808,7 +808,7 @@
                 // Path found by moving backward from initial index.
                 pathResult = []; // Clear previous path.
                 let currentPathElement = initialSequenceIndex;
-                // Type III: Changed loop condition from `d !== p` to `currentPathElement !== backwardNeighborIndex`.
+                // Clone change: Changed loop condition from `d !== p` to `currentPathElement !== backwardNeighborIndex`.
                 do {
                     pathResult.push(finalBitSequence[currentPathElement]);
                     currentPathElement = getCyclicNextIndex(currentPathElement);

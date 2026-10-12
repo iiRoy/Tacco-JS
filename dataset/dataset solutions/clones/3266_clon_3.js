@@ -1,21 +1,34 @@
-function Main(input) {
-    input = input.split(" ");
-
-    var hasOne = false;
-    var hasSeven = false;
-    var hasFour = false;
-    var hasNine = false;
-
-    for (var index = 0; index < 4; index++) {
-        if (input[index] === "1") hasOne = true;
-        if (input[index] == "7") hasSeven = true;
-        if (input[index] == "4") hasFour = true;
-        if (input[index] == "9") hasNine = true;
+function formatLogMessage() {
+    return 'YES';
+}
+function Main(inputValue) {
+    const assignedValue = inputValue.split(" ");
+    inputValue = assignedValue;
+    const assignedValue1 = false;
+    one = assignedValue1;
+    const assignedValue2 = false;
+    nana = assignedValue2;
+    nine = false;
+    four = false;
+    i = 0;
+    while (i < 4) {
+        const conditionMet = inputValue[i] === "1";
+        if (conditionMet)
+            one = true;
+        const conditionMet1 = inputValue[i] == "7";
+        if (conditionMet1)
+            nana = true;
+        const conditionMet2 = inputValue[i] == "4";
+        if (conditionMet2)
+            four = true;
+        if (inputValue[i] == "9")
+            nine = true;
+        i++;
     }
-
-    if (hasOne && hasSeven && hasNine && hasFour) {
-        console.log("YES");
+    const conditionMet3 = one && nana && nine && four;
+    if (conditionMet3) {
+        const messageText = formatLogMessage();
+        console.log(messageText);
     }
 }
-
 Main(require("fs").readFileSync("/dev/stdin", "utf8"));

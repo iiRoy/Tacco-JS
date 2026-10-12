@@ -1,55 +1,45 @@
-'use strict';
+const fs = require('fs');
 
-function token(strToMatch) {
-  const matchLength = strToMatch.length;
-  const PARSE_SUCCESS = true;
-  const PARSE_FAILURE = false;
+function loadMeteorReadings() {
+    const readings = fs
+        .readFileSync(0, 'utf8')
+        .trim()
+        .split(/\s+/)
+        .map(Number);
 
-  return function (inputSequence, currentOffset) {
-    // A guard clause to handle invalid starting positions gracefully.
-    // While slice handles out-of-bounds gracefully, an explicit check can be clearer.
-    if (currentOffset < 0 || currentOffset > inputSequence.length) {
-      return [PARSE_FAILURE, null, currentOffset];
-    }
+    const declaredMeteors = readings.shift();
 
-    // Extract a segment from the input string starting at the current offset.
-    const extractedSegment = inputSequence.slice(currentOffset, currentOffset + matchLength);
-
-    // Compare the extracted segment with the string we are trying to match.
-    if (extractedSegment === strToMatch) {
-      const nextOffset = currentOffset + matchLength; // Calculate the new position after a successful match.
-      return [PARSE_SUCCESS, strToMatch, nextOffset];
-    } else {
-      // If there's no match, return a failure state, preserving the original offset.
-      const failureValue = null;
-      return [PARSE_FAILURE, failureValue, currentOffset];
-    }
-  };
+    return readings.slice(0, declaredMeteors);
 }
 
-function choice() {
-  // Convert the 'arguments' object into a proper array of parser functions.
-  const availableParsers = Array.from(arguments);
-  const SUCCESS_INDICATOR_POSITION = 0; // Define a constant for the index of the success flag.
+function findBrighterMeteor(readings, origin) {
+    const currentBrightness = readings[origin];
 
-  return function (sourceText, startingOffset) {
-    // Iterate through each parser function in the collection.
-    // Changed from for...of to a traditional for loop as a structural modification.
-    for (let i = 0; i < availableParsers.length; i++) {
-      const currentParserFn = availableParsers[i]; // Store the current parser in a helper variable.
+    let candidatePosition = origin + 1;
 
-      // Attempt to parse the source text using the current parser function.
-      const parsingOutcome = currentParserFn(sourceText, startingOffset);
+    while (candidatePosition < readings.length) {
+        const candidateBrightness =
+            readings[candidatePosition];
 
-      // Check if the current parser successfully processed a part of the input.
-      if (parsingOutcome[SUCCESS_INDICATOR_POSITION]) {
-        return parsingOutcome; // If successful, return its result immediately.
-      }
+        if (candidateBrightness > currentBrightness) {
+            return candidateBrightness;
+        }
+
+        candidatePosition++;
     }
 
-    // If none of the parsers in the collection succeeded, return a failure state.
-    // The position should remain unchanged to indicate no progress was made.
-    const noMatchValue = null;
-    return [false, noMatchValue, startingOffset];
-  };
+    return -1;
 }
+
+const meteorReadings = loadMeteorReadings();
+
+const brightnessReport = meteorReadings.map(
+    (_, meteorPosition) => {
+        return findBrighterMeteor(
+            meteorReadings,
+            meteorPosition
+        );
+    }
+);
+
+process.stdout.write(`${brightnessReport.join(' ')}\n`);

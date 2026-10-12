@@ -1,17 +1,53 @@
-const fileSystemModule = require("fs");
+const musicalScale = [
+  "DO", "DO#", "RE", "RE#", "MI", "FA",
+  "FA#", "SOL", "SOL#", "LA", "LA#", "SI"
+];
 
-function processAndSwapStrings(sourceContent) {
-    const temporaryMarker = '#';
-    const firstReplacementStep = sourceContent.replace(/apple/g, temporaryMarker);
-    const secondReplacementStep = firstReplacementStep.replace(/peach/g, 'apple');
-    const finalReplacementStep = secondReplacementStep.replace(new RegExp(temporaryMarker, 'g'), 'peach');
-    return finalReplacementStep;
+function locateNote(noteName) {
+  return musicalScale.indexOf(noteName);
 }
 
-const standardInputPath = "/dev/stdin";
-const utf8Encoding = "utf8";
+function collectFollowingNotes(startPosition) {
+  const collectedNotes = new Array(3);
+  let currentPosition = startPosition;
+  let collectedCount = 0;
 
-const fileContents = fileSystemModule.readFileSync(standardInputPath, utf8Encoding);
-const transformedOutput = processAndSwapStrings(fileContents);
+  while (collectedCount < collectedNotes.length) {
+    currentPosition += 1;
 
-console.log(transformedOutput);
+    if (currentPosition === musicalScale.length) {
+      currentPosition = 0;
+    }
+
+    collectedNotes[collectedCount] =
+      musicalScale[currentPosition];
+
+    collectedCount += 1;
+  }
+
+  return collectedNotes;
+}
+
+function findAdjacentNotes(noteName) {
+  const startPosition = locateNote(noteName);
+
+  if (startPosition < 0) {
+    return [];
+  }
+
+  return collectFollowingNotes(startPosition);
+}
+
+const fileSystem = require("fs");
+const rawInput = fileSystem.readFileSync(
+  "/dev/stdin",
+  "utf8"
+);
+const requestedNote = rawInput.trim().toUpperCase();
+const foundNotes = findAdjacentNotes(requestedNote);
+
+if (foundNotes.length === 0) {
+  console.log("NOT_FOUND");
+} else {
+  console.log(foundNotes.join(" "));
+}

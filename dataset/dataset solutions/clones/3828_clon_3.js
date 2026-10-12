@@ -1,34 +1,29 @@
-var inputLines = [];
-var ioModule = require('readline');
+var lines = [];
+var ans = 0;
+var readline = require('readline');
 
-var inputInterface = ioModule.createInterface({
+var rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-function computePower(base, exponent) {
-    return Math.pow(base, exponent);
-}
-
-inputInterface.on('line', function (currentInputLine) {
-    inputLines.push(currentInputLine);
+rl.on('line', function (x) {
+    lines[lines.length] = x;
 });
 
-inputInterface.on('close', function () {
-    var targetNumericValue = Number(inputLines[0]);
-    var maxValidPower;
+rl.on('close', function () {
+    var X = parseInt(lines[0], 10);
+    var powers = [10, 9, 8, 7, 6, 5, 4, 3, 2];
 
-    for (var baseCandidate = 1; baseCandidate <= targetNumericValue; baseCandidate++) {
-        var currentBaseSquared = computePower(baseCandidate, 2);
+    for (var i = 1; i <= X; i++) {
+        for (var j = 0; j < powers.length; j++) {
+            var value = Math.pow(i, powers[j]);
 
-        if (currentBaseSquared > targetNumericValue) {
-            break;
-        }
-
-        if (currentBaseSquared <= targetNumericValue) {
-            maxValidPower = currentBaseSquared;
+            if (value <= X) {
+                ans = value;
+            }
         }
     }
 
-    console.log(maxValidPower);
+    console.log(ans);
 });

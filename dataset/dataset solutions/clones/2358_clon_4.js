@@ -1,140 +1,59 @@
-var inputReader = require('readline').createInterface({
-  input: process.stdin, output: process.stdout
-});
-var inputProcessor;
-var inputLines = [];
+const fs = require("fs");
 
-inputReader.on('line', function(line){
-  inputLines.push(line);
-});
+const nums = fs.readFileSync(0, "utf8").trim().split(/\s+/).map(Number);
+let p = 0;
 
-inputReader.on('close', function(){
-  inputProcessor = initializeInput(inputLines);
-  console.error('\n↑入力 ↓出力');
-  solveProblem();
-});
+const H = nums[p++];
+const W = nums[p++];
 
-function deepCopy(item){
-  return (item instanceof Set) ? new Set(Array.from(item)) : JSON.parse(JSON.stringify(item));
+const A = [];
+for (let y = 0; y < H; y++) {
+  A[y] = nums.slice(p, p + W);
+  p += W;
 }
 
-function readInt(){
-  return convertInput(getNextToken(), 1);
-}
-
-function readStrArray(){
-  return convertInput(getNextToken(), 2);
-}
-
-function readIntArray(){
-  return convertInput(getNextToken(), 4);
-}
-
-function readCharArray(){
-  return convertInput(getNextToken(), 6);
-}
-
-function getNextToken(){
-  return inputProcessor.getNextToken();
-}
-
-function hasMoreTokens(){
-  return inputProcessor.hasMoreTokens();
-}
-
-function initializeInput(lines){
-  return {
-    data : lines,
-    pointer : 0,
-    total : lines.length,
-    hasMoreTokens : function(){
-      return (this.pointer < this.total);
-    },
-    getNextToken : function(){
-      if(this.hasMoreTokens()){
-        return this.data[this.pointer++];
-      } else {
-        throw 'InputExhaustedException: No more input available';
-      }
-    }
-  };
-}
-
-function outputResult(val){
-  console.log(val);
-}
-
-function logDebug(val){
-  console.error('debug:' + require('util').inspect(val, false, null));
-}
-
-function convertInput(data, type){
-  try {
-    switch(type){
-      case 1: return parseInt(data);
-      case 2: return data.split(' ');
-      case 4: return data.split(' ').map(Number);
-      case 6: return data.split('');
-      case 7: return data.split('').map(Number);
-      case 8: return data.join(' ');
-      case 9: return data.join('\n');
-      case 0: return data.join('');
-      default: return data;
-    }
-  } catch(e) {
-    return data;
+const D = [];
+let total = 0;
+for (let y = 0; y < H; y++) {
+  D[y] = [];
+  for (let x = 0; x < W; x++) {
+    const v = Math.abs(A[y][x] - nums[p++]);
+    D[y][x] = v;
+    total += v;
   }
 }
 
-function solveProblem(){
-  const dimensions = readIntArray();
-  const gridHeight = dimensions[0];
-  const gridWidth = dimensions[1];
+const states = Array.from({ length: H }, () =>
+  Array.from({ length: W }, () => new Set())
+);
 
-  const gridA = Array.from({ length: gridHeight }, () => readIntArray());
+states[0][0].add(D[0][0]);
 
-  const diffGrid = Array.from({ length: gridHeight }, (r) => {
-    const rowB = readIntArray();
-    return Array.from({ length: gridWidth }, (c) => Math.abs(gridA[r][c] - rowB[c]));
-  });
+for (let y = 0; y < H; y++) {
+  for (let x = 0; x < W; x++) {
+    if (y === 0 && x === 0) continue;
 
-  const sumLimit = 90;
+    const here = D[y][x];
 
-  const dpState = Array.from({ length: gridHeight }, () =>
-    Array.from({ length: gridWidth }, () => new Set())
-  );
-
-  dpState[0][0].add(diffGrid[0][0]);
-
-  const updateReachableSums = (sourceSet, currentCellValue, targetSet, limit) => {
-    sourceSet.forEach(prevSum => {
-      const sumPlus = Math.abs(prevSum + currentCellValue);
-      const sumMinus = Math.abs(prevSum - currentCellValue);
-      if (sumPlus < limit) targetSet.add(sumPlus);
-      if (sumMinus < limit) targetSet.add(sumMinus);
-    });
-  };
-
-  for (let r = 0; r < gridHeight; r++) {
-    for (let c = 0; c < gridWidth; c++) {
-      if (r === 0 && c === 0) continue;
-
-      if (r > 0) {
-        updateReachableSums(dpState[r - 1][c], diffGrid[r][c], dpState[r][c], sumLimit);
+    if (y > 0) {
+      for (const prev of states[y - 1][x]) {
+        states[y][x].add(Math.abs(prev + here));
+        states[y][x].add(Math.abs(prev - here));
       }
+    }
 
-      if (c > 0) {
-        updateReachableSums(dpState[r][c - 1], diffGrid[r][c], dpState[r][c], sumLimit);
+    if (x > 0) {
+      for (const prev of states[y][x - 1]) {
+        states[y][x].add(Math.abs(prev + here));
+        states[y][x].add(Math.abs(prev - here));
       }
     }
   }
-
-  let minimumFinalSum = Infinity;
-  dpState[gridHeight - 1][gridWidth - 1].forEach(s => {
-    if (s < minimumFinalSum) {
-      minimumFinalSum = s;
-    }
-  });
-
-  outputResult(minimumFinalSum);
 }
+
+let answer = Infinity;
+for (const v of states[H - 1][W - 1]) {
+  if (v < answer) answer = v;
+}
+
+process.stdout.write(String(answer));

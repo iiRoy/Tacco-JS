@@ -1,49 +1,32 @@
-const inputSourcePath = '/dev/stdin';
-const rawFileContent = require('fs').readFileSync(inputSourcePath, 'utf8');
+var input = require('fs').readFileSync('/dev/stdin', 'utf8').split(/\n/);
 
-const inputLines = rawFileContent.split(/\n/);
+for (var row = 0; row < input.length; row++) {
+    var tokens = input[row].split(/\s/);
+    var stack = [];
 
-const processNumericToken = (tokenValue) => {
-    return isNaN(tokenValue) ? 0 : parseFloat(tokenValue).toFixed(6);
-};
+    for (var i = 0; i < tokens.length; i++) {
+        var c = tokens[i];
 
-const rpnOperatorHandlers = Object.create(null);
-
-rpnOperatorHandlers['+'] = (currentOperandStack) => {
-    currentOperandStack.push(
-        currentOperandStack.pop() + currentOperandStack.pop()
-    );
-};
-
-rpnOperatorHandlers['-'] = (currentOperandStack) => {
-    currentOperandStack.push(
-        -currentOperandStack.pop() + currentOperandStack.pop()
-    );
-};
-
-rpnOperatorHandlers['*'] = (currentOperandStack) => {
-    currentOperandStack.push(
-        currentOperandStack.pop() * currentOperandStack.pop()
-    );
-};
-
-rpnOperatorHandlers['/'] = (currentOperandStack) => {
-    currentOperandStack.push(
-        1 / currentOperandStack.pop() * currentOperandStack.pop()
-    );
-};
-
-inputLines.forEach((lineContent) => {
-    const currentLineTokens = lineContent.split(/\s/);
-    const operandStack = [];
-
-    currentLineTokens.forEach((currentTokenStr) => {
-        if (Object.prototype.hasOwnProperty.call(rpnOperatorHandlers, currentTokenStr)) {
-            rpnOperatorHandlers[currentTokenStr](operandStack);
+        if (c === '+') {
+            var r1 = stack.pop();
+            var l1 = stack.pop();
+            stack.push(l1 + r1);
+        } else if (c === '-') {
+            var r2 = stack.pop();
+            var l2 = stack.pop();
+            stack.push(l2 - r2);
+        } else if (c === '*') {
+            var r3 = stack.pop();
+            var l3 = stack.pop();
+            stack.push(l3 * r3);
+        } else if (c === '/') {
+            var r4 = stack.pop();
+            var l4 = stack.pop();
+            stack.push(l4 / r4);
         } else {
-            operandStack.push(processNumericToken(currentTokenStr));
+            stack.push(isNaN(c) ? 0 : parseFloat(c).toFixed(6));
         }
-    });
+    }
 
-    console.log(operandStack[0]);
-});
+    console.log(stack[0]);
+}

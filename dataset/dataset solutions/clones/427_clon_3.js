@@ -1,42 +1,71 @@
-$(function(){
-    const fileSystemModule = require('fs');
-    const rawInputData = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
-    const processedLines = rawInputData.trim().split("\n");
-    let collectedSums = [];
-    const BATCH_PROCESSING_SIZE = 5;
-    const LABEL_CHARACTERS = "ABCDE";
+const fs = require('fs');
 
-    for (let lineIterator = 0; lineIterator < processedLines.length; lineIterator++) {
-        const currentInputLine = processedLines[lineIterator];
+function readTerrain() {
+    const values = fs
+        .readFileSync(0, 'utf8')
+        .trim()
+        .split(/\s+/)
+        .map(Number);
 
-        if (collectedSums.length === 0 && currentInputLine === "0 0") {
-            break;
-        }
+    const size = values.shift();
 
-        const lineParts = currentInputLine.split(" ");
-        const numericValues = lineParts.map(Number);
+    return values.slice(0, size);
+}
 
-        const currentLineSum = numericValues[0] + numericValues[1];
-        collectedSums.push(currentLineSum);
+function buildWesternBarriers(towers) {
+    const barriers = [];
+    let tallestTower = 0;
 
-        if (collectedSums.length === BATCH_PROCESSING_SIZE) {
-            let maximumValueInBatch = -Infinity;
-            let indexOfMaximum = -1;
-
-            for (let sumIndex = 0; sumIndex < collectedSums.length; sumIndex++) {
-                const valueAtIndex = collectedSums[sumIndex];
-                if (valueAtIndex > maximumValueInBatch) {
-                    maximumValueInBatch = valueAtIndex;
-                    indexOfMaximum = sumIndex;
-                }
-            }
-
-            if (indexOfMaximum !== -1) {
-                const correspondingLabel = LABEL_CHARACTERS[indexOfMaximum];
-                console.log(correspondingLabel + " " + maximumValueInBatch);
-            }
-
-            collectedSums = [];
-        }
+    for (const tower of towers) {
+        tallestTower = Math.max(tallestTower, tower);
+        barriers.push(tallestTower);
     }
-});
+
+    return barriers;
+}
+
+function buildEasternBarriers(towers) {
+    const barriers = new Array(towers.length);
+    let tallestTower = 0;
+    let position = towers.length - 1;
+
+    while (position >= 0) {
+        tallestTower = Math.max(
+            tallestTower,
+            towers[position]
+        );
+
+        barriers[position] = tallestTower;
+        position--;
+    }
+
+    return barriers;
+}
+
+function calculateDustByCrater(towers) {
+    const westernBarriers = buildWesternBarriers(towers);
+    const easternBarriers = buildEasternBarriers(towers);
+
+    return towers.map((tower, position) => {
+        const maximumLevel = Math.min(
+            westernBarriers[position],
+            easternBarriers[position]
+        );
+
+        if (tower >= maximumLevel) {
+            return 0;
+        }
+
+        return maximumLevel - tower;
+    });
+}
+
+const lunarTerrain = readTerrain();
+const dustInCraters = calculateDustByCrater(lunarTerrain);
+
+const totalDust = dustInCraters.reduce(
+    (total, currentCrater) => total + currentCrater,
+    0
+);
+
+process.stdout.write(`${totalDust}\n`);

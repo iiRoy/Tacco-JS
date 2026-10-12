@@ -1,22 +1,148 @@
-'use strict'; // Enforce strict mode for cleaner code execution
+function priority(symbol) {
+  if (symbol === "+" || symbol === "-") {
+    return 1;
+  }
 
-/**
- * Calculates the total hours remaining until the next day, given a starting hour.
- * This function assumes a 24-hour cycle.
- * @param {string} inputString - The input string representing the current hour.
- */
-function calculateTime(inputString) {
-  // Convert the input string to a numerical value, representing the current hour.
-  const currentHour = Number(inputString);
+  if (symbol === "*" || symbol === "/") {
+    return 2;
+  }
 
-  // Calculate the hours remaining in the current day (24 - currentHour),
-  // then add another 24 hours to represent the full next day.
-  // This effectively calculates the time until the same hour on the day after tomorrow.
-  const totalHoursRemaining = (24 - currentHour) + 24;
-
-  // Output the calculated total hours to the console.
-  console.log(totalHoursRemaining);
+  return 0;
 }
 
-// Read the input from standard input, decode it as UTF-8, and pass it to the main calculation function.
-calculateTime(require("fs").readFileSync("/dev/stdin", "utf8"));
+function executePending(numbers, symbols) {
+  if (numbers.length < 2 || symbols.length === 0) {
+    return false;
+  }
+
+  const symbol = symbols.pop();
+  const secondOperand = numbers.pop();
+  const firstOperand = numbers.pop();
+  let answer;
+
+  if (symbol === "+") {
+    answer = firstOperand + secondOperand;
+  } else if (symbol === "-") {
+    answer = firstOperand - secondOperand;
+  } else if (symbol === "*") {
+    answer = firstOperand * secondOperand;
+  } else if (symbol === "/") {
+    if (secondOperand === 0) {
+      return false;
+    }
+
+    answer = firstOperand / secondOperand;
+  } else {
+    return false;
+  }
+
+  numbers.push(answer);
+
+  return true;
+}
+
+function evaluateFormula(formula) {
+  const compactFormula = formula.replace(/\s+/g, "");
+
+  if (compactFormula.length === 0) {
+    return null;
+  }
+
+  const numbers = [];
+  const symbols = [];
+  let needsOperand = true;
+
+  for (
+    let position = 0;
+    position < compactFormula.length;
+    position++
+  ) {
+    const character = compactFormula[position];
+
+    if (/^[0-9]$/.test(character)) {
+      if (!needsOperand) {
+        return null;
+      }
+
+      numbers.push(Number(character));
+      needsOperand = false;
+    } else if (character === "(") {
+      if (!needsOperand) {
+        return null;
+      }
+
+      symbols.push(character);
+      needsOperand = true;
+    } else if (character === ")") {
+      if (needsOperand) {
+        return null;
+      }
+
+      while (
+        symbols.length > 0 &&
+        symbols[symbols.length - 1] !== "("
+      ) {
+        if (!executePending(numbers, symbols)) {
+          return null;
+        }
+      }
+
+      if (symbols.length === 0) {
+        return null;
+      }
+
+      symbols.pop();
+      needsOperand = false;
+    } else if ("+-*/".includes(character)) {
+      if (needsOperand) {
+        return null;
+      }
+
+      while (
+        symbols.length > 0 &&
+        symbols[symbols.length - 1] !== "(" &&
+        priority(symbols[symbols.length - 1]) >=
+          priority(character)
+      ) {
+        if (!executePending(numbers, symbols)) {
+          return null;
+        }
+      }
+
+      symbols.push(character);
+      needsOperand = true;
+    } else {
+      return null;
+    }
+  }
+
+  if (needsOperand) {
+    return null;
+  }
+
+  while (symbols.length > 0) {
+    if (symbols[symbols.length - 1] === "(") {
+      return null;
+    }
+
+    if (!executePending(numbers, symbols)) {
+      return null;
+    }
+  }
+
+  return numbers.length === 1
+    ? numbers[0]
+    : null;
+}
+
+const formula = require("fs")
+  .readFileSync("/dev/stdin", "utf8")
+  .trim();
+
+const answer = evaluateFormula(formula);
+
+console.log(
+  answer === null || !Number.isFinite(answer)
+    ? "INVALID"
+    : String(answer)
+);

@@ -1,13 +1,62 @@
-var input = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from stdin
-var lines = input.split('\n'); // Split input into lines
+/* Decodificador de la cámara alienígena */
+const fs=require('fs');
 
-var p = []var j = []var p[0] = Number(lines[0]);
-var p[1] = Number(lines[1]);
-var p[2] = Number(lines[2]);
+const tokens=fs
+.readFileSync(0,'utf8')
+.trim()
+.split(/\s+/);
 
-// Assign values to array 'j'
-var j[0] = Number(lines[3]);
-var j[1] = Number(lines[4]);
+const rows=Number(tokens[0]);
+const columns=Number(tokens[1]);
 
-// Calculate and print the sum of the minimums
-console.log(Math.min.apply(null, p) + Math.min.apply(null, j))
+let tokenIndex=2;
+
+const matrix=Array.from(
+{length:rows},
+()=>Array.from(
+{length:columns},
+()=>tokens[tokenIndex++]
+)
+);
+
+let top=0;
+let bottom=rows-1;
+let left=0;
+let right=columns-1;
+
+const message=[];
+
+// Leer una capa exterior en cada iteración
+while(top<=bottom&&left<=right){
+    for(let column=left;column<=right;column++){
+        message.push(matrix[top][column]);
+    }
+
+    top++;
+
+    for(let row=top;row<=bottom;row++){
+        message.push(matrix[row][right]);
+    }
+
+    right--;
+
+    /* Recorrer la frontera inferior */
+    if(top<=bottom){
+        for(let column=right;column>=left;column--){
+            message.push(matrix[bottom][column]);
+        }
+
+        bottom--;
+    }
+
+    /* Cerrar la capa por el lado izquierdo */
+    if(left<=right){
+        for(let row=bottom;row>=top;row--){
+            message.push(matrix[row][left]);
+        }
+
+        left++;
+    }
+}
+
+console.log(message.join(' '));

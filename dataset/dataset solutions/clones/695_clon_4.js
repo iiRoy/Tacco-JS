@@ -1,35 +1,68 @@
-let inputData = '';
-process.stdin.on('data', chunk => {
-    inputData += chunk;
-});
+const rawTelemetry = require("fs")
+    .readFileSync(0, "utf8")
+    .trim()
+    .split(/\s+/)
+    .map(Number);
 
-process.stdin.on('end', () => {
-    const tokens = inputData.trim().split(/\s+/);
-    let tokenPointer = 0;
+const totalApparitions = rawTelemetry.shift();
 
-    const retrieveNextInteger = () => parseInt(tokens[tokenPointer++], 10);
+const apparitionSchedule = Array.from(
+    { length: totalApparitions },
+    (_, position) => ({
+        opensAt: rawTelemetry[position * 2],
+        closesAt: rawTelemetry[position * 2 + 1]
+    })
+);
 
-    while (true) {
-        const deckSize = retrieveNextInteger();
-        const operationCount = retrieveNextInteger();
-
-        if (operationCount === 0 && deckSize === 0) {
-            break;
-        }
-
-        let currentDeck = Array.from({ length: deckSize }, (_, index) => deckSize - index);
-
-        for (let opIndex = 0; opIndex < operationCount; opIndex++) {
-            const cutPoint = retrieveNextInteger() - 1;
-            const moveLength = retrieveNextInteger();
-
-            const segmentA = currentDeck.slice(0, cutPoint);
-            const segmentB = currentDeck.slice(cutPoint, cutPoint + moveLength);
-            const segmentC = currentDeck.slice(cutPoint + moveLength);
-
-            currentDeck = [...segmentB, ...segmentA, ...segmentC];
-        }
-
-        process.stdout.write(currentDeck[0] + '\n');
+apparitionSchedule.sort((leftEvent, rightEvent) => {
+    if (leftEvent.opensAt !== rightEvent.opensAt) {
+        return leftEvent.opensAt - rightEvent.opensAt;
     }
+
+    return leftEvent.closesAt - rightEvent.closesAt;
 });
+
+function locateNextCompatible(targetTime, lowerLimit) {
+    let leftBoundary = lowerLimit;
+    let rightBoundary = apparitionSchedule.length;
+
+    while (leftBoundary < rightBoundary) {
+        const middle =
+            Math.floor((leftBoundary + rightBoundary) / 2);
+
+        if (apparitionSchedule[middle].opensAt < targetTime) {
+            leftBoundary = middle + 1;
+        } else {
+            rightBoundary = middle;
+        }
+    }
+
+    return leftBoundary;
+}
+
+const maximumFromPosition =
+    Array(totalApparitions + 1).fill(0);
+
+for (
+    let position = totalApparitions - 1;
+    position >= 0;
+    position--
+) {
+    const nextCompatible = locateNextCompatible(
+        apparitionSchedule[position].closesAt,
+        position + 1
+    );
+
+    const resultIfObserved =
+        1 + maximumFromPosition[nextCompatible];
+
+    const resultIfIgnored =
+        maximumFromPosition[position + 1];
+
+    maximumFromPosition[position] =
+        Math.max(resultIfObserved, resultIfIgnored);
+}
+
+process.stdout.write(
+    maximumFromPosition[0].toString()
+);

@@ -1,4 +1,4 @@
-/-----
+//-----
 
 var log = console.log;
 if (typeof process != "undefined") {

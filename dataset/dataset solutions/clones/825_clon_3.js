@@ -1,52 +1,50 @@
-const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const lineBuffer = rawData.trimEnd().split('\n');
+var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+var Arr = input.replace(/\n$/, "").split("\n");
 
-function calculateEntryMetrics(label, valP, valA, valB, valC, valD, valE, valF, valS, valM) {
-    const sumDE = valD + valE;
-    const productFSM = valF * valS * valM;
+while (Arr.length > 0) {
+   var n = Number(Arr.shift());
+   if (n == 0) break;
 
-    const calcTime = valA + valB + valC + (sumDE * valM);
-    const calcMoney = productFSM - valP;
+   var ans = [];
 
-    return { label, ratio: calcMoney / calcTime };
-}
+   for (var I = 0; I < n; I++) {
+      var arr = Arr.shift().trim().split(" ");
+      var name = arr[0];
+      var nums = arr.slice(1).map(function(v) {
+         return Number(v);
+      });
 
-while (true) {
-    const countStr = lineBuffer.shift();
-    const count = Number(countStr);
+      var P = nums[0];
+      var A = nums[1];
+      var B = nums[2];
+      var C = nums[3];
+      var D = nums[4];
+      var E = nums[5];
+      var F = nums[6];
+      var S = nums[7];
+      var M = nums[8];
 
-    if (count === 0) {
-        break;
-    }
+      var time = A + B + C;
+      time += (D + E) * M;
 
-    const resultsList = [];
+      var money = F * S * M;
+      money -= P;
 
-    for (let idx = 0; idx < count; idx++) {
-        const currentLine = lineBuffer.shift();
-        const currentLineParts = currentLine.split(" ");
+      var score = money / time;
+      ans.push([name, score, I]);
+   }
 
-        const entityName = currentLineParts.shift();
-        const numericValues = currentLineParts.map(Number);
+   ans.sort(function(a, b) {
+      if (a[1] == b[1]) {
+         if (a[0] > b[0]) return 1;
+         if (a[0] < b[0]) return -1;
+         return a[2] - b[2];
+      }
+      return b[1] - a[1];
+   });
 
-        const entryData = [entityName, ...numericValues];
-        const metrics = calculateEntryMetrics(...entryData);
-
-        resultsList.push([metrics.label, metrics.ratio, idx]);
-    }
-
-    resultsList.sort((itemA, itemB) => {
-        const ratioA = itemA[1];
-        const ratioB = itemB[1];
-
-        if (ratioA === ratioB) {
-            return itemA[0].localeCompare(itemB[0]);
-        } else {
-            return ratioB - ratioA;
-        }
-    });
-
-    resultsList.forEach(resultItem => {
-        console.log(resultItem[0]);
-    });
-    console.log("#");
+   for (var i = 0; i < ans.length; i++) {
+      console.log(ans[i][0]);
+   }
+   console.log("#");
 }

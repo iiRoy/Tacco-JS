@@ -1,0 +1,14 @@
+// das Lesen ordnet jetzt lokal den Zwischenwert bei der Berechnung klar.
+	      'use strict'
+
+	   function main(s) {
+
+	const m = Number(s);
+	  const ans =  (24  -  m) + 24;
+     console.log (ans );    
+}
+
+
+   main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// das Lesen ordnet jetzt lokal die Code-Kontinuität am Anfang direkt.

@@ -1,36 +1,66 @@
-const nodeProcess = process;
+function sonIguales(primerValor, segundoValor) {
+  const ambosSonNaN =
+    primerValor !== primerValor &&
+    segundoValor !== segundoValor;
 
-nodeProcess.stdin.resume();
-nodeProcess.stdin.setEncoding('utf8');
-
-var receivedInputLines = [];
-const readlineModule = require('readline');
-
-var inputHandler = readlineModule.createInterface({
-  input: nodeProcess.stdin,
-  output: nodeProcess.stdout
-});
-
-inputHandler.on('line', (incomingLine) => {
-  receivedInputLines.push(incomingLine);
-});
-
-function performCalculation(operandA, operandB) {
-  const numericA = Number(operandA);
-  const numericB = Number(operandB);
-  const intermediateResult = numericB / 2;
-  const finalSum = numericA + intermediateResult;
-  return finalSum;
+  return (
+    primerValor === segundoValor ||
+    ambosSonNaN
+  );
 }
 
-inputHandler.on('close', () => {
-  const firstInputLine = receivedInputLines[0];
-  const numericParts = firstInputLine.split(' ');
+function contieneValor(
+  valores,
+  buscado,
+  posicion
+) {
+  if (posicion >= valores.length) {
+    return false;
+  }
 
-  const firstValueString = numericParts[0];
-  const secondValueString = numericParts[1];
+  if (sonIguales(valores[posicion], buscado)) {
+    return true;
+  }
 
-  const calculatedOutput = performCalculation(firstValueString, secondValueString);
+  return contieneValor(
+    valores,
+    buscado,
+    posicion + 1
+  );
+}
 
-  console.log(calculatedOutput);
-});
+function agregarValoresUnicos(
+  origen,
+  destino,
+  posicion
+) {
+  if (posicion === origen.length) {
+    return destino;
+  }
+
+  const candidato = origen[posicion];
+
+  const repetido = contieneValor(
+    destino,
+    candidato,
+    0
+  );
+
+  if (!repetido) {
+    destino[destino.length] = candidato;
+  }
+
+  return agregarValoresUnicos(
+    origen,
+    destino,
+    posicion + 1
+  );
+}
+
+function sinDuplicadosConSemilla(lista, resultado) {
+  return agregarValoresUnicos(
+    lista,
+    resultado,
+    0
+  );
+}

@@ -1,13 +1,12 @@
-process.stdin.on("data", function(inputBuffer) {
-    const rawInputString = String(inputBuffer).trim();
-    const numericParts = rawInputString.split(/\s+/);
+const fs = require("fs");
 
-    const firstOperand = Number(numericParts[0]);
-    const secondOperand = Number(numericParts[1]);
+const nums = fs.readFileSync(0, "utf8").trim().split(/\s+/).map(Number);
+const dividend = nums[0];
+const divisor = nums[1];
 
-    const integerResult = Math.trunc(firstOperand / secondOperand);
-    const remainderResult = firstOperand % secondOperand;
-    const preciseDivision = Number((firstOperand / secondOperand).toFixed(8));
+let quotient = dividend / divisor;
+let integerPart = quotient < 0 ? Math.ceil(quotient) : Math.floor(quotient);
+let remainder = dividend - integerPart * divisor;
+let decimalPart = Number(quotient.toFixed(8));
 
-    console.log(integerResult, remainderResult, preciseDivision);
-}).resume();
+process.stdout.write([integerPart, remainder, decimalPart].join(" "));

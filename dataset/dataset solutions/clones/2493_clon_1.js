@@ -30,4 +30,4 @@ Main(input);
 */
 
 // Read input from standard input and execute Main function
-Main(require("fs").readFileSync("/dev/stdin", "utf8"));*/
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

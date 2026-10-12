@@ -1,73 +1,43 @@
-var processInput = require('process').stdin; // Obtain the standard input stream from the process module.
-var collectedData = ""; // Initialize an empty string to accumulate incoming data.
-
-// Attach an event listener for 'data' events on the standard input.
-processInput.on('data', function (chunkOfData) {
-    collectedData += chunkOfData; // Append each received data chunk to the accumulated string.
-});
-
-// Attach an event listener for the 'end' event, indicating no more data will be received.
-processInput.on('end', function () {
-    // Split the entire collected data into an array of strings, using newline as a delimiter.
-    var dataLines = collectedData.split('\n');
-
-    // Parse the first line to get two integer values: total entries and top count.
-    var firstLineParts = dataLines[0].split(' ');
-    var totalEntries = parseInt(firstLineParts[0].trim());
-    var topSelectionCount = parseInt(firstLineParts[1].trim());
-
-    // Handle the edge case where the selection count is zero.
-    if (topSelectionCount === 0) {
-        console.log(0); // Output 0 as no sums can be formed.
-        return; // Exit the function early.
+var inputStream = require('process').stdin;
+var rawText = "";
+inputStream.on('data', function (chunk) { rawText += chunk; });
+inputStream.on('end', function () {
+    var rows = rawText.split('\n');
+    var _b = rows[0].split(' ')
+        .map(function (value) { return parseInt(value.trim()); }), count = _b[0], choose = _b[1];
+    if (choose === 0) {
+        console.log(0);
+        return;
     }
-
-    // Define an array of coefficient sets for various combinations of signs.
-    var signCombinations = [
+    var patterns = [
         [1, 1, 1],
         [1, 1, -1],
         [1, -1, 1],
         [1, -1, -1],
         [-1, 1, 1],
         [-1, 1, -1],
-        [-1, -1, -1], // Note: The original code is missing [-1, -1, 1]
+        [-1, -1, -1],
     ];
-
-    // Initialize an array of arrays to store calculated sums for each sign combination.
-    var computedSumsPerCombination = [];
-    for (var _idx = 0; _idx < signCombinations.length; _idx++) {
-        computedSumsPerCombination.push(new Array()); // Add an empty array for each combination.
+    var scores = [];
+    for (var _j = 0, patterns_1 = patterns; _j < patterns_1.length; _j++) {
+        var item = patterns_1[_j];
+        scores.push(new Array());
     }
-
-    // Iterate through the input data lines, starting from the second line (index 1).
-    for (var entryIndex = 0; entryIndex < totalEntries; entryIndex++) {
-        // Parse the current line to get three integer coordinates.
-        var currentLineParts = dataLines[entryIndex + 1].split(' ');
-        var coordX = parseInt(currentLineParts[0].trim());
-        var coordY = parseInt(currentLineParts[1].trim());
-        var coordZ = parseInt(currentLineParts[2].trim());
-
-        // For each set of sign coefficients, calculate a sum and store it.
-        signCombinations.forEach(function (coeffs, combinationIndex) {
-            var coeffA = coeffs[0];
-            var coeffB = coeffs[1];
-            var coeffC = coeffs[2];
-            // Calculate the sum: (x*a) + (y*b) + (z*c)
-            computedSumsPerCombination[combinationIndex].push(coordX * coeffA + coordY * coeffB + coordZ * coeffC);
+    var _loop_2 = function (idx) {
+        var _b = rows[idx + 1].split(' ')
+            .map(function (value) { return parseInt(value.trim()); }), px = _b[0], py = _b[1], pz = _b[2];
+        patterns.forEach(function (_b, idx) {
+            var sx = _b[0], sy = _b[1], sz = _b[2];
+            scores[idx].push(px * sx + py * sy + pz * sz);
         });
+    };
+    for (var idx = 0; idx < count; idx++) {
+        _loop_2(idx);
     }
-
-    // Process each array of sums: sort in descending order and sum the top 'topSelectionCount' elements.
-    var maximumSumsForEachSet = computedSumsPerCombination.map(function (currentSumSet) {
-        // Sort the current set of sums in descending order.
-        currentSumSet.sort(function (valueOne, valueTwo) { return valueTwo - valueOne; });
-        // Take the top 'topSelectionCount' elements and reduce them to a single sum.
-        return currentSumSet.slice(0, topSelectionCount).reduce(function (accumulator, currentValue) { return accumulator + currentValue; });
+    var bestScores = scores.map(function (value) {
+        value.sort(function (left, right) { return right - left; });
+        return value.slice(0, choose).reduce(function (left, right) { return left + right; });
     });
-
-    // Sort the resulting sums (one for each sign combination) in descending order.
-    maximumSumsForEachSet.sort(function (sumA, sumB) { return sumB - sumA; });
-
-    // The largest sum among all sign combinations is the final result.
-    console.log(maximumSumsForEachSet[0]);
+    bestScores.sort(function (left, right) { return right - left; });
+    console.log(bestScores[0]);
 });

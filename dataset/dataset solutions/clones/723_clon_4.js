@@ -1,30 +1,36 @@
-const readline = require('readline');
+const fs = require('fs');
 
-const inputProcessor = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
+const packet = fs
+    .readFileSync(0, 'utf8')
+    .trim()
+    .split(/\s+/)
+    .map(Number);
 
-const exclusionSet = new Set(
-    'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ/d .'.split('')
-);
+const registeredZones = packet.shift();
+const activationEnergy = packet.shift();
+const magneticReadings = packet.slice(0, registeredZones);
 
-const evaluateBalance = (sourceString) => {
-    const intermediateString = Array.from(sourceString)
-        .filter(char => !exclusionSet.has(char))
-        .join('');
+const previousEnergyLevels = new Set([0]);
 
-    const finalString = (intermediateString.includes('[]') || intermediateString.includes('()'))
-        ? ''
-        : intermediateString;
+let totalEnergySoFar = 0;
+let portalSignalDetected = false;
 
-    return finalString.length === 0 ? "yes" : "no";
-};
+for (const magneticChange of magneticReadings) {
+    totalEnergySoFar += magneticChange;
 
-inputProcessor.on('line', (currentInput) => {
-    if (currentInput === ".") {
-        inputProcessor.close();
-        return;
+    const necessaryPreviousLevel =
+        totalEnergySoFar - activationEnergy;
+
+    if (previousEnergyLevels.has(necessaryPreviousLevel)) {
+        portalSignalDetected = true;
+        break;
     }
-    console.log(evaluateBalance(currentInput));
-});
+
+    previousEnergyLevels.add(totalEnergySoFar);
+}
+
+if (portalSignalDetected) {
+    console.log('PULSO ENCONTRADO');
+} else {
+    console.log('PULSO INEXISTENTE');
+}

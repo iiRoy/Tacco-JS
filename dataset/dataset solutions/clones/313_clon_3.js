@@ -1,56 +1,55 @@
-const parseNumericPair = (inputString) => {
-    return inputString.split(" ").map(Number);
+const fs = require("fs");
+const lines = fs.readFileSync("/dev/stdin", "utf8").trim().split("\n");
+
+const configuration = lines[0].split(" ").map(Number);
+const scores = new Array(configuration[0]).fill(0);
+
+let leader = {
+  id: 0,
+  score: 0,
 };
 
-const identifyCurrentMaxPlayer = (allPlayerScores) => {
-    let highestScoreFound = -Infinity;
-    let playerIndexWithHighestScore = -1;
+function recalculateLeader(currentScores) {
+  let bestId = 0;
+  let bestScore = -Infinity;
+  let position = 0;
 
-    allPlayerScores.forEach((scoreValue, playerIdentifier) => {
-        if (scoreValue > highestScoreFound) {
-            highestScoreFound = scoreValue;
-            playerIndexWithHighestScore = playerIdentifier;
-        }
-    });
-    return { score: highestScoreFound, index: playerIndexWithHighestScore };
-};
+  while (position < currentScores.length) {
+    const candidateScore = currentScores[position];
 
-const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
-
-const processedInputLines = rawInputData.trim().split("\n");
-
-const [totalPlayers, totalQueries] = parseNumericPair(processedInputLines.shift());
-
-const playerScoresTracker = Array.from({ length: totalPlayers }, () => 0);
-
-let currentMaximumScore = 0;
-let playerIndexHoldingMax = 0;
-
-processedInputLines.forEach((queryLine) => {
-    const [oneBasedPlayerId, scoreAdjustment] = parseNumericPair(queryLine);
-    const zeroBasedPlayerId = oneBasedPlayerId - 1;
-
-    playerScoresTracker[zeroBasedPlayerId] += scoreAdjustment;
-
-    let requiresFullScanForMax = false;
-
-    if (zeroBasedPlayerId === playerIndexHoldingMax) {
-        if (scoreAdjustment < 0) {
-            requiresFullScanForMax = true;
-        } else {
-            currentMaximumScore += scoreAdjustment;
-        }
-    } else {
-        if (scoreAdjustment >= 0) {
-            requiresFullScanForMax = true;
-        }
+    if (candidateScore > bestScore) {
+      bestId = position;
+      bestScore = candidateScore;
     }
 
-    if (requiresFullScanForMax) {
-        const maxPlayerDetails = identifyCurrentMaxPlayer(playerScoresTracker);
-        currentMaximumScore = maxPlayerDetails.score;
-        playerIndexHoldingMax = maxPlayerDetails.index;
-    }
+    position += 1;
+  }
 
-    console.log((playerIndexHoldingMax + 1) + " " + currentMaximumScore);
-});
+  return {
+    id: bestId,
+    score: bestScore,
+  };
+}
+
+for (const operationLine of lines.slice(1)) {
+  const operation = operationLine.split(" ").map(Number);
+  const playerId = operation[0] - 1;
+  const scoreChange = operation[1];
+
+  scores[playerId] = scores[playerId] + scoreChange;
+
+  const updatedCurrentLeader = playerId === leader.id;
+  const leaderCannotChange =
+    (updatedCurrentLeader && scoreChange >= 0) ||
+    (!updatedCurrentLeader && scoreChange < 0);
+
+  if (leaderCannotChange) {
+    if (updatedCurrentLeader) {
+      leader.score = leader.score + scoreChange;
+    }
+  } else {
+    leader = recalculateLeader(scores);
+  }
+
+  console.log(`${leader.id + 1} ${leader.score}`);
+}

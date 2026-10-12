@@ -1,17 +1,23 @@
-function processInput(rawData) {
-    const trimmedData = rawData.trim();
-    const charSegments = trimmedData.split('');
-    const digitArray = charSegments.map(charVal => parseInt(charVal, 10));
+function Main(input){
+	var xs = input.trim().split('').map(function(v){
+        return parseInt(v, 10);
+    });
+    var ans = 0;
+    var found = false;
 
-    let nineCount = 0;
-    for (const currentDigit of digitArray) {
-        if (currentDigit === 9) {
-            nineCount++;
+    for(var i = 0; i < xs.length; i++){
+    	if(xs[i] == 9){
+            ans = ans + 1;
+            found = true;
+        }else{
+            ans = ans + 0;
         }
     }
 
-    const resultStatus = (nineCount > 0) ? 'Yes' : 'No';
-    console.log(resultStatus);
+    if(found && ans != 0){
+        console.log('Yes');
+    }else{
+        console.log('No');
+    }
 }
-
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

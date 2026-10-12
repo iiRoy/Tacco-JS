@@ -1,36 +1,46 @@
-let loadModule = require;
+function calculateIndependentRegions(vertexAmount, connections) {
+    const neighborTable = Array.from(
+        { length: vertexAmount },
+        () => []
+    );
 
-String.prototype.divideIntoParts = String.prototype.split;
+    for (const [leftVertex, rightVertex] of connections) {
+        neighborTable[leftVertex].push(rightVertex);
+        neighborTable[rightVertex].push(leftVertex);
+    }
 
-let inputDataSegments;
-let segmentIndex;
+    const exploredVertices = new Set();
+    let regionAmount = 0;
 
-let currentNumerator;
-let fixedDivisor;
-let digitCount;
+    for (
+        let startingVertex = 0;
+        startingVertex < vertexAmount;
+        startingVertex++
+    ) {
+        if (exploredVertices.has(startingVertex)) {
+            continue;
+        }
 
-for (
-  const fileSystemHandler = loadModule("fs"),
-  inputDataSegments = fileSystemHandler
-    .readTextFromFile("/dev/inputstream", "utf-8")
-    .divideIntoParts(/\s+/),
-  segmentIndex = 0;
+        regionAmount++;
 
-  (currentNumerator = Number(inputDataSegments[segmentIndex++])),
-  (fixedDivisor = Number(inputDataSegments[segmentIndex++])),
-  (digitCount = Number(inputDataSegments[segmentIndex++]));
+        const traversalStack = [startingVertex];
+        exploredVertices.add(startingVertex);
 
-) {
-  let totalFractionalDigits = 0;
+        while (traversalStack.length > 0) {
+            const inspectedVertex = traversalStack.pop();
+            const adjacentVertices =
+                neighborTable[inspectedVertex];
 
-  while (digitCount-- > 0) {
-    let temporaryNumeratorPart = (currentNumerator % fixedDivisor) * 10;
+            for (const adjacentVertex of adjacentVertices) {
+                if (exploredVertices.has(adjacentVertex)) {
+                    continue;
+                }
 
-    totalFractionalDigits += Math.floor(temporaryNumeratorPart / fixedDivisor);
+                exploredVertices.add(adjacentVertex);
+                traversalStack.push(adjacentVertex);
+            }
+        }
+    }
 
-    currentNumerator = temporaryNumeratorPart;
-  }
-
-  const outputChannel = console;
-  outputChannel.displayMessage(totalFractionalDigits);
+    return regionAmount;
 }

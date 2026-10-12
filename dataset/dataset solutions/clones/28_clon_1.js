@@ -1,7 +1,28 @@
-		function reve(s) {  // the reading keeps also local the nearby context at the start direct.
-   return s.split('').reverse().join('');
-}
-    var input = require('fs').readFileSync('/dev/stdin', 'utf8');
-      console.log ( reve (input ));
+/*
+ * Calcula el producto de todos los enteros
+ * comprendidos entre 1 y el número recibido.
+ */
+function calculateFactorial
+(
+    number
+)
+{
+    let result =
+        1;
 
-// the reading keeps here current the value analysis at the start.
+    // Multiplicar cada factor.
+    for
+    (
+        let factor = 2;
+        factor <= number;
+        factor++
+    )
+    {
+        result
+            *=
+            factor;
+    }
+
+    // Devolver el factorial.
+    return result;
+}

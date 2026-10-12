@@ -30,7 +30,7 @@ for (var   j  = 0; j < s.length; j++) {
 }
           sum+= last;
 	if(last > 0)rest += last;
-     elseup.push ( [- mn,last] );
+     else up.push ( [- mn,last] );
 }     
  if (sum ) return   NN;
    up.sort(( a,b) => b [0 ]  -  a [0]);

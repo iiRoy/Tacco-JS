@@ -21,4 +21,4 @@ process.stdin.on('data', function(raw){
       console.log(max);
     }
   }
-}
+})

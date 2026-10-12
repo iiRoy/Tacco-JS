@@ -1,2867 +1,2171 @@
-applicationModuleLoader = function (
-  moduleDefinitionsMap, // Stores module definitions by their ID.
-  moduleInstanceCache,  // Caches loaded module instances for performance.
-  entryModuleIdentifiers, // An array of module IDs that should be loaded as entry points.
-  globalExportIdentifier // The name to export the main module under in the global scope.
-) {
-  var lastEncounteredError, // Stores the first error that occurs during module loading.
-    existingGlobalLoader =
-      "function" == typeof applicationModuleLoader && applicationModuleLoader, // Reference to a previously defined global loader.
-    nodeJsRequire = "function" == typeof require && require; // Reference to Node.js's native `require` function.
-
-  // The central function for resolving and loading modules.
-  function retrieveModule(moduleId, bypassCacheCheck) {
-    // If the module is already in the cache, return its exports.
-    if (!moduleInstanceCache[moduleId]) {
-      // If not in cache, check if the module definition exists.
-      if (!moduleDefinitionsMap[moduleId]) {
-        // If the module is not defined, try to load it globally or via Node.js.
-        var globalLoaderRef =
-          "function" == typeof applicationModuleLoader && applicationModuleLoader;
-        if (!bypassCacheCheck && globalLoaderRef) return globalLoaderRef(moduleId, !0);
-        if (existingGlobalLoader) return existingGlobalLoader(moduleId, !0);
-        if (nodeJsRequire && "string" == typeof moduleId)
-          return nodeJsRequire(moduleId);
-
-        // If the module cannot be found, throw an error.
-        var moduleNotFoundException = new Error(
-          "Cannot find module '" + moduleId + "'"
-        );
-        throw ((moduleNotFoundException.code = "MODULE_NOT_FOUND"), moduleNotFoundException);
+parcelRequire = (function (modules, cache, entries, globalName) {
+  var error,
+    previousRequire = "function" == typeof parcelRequire && parcelRequire,
+    nativeRequire = "function" == typeof require && require;
+  function localRequire(id, jumped) {
+    if (!cache[id]) {
+      if (!modules[id]) {
+        var oldRequire = "function" == typeof parcelRequire && parcelRequire;
+        if (!jumped && oldRequire) return oldRequire(id, !0);
+        if (previousRequire) return previousRequire(id, !0);
+        if (nativeRequire && "string" == typeof id) return nativeRequire(id);
+        var err = new Error("Cannot find module '" + id + "'");
+        throw ((err.code = "MODULE_NOT_FOUND"), err);
       }
-
-      // Configure a local resolver for the current module's dependencies.
-      moduleResolverFunc.resolve = function (relativePath) {
-        return moduleDefinitionsMap[moduleId][1][relativePath] || relativePath;
-      };
-      moduleResolverFunc.cache = {}; // Placeholder for Parcel's internal cache, not actively used here.
-
-      // Create a new module instance and store it in the cache.
-      var currentModuleInstance = (moduleInstanceCache[moduleId] = new retrieveModule.Module(
-        moduleId
-      ));
-      // Execute the module's factory function, passing `moduleResolverFunc`, `currentModuleInstance`, and `currentModuleInstance.exports`.
-      moduleDefinitionsMap[moduleId][0].call(
-        currentModuleInstance.exports,
-        moduleResolverFunc,
-        currentModuleInstance,
-        currentModuleInstance.exports,
-        this
-      );
+      (resolver.resolve = function (name) {
+        return modules[id][1][name] || name;
+      }),
+        (resolver.cache = {});
+      var moduleObject = (cache[id] = new localRequire.Module(id));
+      modules[id][0].call(moduleObject.exports, resolver, moduleObject, moduleObject.exports, this);
     }
-    // Return the exports of the loaded module.
-    return moduleInstanceCache[moduleId].exports;
-
-    // Internal helper function used by module factory functions to `require` dependencies.
-    function moduleResolverFunc(dependencyPath) {
-      return retrieveModule(moduleResolverFunc.resolve(dependencyPath));
+    return cache[id].exports;
+    function resolver(moduleName) {
+      return localRequire(resolver.resolve(moduleName));
     }
   }
-
-  // Mark this loader for identification.
-  retrieveModule.isParcelRequire = !0;
-  // Define the constructor for module objects.
-  retrieveModule.Module = function (idValue) {
-    this.id = idValue;
-    this.bundle = retrieveModule; // Reference to the loader itself.
-    this.exports = {}; // The object that holds the module's exported values.
-  };
-  // Store references to the module definitions and cache for external access.
-  retrieveModule.modules = moduleDefinitionsMap;
-  retrieveModule.cache = moduleInstanceCache;
-  retrieveModule.parent = existingGlobalLoader; // Reference to a parent loader, if any.
-  // A utility function to register new module definitions dynamically.
-  retrieveModule.register = function (registrationId, registrationDefinition) {
-    moduleDefinitionsMap[registrationId] = [
-      function (dependencyResolver, moduleInstance) {
-        moduleInstance.exports = registrationDefinition;
-      },
-      {},
-    ];
-  };
-
-  // Iterate over the entry points and load each module.
-  for (var entryIndex = 0; entryIndex < entryModuleIdentifiers.length; entryIndex++) {
+  (localRequire.isParcelRequire = !0),
+    (localRequire.Module = function (id) {
+      (this.id = id), (this.bundle = localRequire), (this.exports = {});
+    }),
+    (localRequire.modules = modules),
+    (localRequire.cache = cache),
+    (localRequire.parent = previousRequire),
+    (localRequire.register = function (id, value) {
+      modules[id] = [
+        function (require, module) {
+          module.exports = value;
+        },
+        {},
+      ];
+    });
+  for (var idx = 0; idx < entries.length; idx++)
     try {
-      retrieveModule(entryModuleIdentifiers[entryIndex]);
-    } catch (currentLoadError) {
-      // Capture the first error encountered, but continue loading other entries.
-      lastEncounteredError || (lastEncounteredError = currentLoadError);
+      localRequire(entries[idx]);
+    } catch (caught) {
+      error || (error = caught);
     }
-  }
-
-  // If entry points were specified, handle the export of the last entry module.
-  if (entryModuleIdentifiers.length) {
-    var finalExport = retrieveModule(
-      entryModuleIdentifiers[entryModuleIdentifiers.length - 1]
-    );
-    // Expose the final export based on the environment (CommonJS, AMD, or global).
+  if (entries.length) {
+    var exported = localRequire(entries[entries.length - 1]);
     "object" == typeof exports && "undefined" != typeof module
-      ? (module.exports = finalExport)
+      ? (module.exports = exported)
       : "function" == typeof define && define.amd
-      ? define(function () {
-          return finalExport;
-        })
-      : globalExportIdentifier && (this[globalExportIdentifier] = finalExport);
+        ? define(function () {
+            return exported;
+          })
+        : globalName && (this[globalName] = exported);
   }
-
-  // Update the global reference to this module loader.
-  applicationModuleLoader = retrieveModule;
-  // If an error was recorded during entry point loading, re-throw it.
-  if (lastEncounteredError) throw lastEncounteredError;
-  // Return the fully configured module loader function.
-  return retrieveModule;
-}(
+  if (((parcelRequire = localRequire), error)) throw error;
+  return localRequire;
+})(
   {
-    // --- Module Definitions ---
-    "Focm": [
-      function (getDependency, currentModuleRef, moduleExports) {
-        // This object will hold all the exported components of the PureScript library.
-        var packageExports = {};
-
-        // Module: Control.Apply
-        (function (exportContainer) {
+    Focm: [
+      function (require, module, exports) {
+        var PS = {};
+        !(function (scope) {
           "use strict";
-          (exportContainer["Control.Apply"] =
-            exportContainer["Control.Apply"] || {}).arrayApply = function (
-            funcArray
-          ) {
-            return function (valueArray) {
-              for (
-                var funcCount = funcArray.length,
-                  valCount = valueArray.length,
-                  resultArray = new Array(funcCount * valCount),
-                  resultIndex = 0,
-                  funcIter = 0;
-                funcIter < funcCount;
-                funcIter++
-              )
+          (PS["Control.Apply"] = PS["Control.Apply"] || {}).arrayApply =
+            function (fs) {
+              return function (xs) {
                 for (
-                  var currentFunc = funcArray[funcIter], valIter = 0;
-                  valIter < valCount;
-                  valIter++
+                  var flen = fs.length,
+                    xlen = xs.length,
+                    out = new Array(flen * xlen),
+                    p = 0,
+                    i = 0;
+                  i < flen;
+                  i++
                 )
-                  resultArray[resultIndex++] = currentFunc(valueArray[valIter]);
-              return resultArray;
+                  for (var fn = fs[i], j = 0; j < xlen; j++) out[p++] = fn(xs[j]);
+                return out;
+              };
             };
-          };
-        })(packageExports),
-          // Module: Control.Semigroupoid
-          (function (exportContainer) {
+        })(),
+          (function (scope) {
             "use strict";
-            exportContainer["Control.Semigroupoid"] =
-              exportContainer["Control.Semigroupoid"] || {};
-            var semigroupoidControl =
-                exportContainer["Control.Semigroupoid"], // Alias for Control.Semigroupoid
-              SemigroupoidConstructor = function (composerFunction) {
-                this.compose = composerFunction;
+            scope["Control.Semigroupoid"] = scope["Control.Semigroupoid"] || {};
+            var mod = scope["Control.Semigroupoid"],
+              Semigroupoid = function (compose) {
+                this.compose = compose;
               },
-              functionSemigroupoidInstance = new SemigroupoidConstructor(
-                function (firstFunc) {
-                  return function (secondFunc) {
-                    return function (inputVal) {
-                      return firstFunc(secondFunc(inputVal));
+              semigroupoidFn = new Semigroupoid(function (f) {
+                return function (g) {
+                  return function (x) {
+                    return f(g(x));
+                  };
+                };
+              });
+            (mod.compose = function (dict) {
+              return dict.compose;
+            }),
+              (mod.Semigroupoid = Semigroupoid),
+              (mod.semigroupoidFn = semigroupoidFn);
+          })(PS),
+          (function (scope) {
+            "use strict";
+            scope["Control.Category"] = scope["Control.Category"] || {};
+            var mod = scope["Control.Category"],
+              sg = scope["Control.Semigroupoid"],
+              Category = function (Semigroupoid0, identity) {
+                (this.Semigroupoid0 = Semigroupoid0), (this.identity = identity);
+              },
+              categoryFn = new Category(
+                function () {
+                  return sg.semigroupoidFn;
+                },
+                function (x) {
+                  return x;
+                },
+              );
+            (mod.Category = Category),
+              (mod.identity = function (dict) {
+                return dict.identity;
+              }),
+              (mod.categoryFn = categoryFn);
+          })(PS),
+          (function (scope) {
+            "use strict";
+            scope["Data.Function"] = scope["Data.Function"] || {};
+            var mod = scope["Data.Function"];
+            (mod.flip = function (f) {
+              return function (a) {
+                return function (b) {
+                  return f(b)(a);
+                };
+              };
+            }),
+              (mod.const = function (x) {
+                return function (y) {
+                  return x;
+                };
+              });
+          })(PS),
+          (function (scope) {
+            "use strict";
+            (PS["Data.Functor"] = PS["Data.Functor"] || {}).arrayMap = function (
+              fn,
+            ) {
+              return function (arr) {
+                for (var len = arr.length, out = new Array(len), i = 0; i < len; i++)
+                  out[i] = fn(arr[i]);
+                return out;
+              };
+            };
+          })(),
+          (function (scope) {
+            "use strict";
+            (PS["Data.Unit"] = PS["Data.Unit"] || {}).unit = {};
+          })(),
+          (function (scope) {
+            "use strict";
+            scope["Data.Unit"] = scope["Data.Unit"] || {};
+            var a = scope["Data.Unit"],
+              b = scope["Data.Unit"];
+            a.unit = b.unit;
+          })(PS),
+          (function (scope) {
+            "use strict";
+            scope["Data.Functor"] = scope["Data.Functor"] || {};
+            var mod = scope["Data.Functor"],
+              self = scope["Data.Functor"],
+              fn = scope["Data.Function"],
+              unit = scope["Data.Unit"],
+              Functor = function (map) {
+                this.map = map;
+              },
+              map = function (dict) {
+                return dict.map;
+              },
+              functorArray = new Functor(self.arrayMap);
+            (mod.Functor = Functor),
+              (mod.map = map),
+              (mod.void = function (dict) {
+                return map(dict)(fn.const(unit.unit));
+              }),
+              (mod.functorArray = functorArray);
+          })(PS),
+          (function (scope) {
+            "use strict";
+            scope["Control.Apply"] = scope["Control.Apply"] || {};
+            var mod = scope["Control.Apply"],
+              self = scope["Control.Apply"],
+              cat = scope["Control.Category"],
+              fn = scope["Data.Function"],
+              functor = scope["Data.Functor"],
+              Apply = function (Functor0, apply) {
+                (this.Functor0 = Functor0), (this.apply = apply);
+              },
+              applyArray = new Apply(function () {
+                return functor.functorArray;
+              }, self.arrayApply),
+              apply = function (dict) {
+                return dict.apply;
+              };
+            (mod.Apply = Apply),
+              (mod.apply = apply),
+              (mod.applySecond = function (dict) {
+                return function (x) {
+                  return function (y) {
+                    return apply(dict)(
+                      functor.map(dict.Functor0())(fn.const(cat.identity(cat.categoryFn)))(x),
+                    )(y);
+                  };
+                };
+              }),
+              (mod.applyArray = applyArray);
+          })(PS),
+          (function (scope) {
+            "use strict";
+            scope["Control.Applicative"] = scope["Control.Applicative"] || {};
+            var mod = scope["Control.Applicative"],
+              apply = scope["Control.Apply"],
+              pure = function (dict) {
+                return dict.pure;
+              };
+            (mod.Applicative = function (Apply0, pureFn) {
+              (this.Apply0 = Apply0), (this.pure = pureFn);
+            }),
+              (mod.pure = pure),
+              (mod.liftA1 = function (dict) {
+                return function (fn) {
+                  return function (value) {
+                    return apply.apply(dict.Apply0())(pure(dict)(fn))(value);
+                  };
+                };
+              });
+          })(PS),
+          (function (scope) {
+            "use strict";
+            (PS["Control.Bind"] = PS["Control.Bind"] || {}).arrayBind = function (
+              arr,
+            ) {
+              return function (fn) {
+                for (var out = [], i = 0, len = arr.length; i < len; i++)
+                  Array.prototype.push.apply(out, fn(arr[i]));
+                return out;
+              };
+            };
+          })(),
+          (function (scope) {
+            "use strict";
+            scope["Control.Bind"] = scope["Control.Bind"] || {};
+            var mod = scope["Control.Bind"],
+              self = scope["Control.Bind"],
+              apply = scope["Control.Apply"],
+              fn = scope["Data.Function"],
+              Bind = function (Apply0, bind) {
+                (this.Apply0 = Apply0), (this.bind = bind);
+              },
+              bindArray = new Bind(function () {
+                return apply.applyArray;
+              }, self.arrayBind),
+              bind = function (dict) {
+                return dict.bind;
+              },
+              bindFlipped = function (dict) {
+                return fn.flip(bind(dict));
+              };
+            (mod.Bind = Bind),
+              (mod.bind = bind),
+              (mod.bindFlipped = bindFlipped),
+              (mod.composeKleisliFlipped = function (dict) {
+                return function (f) {
+                  return function (g) {
+                    return function (x) {
+                      return bindFlipped(dict)(f)(g(x));
                     };
                   };
-                }
-              );
-            semigroupoidControl.compose = function (instance) {
-              return instance.compose;
-            };
-            semigroupoidControl.Semigroupoid = SemigroupoidConstructor;
-            semigroupoidControl.semigroupoidFn = functionSemigroupoidInstance;
-          })(packageExports),
-          // Module: Control.Category
-          (function (exportContainer) {
-            "use strict";
-            exportContainer["Control.Category"] =
-              exportContainer["Control.Category"] || {};
-            var categoryControl = exportContainer["Control.Category"], // Alias for Control.Category
-              semigroupoidControl = exportContainer["Control.Semigroupoid"], // Alias for Control.Semigroupoid
-              CategoryConstructor = function (semigroupoidInst, identityFunc) {
-                this.Semigroupoid0 = semigroupoidInst;
-                this.identity = identityFunc;
-              },
-              functionCategoryInstance = new CategoryConstructor(
-                function () {
-                  return semigroupoidControl.semigroupoidFn;
-                },
-                function (inputVal) {
-                  return inputVal;
-                }
-              );
-            categoryControl.Category = CategoryConstructor;
-            categoryControl.identity = function (instance) {
-              return instance.identity;
-            };
-            categoryControl.categoryFn = functionCategoryInstance;
-          })(packageExports),
-          // Module: Data.Function
-          (function (exportContainer) {
-            "use strict";
-            exportContainer["Data.Function"] =
-              exportContainer["Data.Function"] || {};
-            var functionData = exportContainer["Data.Function"]; // Alias for Data.Function
-            functionData.flip = function (funcToFlip) {
-              return function (argOne) {
-                return function (argTwo) {
-                  return funcToFlip(argTwo)(argOne);
                 };
-              };
-            };
-            functionData.const = function (constantVal) {
-              return function (ignoredVal) {
-                return constantVal;
-              };
-            };
-          })(packageExports),
-          // Module: Data.Functor (arrayMap specific part)
-          (function (exportContainer) {
+              }),
+              (mod.bindArray = bindArray);
+          })(PS),
+          (function (scope) {
             "use strict";
-            (exportContainer["Data.Functor"] =
-              exportContainer["Data.Functor"] || {}).arrayMap = function (
-              transformFunc
-            ) {
-              return function (inputArray) {
-                for (
-                  var arrayLength = inputArray.length,
-                    mappedArray = new Array(arrayLength),
-                    idx = 0;
-                  idx < arrayLength;
-                  idx++
-                )
-                  mappedArray[idx] = transformFunc(inputArray[idx]);
-                return mappedArray;
-              };
-            };
-          })(packageExports),
-          // Module: Data.Unit (unit definition)
-          (function (exportContainer) {
-            "use strict";
-            (exportContainer["Data.Unit"] =
-              exportContainer["Data.Unit"] || {}).unit = {};
-          })(packageExports),
-          // Module: Data.Unit (re-export)
-          (function (exportContainer) {
-            "use strict";
-            exportContainer["Data.Unit"] = exportContainer["Data.Unit"] || {};
-            var unitData = exportContainer["Data.Unit"], // Alias for Data.Unit
-              unitReExport = exportContainer["Data.Unit"]; // Another alias for Data.Unit
-            unitData.unit = unitReExport.unit;
-          })(packageExports),
-          // Module: Data.Functor
-          (function (exportContainer) {
-            "use strict";
-            exportContainer["Data.Functor"] =
-              exportContainer["Data.Functor"] || {};
-            var functorData = exportContainer["Data.Functor"], // Alias for Data.Functor
-              functorReExport = exportContainer["Data.Functor"], // Another alias for Data.Functor
-              functionData = exportContainer["Data.Function"], // Alias for Data.Function
-              unitData = exportContainer["Data.Unit"], // Alias for Data.Unit
-              FunctorConstructor = function (mapFunc) {
-                this.map = mapFunc;
-              },
-              getMapFunction = function (instance) {
-                return instance.map;
-              },
-              arrayFunctorInstance = new FunctorConstructor(
-                functorReExport.arrayMap
-              );
-            functorData.Functor = FunctorConstructor;
-            functorData.map = getMapFunction;
-            functorData.void = function (instance) {
-              return getMapFunction(instance)(functionData.const(unitData.unit));
-            };
-            functorData.functorArray = arrayFunctorInstance;
-          })(packageExports),
-          // Module: Control.Apply
-          (function (exportContainer) {
-            "use strict";
-            exportContainer["Control.Apply"] =
-              exportContainer["Control.Apply"] || {};
-            var applyControl = exportContainer["Control.Apply"], // Alias for Control.Apply
-              applyReExport = exportContainer["Control.Apply"], // Another alias for Control.Apply
-              categoryControl = exportContainer["Control.Category"], // Alias for Control.Category
-              functionData = exportContainer["Data.Function"], // Alias for Data.Function
-              functorData = exportContainer["Data.Functor"], // Alias for Data.Functor
-              ApplyConstructor = function (functorInst, applyFunc) {
-                this.Functor0 = functorInst;
-                this.apply = applyFunc;
-              },
-              getApplyFunction = function (instance) {
-                return instance.apply;
-              },
-              arrayApplyInstance = new ApplyConstructor(
-                function () {
-                  return functorData.functorArray;
-                },
-                applyReExport.arrayApply
-              );
-            applyControl.Apply = ApplyConstructor;
-            applyControl.apply = getApplyFunction;
-            applyControl.applySecond = function (instance) {
-              return function (firstAction) {
-                return function (secondAction) {
-                  return getApplyFunction(instance)(
-                    functorData.map(instance.Functor0())(
-                      functionData.const(categoryControl.identity(categoryControl.categoryFn))
-                    )(firstAction)
-                  )(secondAction);
-                };
-              };
-            };
-            applyControl.applyArray = arrayApplyInstance;
-          })(packageExports),
-          // Module: Control.Applicative
-          (function (exportContainer) {
-            "use strict";
-            exportContainer["Control.Applicative"] =
-              exportContainer["Control.Applicative"] || {};
-            var applicativeControl = exportContainer["Control.Applicative"], // Alias for Control.Applicative
-              applyControl = exportContainer["Control.Apply"], // Alias for Control.Apply
-              getPureFunction = function (instance) {
-                return instance.pure;
-              };
-            applicativeControl.Applicative = function (applyInst, pureFunc) {
-              this.Apply0 = applyInst;
-              this.pure = pureFunc;
-            };
-            applicativeControl.pure = getPureFunction;
-            applicativeControl.liftA1 = function (instance) {
-              return function (transformFunc) {
-                return function (inputVal) {
-                  return applyControl.apply(instance.Apply0())(
-                    getPureFunction(instance)(transformFunc)
-                  )(inputVal);
-                };
-              };
-            };
-          })(packageExports),
-          // Module: Control.Bind (arrayBind specific part)
-          (function (exportContainer) {
-            "use strict";
-            (exportContainer["Control.Bind"] =
-              exportContainer["Control.Bind"] || {}).arrayBind = function (
-              sourceArray
-            ) {
-              return function (bindingFunc) {
-                for (
-                  var resultCollection = [],
-                    idx = 0,
-                    len = sourceArray.length;
-                  idx < len;
-                  idx++
-                )
-                  Array.prototype.push.apply(
-                    resultCollection,
-                    bindingFunc(sourceArray[idx])
-                  );
-                return resultCollection;
-              };
-            };
-          })(packageExports),
-          // Module: Control.Bind
-          (function (exportContainer) {
-            "use strict";
-            exportContainer["Control.Bind"] =
-              exportContainer["Control.Bind"] || {};
-            var bindControl = exportContainer["Control.Bind"], // Alias for Control.Bind
-              bindReExport = exportContainer["Control.Bind"], // Another alias for Control.Bind
-              applyControl = exportContainer["Control.Apply"], // Alias for Control.Apply
-              functionData = exportContainer["Data.Function"], // Alias for Data.Function
-              BindConstructor = function (applyInst, bindFunc) {
-                this.Apply0 = applyInst;
-                this.bind = bindFunc;
-              },
-              getBindFunction = function (instance) {
-                return instance.bind;
-              },
-              arrayBindInstance = new BindConstructor(
-                function () {
-                  return applyControl.applyArray;
-                },
-                bindReExport.arrayBind
-              ),
-              getFlippedBind = function (instance) {
-                return functionData.flip(getBindFunction(instance));
-              };
-            bindControl.Bind = BindConstructor;
-            bindControl.bind = getBindFunction;
-            bindControl.bindFlipped = getFlippedBind;
-            bindControl.composeKleisliFlipped = function (instance) {
-              return function (firstKleisli) {
-                return function (secondKleisli) {
-                  return function (inputVal) {
-                    return getFlippedBind(instance)(firstKleisli)(
-                      secondKleisli(inputVal)
-                    );
-                  };
-                };
-              };
-            };
-            bindControl.bindArray = arrayBindInstance;
-          })(packageExports),
-          // Module: Data.Maybe
-          (function (exportContainer) {
-            "use strict";
-            exportContainer["Data.Maybe"] =
-              exportContainer["Data.Maybe"] || {};
-            var maybeData = exportContainer["Data.Maybe"], // Alias for Data.Maybe
-              applicativeControl = exportContainer["Control.Applicative"], // Alias for Control.Applicative
-              applyControl = exportContainer["Control.Apply"], // Alias for Control.Apply
-              bindControl = exportContainer["Control.Bind"], // Alias for Control.Bind
-              functorData = exportContainer["Data.Functor"], // Alias for Data.Functor
-              NothingConstructor = (function () {
+            scope["Data.Maybe"] = scope["Data.Maybe"] || {};
+            var mod = scope["Data.Maybe"],
+              Applicative = scope["Control.Applicative"],
+              Apply = scope["Control.Apply"],
+              Bind = scope["Control.Bind"],
+              Functor = scope["Data.Functor"],
+              Nothing = (function () {
                 function Nothing() {}
                 return (Nothing.value = new Nothing()), Nothing;
               })(),
-              JustConstructor = (function () {
-                function Just(value) {
-                  this.value0 = value;
+              Just = (function () {
+                function Just(value0) {
+                  this.value0 = value0;
                 }
-                return (Just.create = function (val) {
-                  return new Just(val);
-                }), Just;
+                return (
+                  (Just.create = function (x) {
+                    return new Just(x);
+                  }),
+                  Just
+                );
               })(),
-              maybeFunctorInstance = new functorData.Functor(function (
-                transformFunc
-              ) {
-                return function (maybeVal) {
-                  return maybeVal instanceof JustConstructor
-                    ? new JustConstructor(transformFunc(maybeVal.value0))
-                    : NothingConstructor.value;
+              functorMaybe = new Functor.Functor(function (f) {
+                return function (m) {
+                  return m instanceof Just ? new Just(f(m.value0)) : Nothing.value;
                 };
               }),
-              maybeApplyInstance = new applyControl.Apply(
+              applyMaybe = new Apply.Apply(
                 function () {
-                  return maybeFunctorInstance;
+                  return functorMaybe;
                 },
-                function (maybeFunc) {
-                  return function (maybeVal) {
-                    if (maybeFunc instanceof JustConstructor)
-                      return functorData.map(maybeFunctorInstance)(
-                        maybeFunc.value0
-                      )(maybeVal);
-                    if (maybeFunc instanceof NothingConstructor)
-                      return NothingConstructor.value;
+                function (mf) {
+                  return function (mx) {
+                    if (mf instanceof Just) return Functor.map(functorMaybe)(mf.value0)(mx);
+                    if (mf instanceof Nothing) return Nothing.value;
                     throw new Error(
                       "Failed pattern match at Data.Maybe (line 67, column 1 - line 67, column 35): " +
-                        [maybeFunc.constructor.name, maybeVal.constructor.name]
+                        [mf.constructor.name, mx.constructor.name],
                     );
                   };
-                }
-              ),
-              maybeBindInstance = new bindControl.Bind(
-                function () {
-                  return maybeApplyInstance;
                 },
-                function (maybeVal) {
-                  return function (bindFunc) {
-                    if (maybeVal instanceof JustConstructor)
-                      return bindFunc(maybeVal.value0);
-                    if (maybeVal instanceof NothingConstructor)
-                      return NothingConstructor.value;
+              ),
+              bindMaybe = new Bind.Bind(
+                function () {
+                  return applyMaybe;
+                },
+                function (mx) {
+                  return function (f) {
+                    if (mx instanceof Just) return f(mx.value0);
+                    if (mx instanceof Nothing) return Nothing.value;
                     throw new Error(
                       "Failed pattern match at Data.Maybe (line 125, column 1 - line 125, column 33): " +
-                        [maybeVal.constructor.name, bindFunc.constructor.name]
+                        [mx.constructor.name, f.constructor.name],
                     );
                   };
-                }
-              ),
-              maybeApplicativeInstance = new applicativeControl.Applicative(
-                function () {
-                  return maybeApplyInstance;
                 },
-                JustConstructor.create
-              );
-            maybeData.Nothing = NothingConstructor;
-            maybeData.Just = JustConstructor;
-            maybeData.maybe = function (nothingCase) {
-              return function (justCase) {
-                return function (maybeVal) {
-                  if (maybeVal instanceof NothingConstructor) return nothingCase;
-                  if (maybeVal instanceof JustConstructor)
-                    return justCase(maybeVal.value0);
-                  throw new Error(
-                    "Failed pattern match at Data.Maybe (line 217, column 1 - line 217, column 51): " +
-                      [
-                        nothingCase.constructor.name,
-                        justCase.constructor.name,
-                        maybeVal.constructor.name,
-                      ]
-                  );
+              ),
+              applicativeMaybe = new Applicative.Applicative(function () {
+                return applyMaybe;
+              }, Just.create);
+            (mod.Nothing = Nothing),
+              (mod.Just = Just),
+              (mod.maybe = function (n) {
+                return function (j) {
+                  return function (m) {
+                    if (m instanceof Nothing) return n;
+                    if (m instanceof Just) return j(m.value0);
+                    throw new Error(
+                      "Failed pattern match at Data.Maybe (line 217, column 1 - line 217, column 51): " +
+                        [n.constructor.name, j.constructor.name, m.constructor.name],
+                    );
+                  };
                 };
-              };
-            };
-            maybeData.functorMaybe = maybeFunctorInstance;
-            maybeData.applyMaybe = maybeApplyInstance;
-            maybeData.applicativeMaybe = maybeApplicativeInstance;
-            maybeData.bindMaybe = maybeBindInstance;
-          })(packageExports),
-          // Module: Data.Array
-          (function (exportContainer) {
+              }),
+              (mod.functorMaybe = functorMaybe),
+              (mod.applyMaybe = applyMaybe),
+              (mod.applicativeMaybe = applicativeMaybe),
+              (mod.bindMaybe = bindMaybe);
+          })(PS),
+          (function (scope) {
             "use strict";
-            exportContainer["Data.Array"] =
-              exportContainer["Data.Array"] || {};
-            var arrayData = exportContainer["Data.Array"], // Alias for Data.Array
-              bindControl = exportContainer["Control.Bind"], // Alias for Control.Bind
-              functionData = exportContainer["Data.Function"], // Alias for Data.Function
-              maybeData = exportContainer["Data.Maybe"], // Alias for Data.Maybe
-              arraySingleton = function (value) {
-                return [value];
+            scope["Data.Array"] = scope["Data.Array"] || {};
+            var mod = scope["Data.Array"],
+              bind = scope["Control.Bind"],
+              func = scope["Data.Function"],
+              maybe = scope["Data.Maybe"],
+              singleton = function (x) {
+                return [x];
               },
-              arrayConcatMap = functionData.flip(
-                bindControl.bind(bindControl.bindArray)
-              );
-            arrayData.singleton = arraySingleton;
-            arrayData.concatMap = arrayConcatMap;
-            arrayData.mapMaybe = function (transformFunc) {
-              return arrayConcatMap(function (item) {
-                return maybeData.maybe([])(arraySingleton)(transformFunc(item));
+              concatMap = func.flip(bind.bind(bind.bindArray));
+            (mod.singleton = singleton),
+              (mod.concatMap = concatMap),
+              (mod.mapMaybe = function (f) {
+                return concatMap(function (x) {
+                  return maybe.maybe([])(singleton)(f(x));
+                });
               });
-            };
-          })(packageExports),
-          // Module: Data.Boolean
-          (function (exportContainer) {
+          })(PS),
+          (function (scope) {
             "use strict";
-            exportContainer["Data.Boolean"] =
-              exportContainer["Data.Boolean"] || {};
-            exportContainer["Data.Boolean"].otherwise = !0; // The 'otherwise' constant in PureScript.
-          })(packageExports),
-          // Module: Data.Either
-          (function (exportContainer) {
+            scope["Data.Boolean"] = scope["Data.Boolean"] || {};
+            scope["Data.Boolean"].otherwise = !0;
+          })(PS),
+          (function (scope) {
             "use strict";
-            exportContainer["Data.Either"] =
-              exportContainer["Data.Either"] || {};
-            var eitherData = exportContainer["Data.Either"], // Alias for Data.Either
-              applicativeControl = exportContainer["Control.Applicative"], // Alias for Control.Applicative
-              applyControl = exportContainer["Control.Apply"], // Alias for Control.Apply
-              bindControl = exportContainer["Control.Bind"], // Alias for Control.Bind
-              functorData = exportContainer["Data.Functor"], // Alias for Data.Functor
-              maybeData = exportContainer["Data.Maybe"], // Alias for Data.Maybe
-              LeftConstructor = (function () {
-                function Left(value) {
-                  this.value0 = value;
+            scope["Data.Either"] = scope["Data.Either"] || {};
+            var mod = scope["Data.Either"],
+              Applicative = scope["Control.Applicative"],
+              Apply = scope["Control.Apply"],
+              Bind = scope["Control.Bind"],
+              Functor = scope["Data.Functor"],
+              Maybe = scope["Data.Maybe"],
+              Left = (function () {
+                function Left(value0) {
+                  this.value0 = value0;
                 }
-                return (Left.create = function (val) {
-                  return new Left(val);
-                }), Left;
+                return (
+                  (Left.create = function (x) {
+                    return new Left(x);
+                  }),
+                  Left
+                );
               })(),
-              RightConstructor = (function () {
-                function Right(value) {
-                  this.value0 = value;
+              Right = (function () {
+                function Right(value0) {
+                  this.value0 = value0;
                 }
-                return (Right.create = function (val) {
-                  return new Right(val);
-                }), Right;
+                return (
+                  (Right.create = function (x) {
+                    return new Right(x);
+                  }),
+                  Right
+                );
               })(),
-              eitherFunctorInstance = new functorData.Functor(function (
-                transformFunc
-              ) {
-                return function (eitherVal) {
-                  if (eitherVal instanceof LeftConstructor)
-                    return new LeftConstructor(eitherVal.value0);
-                  if (eitherVal instanceof RightConstructor)
-                    return new RightConstructor(transformFunc(eitherVal.value0));
+              functorEither = new Functor.Functor(function (f) {
+                return function (e) {
+                  if (e instanceof Left) return new Left(e.value0);
+                  if (e instanceof Right) return new Right(f(e.value0));
                   throw new Error(
                     "Failed pattern match at Data.Either (line 38, column 8 - line 38, column 52): " +
-                      [eitherVal.constructor.name]
+                      [e.constructor.name],
                   );
                 };
               }),
-              eitherFoldFunction = function (leftHandler) {
-                return function (rightHandler) {
-                  return function (eitherVal) {
-                    if (eitherVal instanceof LeftConstructor)
-                      return leftHandler(eitherVal.value0);
-                    if (eitherVal instanceof RightConstructor)
-                      return rightHandler(eitherVal.value0);
+              either = function (l) {
+                return function (r) {
+                  return function (e) {
+                    if (e instanceof Left) return l(e.value0);
+                    if (e instanceof Right) return r(e.value0);
                     throw new Error(
                       "Failed pattern match at Data.Either (line 238, column 1 - line 238, column 64): " +
-                        [
-                          leftHandler.constructor.name,
-                          rightHandler.constructor.name,
-                          eitherVal.constructor.name,
-                        ]
+                        [l.constructor.name, r.constructor.name, e.constructor.name],
                     );
                   };
                 };
               },
-              eitherApplyInstance = new applyControl.Apply(
+              applyEither = new Apply.Apply(
                 function () {
-                  return eitherFunctorInstance;
+                  return functorEither;
                 },
-                function (eitherFunc) {
-                  return function (eitherVal) {
-                    if (eitherFunc instanceof LeftConstructor)
-                      return new LeftConstructor(eitherFunc.value0);
-                    if (eitherFunc instanceof RightConstructor)
-                      return functorData.map(eitherFunctorInstance)(
-                        eitherFunc.value0
-                      )(eitherVal);
+                function (f) {
+                  return function (x) {
+                    if (f instanceof Left) return new Left(f.value0);
+                    if (f instanceof Right) return Functor.map(functorEither)(f.value0)(x);
                     throw new Error(
                       "Failed pattern match at Data.Either (line 82, column 1 - line 82, column 41): " +
-                        [eitherFunc.constructor.name, eitherVal.constructor.name]
+                        [f.constructor.name, x.constructor.name],
                     );
                   };
-                }
+                },
               ),
-              eitherBindInstance = new bindControl.Bind(
+              bindEither = new Bind.Bind(
                 function () {
-                  return eitherApplyInstance;
+                  return applyEither;
                 },
-                eitherFoldFunction(function (leftVal) {
-                  return function (bindFunc) {
-                    return new LeftConstructor(leftVal);
+                either(function (l) {
+                  return function (r) {
+                    return new Left(l);
                   };
-                })(function (rightVal) {
-                  return function (bindFunc) {
-                    return bindFunc(rightVal);
+                })(function (x) {
+                  return function (f) {
+                    return f(x);
                   };
-                })
+                }),
               ),
-              eitherApplicativeInstance = new applicativeControl.Applicative(
+              applicativeEither = new Applicative.Applicative(function () {
+                return applyEither;
+              }, Right.create);
+            (mod.Left = Left),
+              (mod.Right = Right),
+              (mod.either = either),
+              (mod.note = function (err) {
+                return Maybe.maybe(new Left(err))(Right.create);
+              }),
+              (mod.functorEither = functorEither),
+              (mod.applyEither = applyEither),
+              (mod.applicativeEither = applicativeEither),
+              (mod.bindEither = bindEither);
+          })(PS),
+          (function (scope) {
+            "use strict";
+            (scope.intDegree = function (n) {
+              return Math.min(Math.abs(n), 2147483647);
+            }),
+              (scope.intDiv = function (n) {
+                return function (d) {
+                  return 0 === d
+                    ? 0
+                    : d > 0
+                      ? Math.floor(n / d)
+                      : -Math.floor(n / -d);
+                };
+              }),
+              (scope.intMod = function (n) {
+                return function (d) {
+                  if (0 === d) return 0;
+                  var m = Math.abs(d);
+                  return ((n % m) + m) % m;
+                };
+              });
+          })((PS["Data.EuclideanRing"] = PS["Data.EuclideanRing"] || {})),
+          (function (scope) {
+            "use strict";
+            (PS["Data.Ring"] = PS["Data.Ring"] || {}).intSub = function (a) {
+              return function (b) {
+                return (a - b) | 0;
+              };
+            };
+          })(),
+          (function (scope) {
+            "use strict";
+            (scope.intAdd = function (a) {
+              return function (b) {
+                return (a + b) | 0;
+              };
+            }),
+              (scope.intMul = function (a) {
+                return function (b) {
+                  return (a * b) | 0;
+                };
+              });
+          })((PS["Data.Semiring"] = PS["Data.Semiring"] || {})),
+          (function (scope) {
+            "use strict";
+            scope["Data.Semiring"] = scope["Data.Semiring"] || {};
+            var mod = scope["Data.Semiring"],
+              self = scope["Data.Semiring"],
+              Semiring = function (add, mul, one, zero) {
+                (this.add = add), (this.mul = mul), (this.one = one), (this.zero = zero);
+              },
+              semiringInt = new Semiring(self.intAdd, self.intMul, 1, 0);
+            (mod.Semiring = Semiring),
+              (mod.add = function (dict) {
+                return dict.add;
+              }),
+              (mod.zero = function (dict) {
+                return dict.zero;
+              }),
+              (mod.mul = function (dict) {
+                return dict.mul;
+              }),
+              (mod.one = function (dict) {
+                return dict.one;
+              }),
+              (mod.semiringInt = semiringInt);
+          })(PS),
+          (function (scope) {
+            "use strict";
+            scope["Data.Ring"] = scope["Data.Ring"] || {};
+            var mod = scope["Data.Ring"],
+              self = scope["Data.Ring"],
+              semiring = scope["Data.Semiring"],
+              Ring = function (Semiring0, sub) {
+                (this.Semiring0 = Semiring0), (this.sub = sub);
+              },
+              ringInt = new Ring(function () {
+                return semiring.semiringInt;
+              }, self.intSub);
+            (mod.Ring = Ring),
+              (mod.sub = function (dict) {
+                return dict.sub;
+              }),
+              (mod.ringInt = ringInt);
+          })(PS),
+          (function (scope) {
+            "use strict";
+            scope["Data.CommutativeRing"] = scope["Data.CommutativeRing"] || {};
+            var mod = scope["Data.CommutativeRing"],
+              ring = scope["Data.Ring"],
+              CommutativeRing = function (Ring0) {
+                this.Ring0 = Ring0;
+              },
+              commutativeRingInt = new CommutativeRing(function () {
+                return ring.ringInt;
+              });
+            (mod.CommutativeRing = CommutativeRing), (mod.commutativeRingInt = commutativeRingInt);
+          })(PS),
+          (function (scope) {
+            "use strict";
+            scope["Data.EuclideanRing"] = scope["Data.EuclideanRing"] || {};
+            var mod = scope["Data.EuclideanRing"],
+              self = scope["Data.EuclideanRing"],
+              cring = scope["Data.CommutativeRing"],
+              EuclideanRing = function (CommutativeRing0, degree, div, modFn) {
+                (this.CommutativeRing0 = CommutativeRing0),
+                  (this.degree = degree),
+                  (this.div = div),
+                  (this.mod = modFn);
+              },
+              euclideanRingInt = new EuclideanRing(
                 function () {
-                  return eitherApplyInstance;
+                  return cring.commutativeRingInt;
                 },
-                RightConstructor.create
+                self.intDegree,
+                self.intDiv,
+                self.intMod,
               );
-            eitherData.Left = LeftConstructor;
-            eitherData.Right = RightConstructor;
-            eitherData.either = eitherFoldFunction;
-            eitherData.note = function (errorMessage) {
-              return maybeData.maybe(new LeftConstructor(errorMessage))(
-                RightConstructor.create
-              );
-            };
-            eitherData.functorEither = eitherFunctorInstance;
-            eitherData.applyEither = eitherApplyInstance;
-            eitherData.applicativeEither = eitherApplicativeInstance;
-            eitherData.bindEither = eitherBindInstance;
-          })(packageExports),
-          // Module: Data.EuclideanRing (native implementations)
-          (function (exportContainer) {
+            (mod.EuclideanRing = EuclideanRing),
+              (mod.degree = function (dict) {
+                return dict.degree;
+              }),
+              (mod.div = function (dict) {
+                return dict.div;
+              }),
+              (mod.mod = function (dict) {
+                return dict.mod;
+              }),
+              (mod.euclideanRingInt = euclideanRingInt);
+          })(PS),
+          (function (scope) {
             "use strict";
-            exportContainer["Data.EuclideanRing"] =
-              exportContainer["Data.EuclideanRing"] || {};
-            exportContainer["Data.EuclideanRing"].intDegree = function (
-              numericVal
-            ) {
-              return Math.min(Math.abs(numericVal), 2147483647); // Max signed 32-bit integer.
-            };
-            exportContainer["Data.EuclideanRing"].intDiv = function (
-              numerator
-            ) {
-              return function (denominator) {
-                return 0 === denominator
-                  ? 0
-                  : denominator > 0
-                  ? Math.floor(numerator / denominator)
-                  : -Math.floor(numerator / -denominator);
-              };
-            };
-            exportContainer["Data.EuclideanRing"].intMod = function (
-              dividend
-            ) {
-              return function (divisor) {
-                if (0 === divisor) return 0;
-                var absoluteDivisor = Math.abs(divisor);
-                return (dividend % absoluteDivisor + absoluteDivisor) % absoluteDivisor;
-              };
-            };
-          })(packageExports["Data.EuclideanRing"] || (packageExports["Data.EuclideanRing"] = {})),
-          // Module: Data.Ring (intSub specific part)
-          (function (exportContainer) {
-            "use strict";
-            (exportContainer["Data.Ring"] =
-              exportContainer["Data.Ring"] || {}).intSub = function (
-              minuend
-            ) {
-              return function (subtrahend) {
-                return minuend - subtrahend | 0; // Bitwise OR 0 for integer truncation.
-              };
-            };
-          })(packageExports),
-          // Module: Data.Semiring (native implementations)
-          (function (exportContainer) {
-            "use strict";
-            exportContainer["Data.Semiring"] =
-              exportContainer["Data.Semiring"] || {};
-            exportContainer["Data.Semiring"].intAdd = function (firstNum) {
-              return function (secondNum) {
-                return firstNum + secondNum | 0;
-              };
-            };
-            exportContainer["Data.Semiring"].intMul = function (firstNum) {
-              return function (secondNum) {
-                return firstNum * secondNum | 0;
-              };
-            };
-          })(packageExports["Data.Semiring"] || (packageExports["Data.Semiring"] = {})),
-          // Module: Data.Semiring
-          (function (exportContainer) {
-            "use strict";
-            exportContainer["Data.Semiring"] =
-              exportContainer["Data.Semiring"] || {};
-            var semiringData = exportContainer["Data.Semiring"], // Alias for Data.Semiring
-              semiringReExport = exportContainer["Data.Semiring"], // Another alias for Data.Semiring
-              SemiringConstructor = function (addFunc, mulFunc, oneVal, zeroVal) {
-                this.add = addFunc;
-                this.mul = mulFunc;
-                this.one = oneVal;
-                this.zero = zeroVal;
-              },
-              integerSemiringInstance = new SemiringConstructor(
-                semiringReExport.intAdd,
-                semiringReExport.intMul,
-                1,
-                0
-              );
-            semiringData.Semiring = SemiringConstructor;
-            semiringData.add = function (instance) {
-              return instance.add;
-            };
-            semiringData.zero = function (instance) {
-              return instance.zero;
-            };
-            semiringData.mul = function (instance) {
-              return instance.mul;
-            };
-            semiringData.one = function (instance) {
-              return instance.one;
-            };
-            semiringData.semiringInt = integerSemiringInstance;
-          })(packageExports),
-          // Module: Data.Ring
-          (function (exportContainer) {
-            "use strict";
-            exportContainer["Data.Ring"] =
-              exportContainer["Data.Ring"] || {};
-            var ringData = exportContainer["Data.Ring"], // Alias for Data.Ring
-              ringReExport = exportContainer["Data.Ring"], // Another alias for Data.Ring
-              semiringData = exportContainer["Data.Semiring"], // Alias for Data.Semiring
-              RingConstructor = function (semiringInst, subFunc) {
-                this.Semiring0 = semiringInst;
-                this.sub = subFunc;
-              },
-              integerRingInstance = new RingConstructor(
-                function () {
-                  return semiringData.semiringInt;
-                },
-                ringReExport.intSub
-              );
-            ringData.Ring = RingConstructor;
-            ringData.sub = function (instance) {
-              return instance.sub;
-            };
-            ringData.ringInt = integerRingInstance;
-          })(packageExports),
-          // Module: Data.CommutativeRing
-          (function (exportContainer) {
-            "use strict";
-            exportContainer["Data.CommutativeRing"] =
-              exportContainer["Data.CommutativeRing"] || {};
-            var commutativeRingData =
-                exportContainer["Data.CommutativeRing"], // Alias for Data.CommutativeRing
-              ringData = exportContainer["Data.Ring"], // Alias for Data.Ring
-              CommutativeRingConstructor = function (ringInst) {
-                this.Ring0 = ringInst;
-              },
-              integerCommutativeRingInstance = new CommutativeRingConstructor(
-                function () {
-                  return ringData.ringInt;
-                }
-              );
-            commutativeRingData.CommutativeRing = CommutativeRingConstructor;
-            commutativeRingData.commutativeRingInt = integerCommutativeRingInstance;
-          })(packageExports),
-          // Module: Data.EuclideanRing
-          (function (exportContainer) {
-            "use strict";
-            exportContainer["Data.EuclideanRing"] =
-              exportContainer["Data.EuclideanRing"] || {};
-            var euclideanRingData =
-                exportContainer["Data.EuclideanRing"], // Alias for Data.EuclideanRing
-              euclideanRingReExport =
-                exportContainer["Data.EuclideanRing"], // Another alias for Data.EuclideanRing
-              commutativeRingData =
-                exportContainer["Data.CommutativeRing"], // Alias for Data.CommutativeRing
-              EuclideanRingConstructor = function (
-                commutativeRingInst,
-                degreeFunc,
-                divFunc,
-                modFunc
-              ) {
-                this.CommutativeRing0 = commutativeRingInst;
-                this.degree = degreeFunc;
-                this.div = divFunc;
-                this.mod = modFunc;
-              },
-              integerEuclideanRingInstance = new EuclideanRingConstructor(
-                function () {
-                  return commutativeRingData.commutativeRingInt;
-                },
-                euclideanRingReExport.intDegree,
-                euclideanRingReExport.intDiv,
-                euclideanRingReExport.intMod
-              );
-            euclideanRingData.EuclideanRing = EuclideanRingConstructor;
-            euclideanRingData.degree = function (instance) {
-              return instance.degree;
-            };
-            euclideanRingData.div = function (instance) {
-              return instance.div;
-            };
-            euclideanRingData.mod = function (instance) {
-              return instance.mod;
-            };
-            euclideanRingData.euclideanRingInt = integerEuclideanRingInstance;
-          })(packageExports),
-          // Module: Data.Foldable (native implementations)
-          (function (exportContainer) {
-            "use strict";
-            exportContainer["Data.Foldable"] =
-              exportContainer["Data.Foldable"] || {};
-            exportContainer["Data.Foldable"].foldrArray = function (
-              foldFunc
-            ) {
-              return function (initialValue) {
-                return function (inputArray) {
-                  for (
-                    var accumulator = initialValue,
-                      idx = inputArray.length - 1;
-                    idx >= 0;
-                    idx--
-                  )
-                    accumulator = foldFunc(inputArray[idx])(accumulator);
-                  return accumulator;
+            (scope.foldrArray = function (f) {
+              return function (z) {
+                return function (xs) {
+                  for (var acc = z, i = xs.length - 1; i >= 0; i--) acc = f(xs[i])(acc);
+                  return acc;
                 };
               };
-            };
-            exportContainer["Data.Foldable"].foldlArray = function (
-              foldFunc
-            ) {
-              return function (initialValue) {
-                return function (inputArray) {
-                  for (
-                    var accumulator = initialValue,
-                      arrayLength = inputArray.length,
-                      idx = 0;
-                    idx < arrayLength;
-                    idx++
-                  )
-                    accumulator = foldFunc(accumulator)(inputArray[idx]);
-                  return accumulator;
+            }),
+              (scope.foldlArray = function (f) {
+                return function (z) {
+                  return function (xs) {
+                    for (var acc = z, len = xs.length, i = 0; i < len; i++)
+                      acc = f(acc)(xs[i]);
+                    return acc;
+                  };
                 };
-              };
-            };
-          })(packageExports["Data.Foldable"] || (packageExports["Data.Foldable"] = {})),
-          // Module: Data.Monoid
-          (function (exportContainer) {
+              });
+          })((PS["Data.Foldable"] = PS["Data.Foldable"] || {})),
+          (function (scope) {
             "use strict";
-            exportContainer["Data.Monoid"] =
-              exportContainer["Data.Monoid"] || {};
-            var monoidData = exportContainer["Data.Monoid"]; // Alias for Data.Monoid
-            monoidData.Monoid = function (semigroupInst, emptyVal) {
-              this.Semigroup0 = semigroupInst;
-              this.mempty = emptyVal;
-            };
-            monoidData.mempty = function (instance) {
-              return instance.mempty;
-            };
-          })(packageExports),
-          // Module: Data.Semigroup
-          (function (exportContainer) {
+            scope["Data.Monoid"] = scope["Data.Monoid"] || {};
+            var mod = scope["Data.Monoid"];
+            (mod.Monoid = function (Semigroup0, mempty) {
+              (this.Semigroup0 = Semigroup0), (this.mempty = mempty);
+            }),
+              (mod.mempty = function (dict) {
+                return dict.mempty;
+              });
+          })(PS),
+          (function (scope) {
             "use strict";
-            exportContainer["Data.Semigroup"] =
-              exportContainer["Data.Semigroup"] || {};
-            var semigroupData = exportContainer["Data.Semigroup"]; // Alias for Data.Semigroup
-            semigroupData.Semigroup = function (appendFunc) {
-              this.append = appendFunc;
-            };
-            semigroupData.append = function (instance) {
-              return instance.append;
-            };
-          })(packageExports),
-          // Module: Data.Foldable
-          (function (exportContainer) {
+            scope["Data.Semigroup"] = scope["Data.Semigroup"] || {};
+            var mod = scope["Data.Semigroup"];
+            (mod.Semigroup = function (append) {
+              this.append = append;
+            }),
+              (mod.append = function (dict) {
+                return dict.append;
+              });
+          })(PS),
+          (function (scope) {
             "use strict";
-            exportContainer["Data.Foldable"] =
-              exportContainer["Data.Foldable"] || {};
-            var foldableData = exportContainer["Data.Foldable"], // Alias for Data.Foldable
-              foldableReExport = exportContainer["Data.Foldable"], // Another alias for Data.Foldable
-              applicativeControl = exportContainer["Control.Applicative"], // Alias for Control.Applicative
-              applyControl = exportContainer["Control.Apply"], // Alias for Control.Apply
-              monoidData = exportContainer["Data.Monoid"], // Alias for Data.Monoid
-              semigroupData = exportContainer["Data.Semigroup"], // Alias for Data.Semigroup
-              unitData = exportContainer["Data.Unit"], // Alias for Data.Unit
-              FoldableConstructor = function (foldMapFunc, foldlFunc, foldrFunc) {
-                this.foldMap = foldMapFunc;
-                this.foldl = foldlFunc;
-                this.foldr = foldrFunc;
+            scope["Data.Foldable"] = scope["Data.Foldable"] || {};
+            var mod = scope["Data.Foldable"],
+              self = scope["Data.Foldable"],
+              applicative = scope["Control.Applicative"],
+              apply = scope["Control.Apply"],
+              monoid = scope["Data.Monoid"],
+              semigroup = scope["Data.Semigroup"],
+              unit = scope["Data.Unit"],
+              Foldable = function (foldMap, foldl, foldr) {
+                (this.foldMap = foldMap), (this.foldl = foldl), (this.foldr = foldr);
               },
-              getFoldrFunction = function (instance) {
-                return instance.foldr;
+              foldr = function (dict) {
+                return dict.foldr;
               },
-              defaultFoldMapRight = function (monoidInst) {
-                return function (transformFunc) {
-                  return function (foldableInst) {
-                    return getFoldrFunction(foldableInst)(function (
-                      itemVal
-                    ) {
-                      return function (accumulator) {
-                        return semigroupData.append(monoidInst.Semigroup0())(
-                          transformFunc(itemVal)
-                        )(accumulator);
+              foldMapDefaultR = function (dict) {
+                return function (m) {
+                  return function (f) {
+                    return foldr(dict)(function (x) {
+                      return function (acc) {
+                        return semigroup.append(m.Semigroup0())(f(x))(acc);
                       };
-                    })(monoidData.mempty(monoidInst));
+                    })(monoid.mempty(m));
                   };
                 };
               },
-              arrayFoldableInstance = new FoldableConstructor(
-                function (monoidInst) {
-                  return defaultFoldMapRight(monoidInst)(arrayFoldableInstance);
+              foldableArray = new Foldable(
+                function (m) {
+                  return foldMapDefaultR(foldableArray)(m);
                 },
-                foldableReExport.foldlArray,
-                foldableReExport.foldrArray
+                self.foldlArray,
+                self.foldrArray,
               );
-            foldableData.Foldable = FoldableConstructor;
-            foldableData.foldr = getFoldrFunction;
-            foldableData.foldl = function (instance) {
-              return instance.foldl;
-            };
-            foldableData.foldMap = function (instance) {
-              return instance.foldMap;
-            };
-            foldableData.foldMapDefaultR = defaultFoldMapRight;
-            foldableData.traverse_ = function (applicativeInst) {
-              return function (foldableInst) {
-                return function (actionFunc) {
-                  return getFoldrFunction(foldableInst)(function (
-                    itemVal
-                  ) {
-                    return applyControl.applySecond(applicativeInst.Apply0())(
-                      actionFunc(itemVal)
-                    );
-                  })(applicativeControl.pure(applicativeInst)(unitData.unit));
+            (mod.Foldable = Foldable),
+              (mod.foldr = foldr),
+              (mod.foldl = function (dict) {
+                return dict.foldl;
+              }),
+              (mod.foldMap = function (dict) {
+                return dict.foldMap;
+              }),
+              (mod.foldMapDefaultR = foldMapDefaultR),
+              (mod.traverse_ = function (dictApp) {
+                return function (dictFold) {
+                  return function (f) {
+                    return function (xs) {
+                      return foldr(dictFold)(function (x) {
+                        return apply.applySecond(dictApp.Apply0())(f(x));
+                      })(applicative.pure(dictApp)(unit.unit))(xs);
+                    };
+                  };
                 };
-              };
-            };
-            foldableData.foldableArray = arrayFoldableInstance;
-          })(packageExports),
-          // Module: Data.Int (fromStringAsImpl specific part)
-          (function (exportContainer) {
+              }),
+              (mod.foldableArray = foldableArray);
+          })(PS),
+          (function (scope) {
             "use strict";
-            (exportContainer["Data.Int"] =
-              exportContainer["Data.Int"] || {}).fromStringAsImpl = function (
-              justCreator
+            (PS["Data.Int"] = PS["Data.Int"] || {}).fromStringAsImpl = function (
+              just,
             ) {
-              return function (nothingVal) {
-                return function (radixVal) {
-                  var regexPattern;
-                  regexPattern =
-                    radixVal < 11
-                      ? "[0-" + (radixVal - 1).toString() + "]"
-                      : 11 === radixVal
-                      ? "[0-9a]"
-                      : "[0-9a-" + String.fromCharCode(86 + radixVal) + "]";
-                  var validationRegex = new RegExp(
-                    "^[\\+\\-]?" + regexPattern + "+$",
-                    "i"
-                  );
-                  return function (inputString) {
-                    if (validationRegex.test(inputString)) {
-                      var parsedInteger = parseInt(inputString, radixVal);
-                      return (0 | parsedInteger) === parsedInteger
-                        ? justCreator(parsedInteger)
-                        : nothingVal;
+              return function (nothing) {
+                return function (radix) {
+                  var pat;
+                  pat =
+                    radix < 11
+                      ? "[0-" + (radix - 1).toString() + "]"
+                      : 11 === radix
+                        ? "[0-9a]"
+                        : "[0-9a-" + String.fromCharCode(86 + radix) + "]";
+                  var re = new RegExp("^[\\+\\-]?" + pat + "+$", "i");
+                  return function (text) {
+                    if (re.test(text)) {
+                      var x = parseInt(text, radix);
+                      return (0 | x) === x ? just(x) : nothing;
                     }
-                    return nothingVal;
+                    return nothing;
                   };
                 };
               };
             };
-          })(packageExports),
-          // Module: Data.Int
-          (function (exportContainer) {
+          })(),
+          (function (scope) {
             "use strict";
-            exportContainer["Data.Int"] =
-              exportContainer["Data.Int"] || {};
-            var integerData = exportContainer["Data.Int"], // Alias for Data.Int
-              integerReExport = exportContainer["Data.Int"], // Another alias for Data.Int
-              maybeData = exportContainer["Data.Maybe"], // Alias for Data.Maybe
-              fromStringAsFunction = integerReExport.fromStringAsImpl(
-                maybeData.Just.create
-              )(maybeData.Nothing.value),
-              fromStringBase10 = fromStringAsFunction(10);
-            integerData.fromString = fromStringBase10;
-            integerData.fromStringAs = fromStringAsFunction;
-            integerData.odd = function (numValue) {
-              return 0 != (1 & numValue);
+            scope["Data.Int"] = scope["Data.Int"] || {};
+            var mod = scope["Data.Int"],
+              self = scope["Data.Int"],
+              maybe = scope["Data.Maybe"],
+              fromStringAs = self.fromStringAsImpl(maybe.Just.create)(maybe.Nothing.value),
+              fromString = fromStringAs(10);
+            (mod.fromString = fromString),
+              (mod.fromStringAs = fromStringAs),
+              (mod.odd = function (n) {
+                return 0 != (1 & n);
+              });
+          })(PS),
+          (function (scope) {
+            "use strict";
+            (PS["Data.Show"] = PS["Data.Show"] || {}).showIntImpl = function (x) {
+              return x.toString();
             };
-          })(packageExports),
-          // Module: Data.Show (showIntImpl specific part)
-          (function (exportContainer) {
+          })(),
+          (function (scope) {
             "use strict";
-            (exportContainer["Data.Show"] =
-              exportContainer["Data.Show"] || {}).showIntImpl = function (
-              intVal
-            ) {
-              return intVal.toString();
-            };
-          })(packageExports),
-          // Module: Data.Show
-          (function (exportContainer) {
-            "use strict";
-            exportContainer["Data.Show"] =
-              exportContainer["Data.Show"] || {};
-            var showData = exportContainer["Data.Show"], // Alias for Data.Show
-              ShowConstructor = function (showFunc) {
-                this.show = showFunc;
+            scope["Data.Show"] = scope["Data.Show"] || {};
+            var mod = scope["Data.Show"],
+              Show = function (show) {
+                this.show = show;
               },
-              integerShowInstance = new ShowConstructor(
-                exportContainer["Data.Show"].showIntImpl
-              );
-            showData.Show = ShowConstructor;
-            showData.show = function (instance) {
-              return instance.show;
-            };
-            showData.showInt = integerShowInstance;
-          })(packageExports),
-          // Module: Data.String.Common (native implementations)
-          (function (exportContainer) {
+              showInt = new Show(scope["Data.Show"].showIntImpl);
+            (mod.Show = Show),
+              (mod.show = function (dict) {
+                return dict.show;
+              }),
+              (mod.showInt = showInt);
+          })(PS),
+          (function (scope) {
             "use strict";
-            exportContainer["Data.String.Common"] =
-              exportContainer["Data.String.Common"] || {};
-            exportContainer["Data.String.Common"].split = function (
-              separator
-            ) {
-              return function (targetString) {
-                return targetString.split(separator);
+            (scope.split = function (sep) {
+              return function (s) {
+                return s.split(sep);
               };
-            };
-            exportContainer["Data.String.Common"].trim = function (
-              targetString
-            ) {
-              return targetString.trim();
-            };
-          })(packageExports["Data.String.Common"] || (packageExports["Data.String.Common"] = {})),
-          // Module: Data.String.Common
-          (function (exportContainer) {
+            }),
+              (scope.trim = function (s) {
+                return s.trim();
+              });
+          })((PS["Data.String.Common"] = PS["Data.String.Common"] || {})),
+          (function (scope) {
             "use strict";
-            exportContainer["Data.String.Common"] =
-              exportContainer["Data.String.Common"] || {};
-            var stringUtilData = exportContainer["Data.String.Common"], // Alias for Data.String.Common
-              stringUtilReExport = exportContainer["Data.String.Common"]; // Another alias for Data.String.Common
-            stringUtilData.split = stringUtilReExport.split;
-            stringUtilData.trim = stringUtilReExport.trim;
-          })(packageExports),
-          // Module: Data.Tuple
-          (function (exportContainer) {
+            scope["Data.String.Common"] = scope["Data.String.Common"] || {};
+            var a = scope["Data.String.Common"],
+              b = scope["Data.String.Common"];
+            (a.split = b.split), (a.trim = b.trim);
+          })(PS),
+          (function (scope) {
             "use strict";
-            exportContainer["Data.Tuple"] =
-              exportContainer["Data.Tuple"] || {};
-            var tupleData = exportContainer["Data.Tuple"], // Alias for Data.Tuple
-              TupleConstructor = (function () {
-                function Tuple(firstVal, secondVal) {
-                  this.value0 = firstVal;
-                  this.value1 = secondVal;
+            scope["Data.Tuple"] = scope["Data.Tuple"] || {};
+            var mod = scope["Data.Tuple"],
+              Tuple = (function () {
+                function Tuple(value0, value1) {
+                  (this.value0 = value0), (this.value1 = value1);
                 }
-                return (Tuple.create = function (valA) {
-                  return function (valB) {
-                    return new Tuple(valA, valB);
-                  };
-                }), Tuple;
+                return (
+                  (Tuple.create = function (a) {
+                    return function (b) {
+                      return new Tuple(a, b);
+                    };
+                  }),
+                  Tuple
+                );
               })();
-            tupleData.Tuple = TupleConstructor;
-          })(packageExports),
-          // Module: Effect (native implementations)
-          (function (exportContainer) {
+            mod.Tuple = Tuple;
+          })(PS),
+          (function (scope) {
             "use strict";
-            exportContainer.Effect = exportContainer.Effect || {};
-            exportContainer.Effect.pureE = function (value) {
+            (scope.pureE = function (x) {
               return function () {
-                return value;
+                return x;
               };
-            };
-            exportContainer.Effect.bindE = function (action) {
-              return function (continuation) {
-                return function () {
-                  return continuation(action())();
+            }),
+              (scope.bindE = function (eff) {
+                return function (k) {
+                  return function () {
+                    return k(eff())();
+                  };
                 };
-              };
-            };
-          })(packageExports["Effect"] || (packageExports["Effect"] = {})),
-          // Module: Control.Monad
-          (function (exportContainer) {
+              });
+          })((PS.Effect = PS.Effect || {})),
+          (function (scope) {
             "use strict";
-            exportContainer["Control.Monad"] =
-              exportContainer["Control.Monad"] || {};
-            var monadControl = exportContainer["Control.Monad"], // Alias for Control.Monad
-              applicativeControl = exportContainer["Control.Applicative"], // Alias for Control.Applicative
-              bindControl = exportContainer["Control.Bind"]; // Alias for Control.Bind
-            monadControl.Monad = function (applicativeInst, bindInst) {
-              this.Applicative0 = applicativeInst;
-              this.Bind1 = bindInst;
-            };
-            monadControl.ap = function (monadInst) {
-              return function (funcAction) {
-                return function (valueAction) {
-                  return bindControl.bind(monadInst.Bind1())(funcAction)(
-                    function (funcResult) {
-                      return bindControl.bind(monadInst.Bind1())(valueAction)(
-                        function (valueResult) {
-                          return applicativeControl.pure(
-                            monadInst.Applicative0()
-                          )(funcResult(valueResult));
-                        }
-                      );
-                    }
-                  );
+            scope["Control.Monad"] = scope["Control.Monad"] || {};
+            var mod = scope["Control.Monad"],
+              applicative = scope["Control.Applicative"],
+              bind = scope["Control.Bind"];
+            (mod.Monad = function (Applicative0, Bind1) {
+              (this.Applicative0 = Applicative0), (this.Bind1 = Bind1);
+            }),
+              (mod.ap = function (dict) {
+                return function (mf) {
+                  return function (mx) {
+                    return bind.bind(dict.Bind1())(mf)(function (f) {
+                      return bind.bind(dict.Bind1())(mx)(function (x) {
+                        return applicative.pure(dict.Applicative0())(f(x));
+                      });
+                    });
+                  };
                 };
-              };
-            };
-          })(packageExports),
-          // Module: Effect
-          (function (exportContainer) {
+              });
+          })(PS),
+          (function (scope) {
             "use strict";
-            exportContainer["Effect"] = exportContainer["Effect"] || {};
-            var effectCore = exportContainer["Effect"], // Alias for Effect
-              effectReExport = exportContainer["Effect"], // Another alias for Effect
-              applicativeControl = exportContainer["Control.Applicative"], // Alias for Control.Applicative
-              applyControl = exportContainer["Control.Apply"], // Alias for Control.Apply
-              bindControl = exportContainer["Control.Bind"], // Alias for Control.Bind
-              monadControl = exportContainer["Control.Monad"], // Alias for Control.Monad
-              functorData = exportContainer["Data.Functor"], // Alias for Data.Functor
-              effectMonadInstance = new monadControl.Monad(
+            scope.Effect = scope.Effect || {};
+            var mod = scope.Effect,
+              self = scope.Effect,
+              Applicative = scope["Control.Applicative"],
+              Apply = scope["Control.Apply"],
+              Bind = scope["Control.Bind"],
+              Monad = scope["Control.Monad"],
+              Functor = scope["Data.Functor"],
+              monadEffect = new Monad.Monad(
                 function () {
-                  return effectApplicativeInstance;
+                  return applicativeEffect;
                 },
                 function () {
-                  return effectBindInstance;
-                }
-              ),
-              effectBindInstance = new bindControl.Bind(
-                function () {
-                  return effectApplyInstance;
+                  return bindEffect;
                 },
-                effectReExport.bindE
               ),
-              effectApplyInstance = new applyControl.Apply(
-                function () {
-                  return effectFunctorInstance;
-                },
-                monadControl.ap(effectMonadInstance)
-              ),
-              effectApplicativeInstance = new applicativeControl.Applicative(
-                function () {
-                  return effectApplyInstance;
-                },
-                effectReExport.pureE
-              ),
-              effectFunctorInstance = new functorData.Functor(
-                applicativeControl.liftA1(effectApplicativeInstance)
-              );
-            effectCore.functorEffect = effectFunctorInstance;
-            effectCore.applyEffect = effectApplyInstance;
-            effectCore.applicativeEffect = effectApplicativeInstance;
-            effectCore.bindEffect = effectBindInstance;
-            effectCore.monadEffect = effectMonadInstance;
-          })(packageExports),
-          // Module: Effect.Aff (complex internal implementation)
-          (function (exportContainer) {
+              bindEffect = new Bind.Bind(function () {
+                return applyEffect;
+              }, self.bindE),
+              applyEffect = new Apply.Apply(function () {
+                return functorEffect;
+              }, Monad.ap(monadEffect)),
+              applicativeEffect = new Applicative.Applicative(function () {
+                return applyEffect;
+              }, self.pureE),
+              functorEffect = new Functor.Functor(Applicative.liftA1(applicativeEffect));
+            (mod.functorEffect = functorEffect),
+              (mod.applyEffect = applyEffect),
+              (mod.applicativeEffect = applicativeEffect),
+              (mod.bindEffect = bindEffect),
+              (mod.monadEffect = monadEffect);
+          })(PS),
+          (function (scope) {
             "use strict";
-            var affInternal = (function () {
-              var internalState = {}, // Represents an empty or default state.
-                pureTag = "Pure", // Tag for pure computations.
-                throwTag = "Throw", // Tag for computations that throw an error.
-                catchTag = "Catch", // Tag for computations that catch errors.
-                syncTag = "Sync", // Tag for synchronous effect computations.
-                asyncTag = "Async", // Tag for asynchronous effect computations.
-                bindTag = "Bind", // Tag for monadic bind operations.
-                bracketTag = "Bracket", // Tag for resource management (acquire/release).
-                forkTag = "Fork", // Tag for forking a new fiber.
-                sequentialTag = "Sequential", // Tag for sequential execution of parallel operations.
-                parMapTag = "Map", // Tag for parallel map.
-                parApplyTag = "Apply", // Tag for parallel apply.
-                parAltTag = "Alt", // Tag for parallel alternative.
-                consTag = "Cons", // Tag for a list-like cons operation (internal stack building).
-                resumeTag = "Resume", // Tag for resuming a computation.
-                releaseTag = "Release", // Tag for releasing a resource.
-                finalizerTag = "Finalizer", // Tag for a finalization step.
-                finalizedTag = "Finalized", // Tag indicating a finalizer has run.
-                forkedTag = "Forked"; // Tag indicating a forked fiber.
-
-              // Constructor for internal Aff operation records.
-              function OperationRecord(tag, val1, val2, val3) {
-                this.tag = tag;
-                this._1 = val1;
-                this._2 = val2;
-                this._3 = val3;
+            var AffImpl = (function () {
+              var EMPTY = {},
+                PURE = "Pure",
+                THROW = "Throw",
+                CATCH = "Catch",
+                SYNC = "Sync",
+                ASYNC = "Async",
+                BIND = "Bind",
+                BRACKET = "Bracket",
+                FORK = "Fork",
+                SEQUENTIAL = "Sequential",
+                MAP = "Map",
+                APPLY = "Apply",
+                ALT = "Alt",
+                CONS = "Cons",
+                RESUME = "Resume",
+                RELEASE = "Release",
+                FINALIZER = "Finalizer",
+                FINALIZED = "Finalized",
+                FORKED = "Forked";
+              function Aff(tag, a, b, c) {
+                (this.tag = tag), (this._1 = a), (this._2 = b), (this._3 = c);
               }
-
-              // Factory function to create OperationRecords with a specific tag.
-              function createOpRecord(tag) {
-                var recordFactory = function (val1, val2, val3) {
-                  return new OperationRecord(tag, val1, val2, val3);
+              function make(tag) {
+                var f = function (a, b, c) {
+                  return new Aff(tag, a, b, c);
                 };
-                return (recordFactory.tag = tag), recordFactory;
+                return (f.tag = tag), f;
               }
-
-              // Creates a "Pure" operation record.
-              function createPureOp(value) {
-                return new OperationRecord(pureTag, void 0);
+              function nonCanceler(x) {
+                return new Aff(PURE, void 0);
               }
-
-              // Executes a function safely, catching and logging any errors.
-              function executeSafely(action) {
+              function safeThrow(error) {
                 try {
-                  action();
-                } catch (err) {
+                  error();
+                } catch (e) {
                   setTimeout(function () {
-                    throw err;
+                    throw e;
                   }, 0);
                 }
               }
-
-              // Attempts to run a function, capturing its result or any thrown error.
-              function tryCatchResult(errorHandler, successHandler, funcToRun) {
+              function attempt(left, right, thunk) {
                 try {
-                  return successHandler(funcToRun());
+                  return right(thunk());
                 } catch (err) {
-                  return errorHandler(err);
+                  return left(err);
                 }
               }
-
-              // Handles asynchronous operations with error handling and result capture.
-              function asyncTryCatch(
-                errorHandler,
-                successHandler,
-                asyncAction
-              ) {
+              function invoke(left, k, cb) {
                 try {
-                  return successHandler(asyncAction());
+                  return k(cb)();
                 } catch (err) {
-                  return asyncAction(errorHandler(err))(), createPureOp;
+                  return cb(left(err))(), nonCanceler;
                 }
               }
-
-              // A simple task scheduler for deferring execution.
-              var taskScheduler = (function () {
-                var queueCapacity = 1024,
-                  queueSize = 0,
-                  queueHead = 0,
-                  taskQueue = new Array(queueCapacity),
-                  isCurrentlyDraining = !1;
-
-                function drainQueue() {
-                  var currentTask;
-                  for (isCurrentlyDraining = !0; 0 !== queueSize; )
-                    queueSize--,
-                      (currentTask = taskQueue[queueHead]),
-                      (taskQueue[queueHead] = void 0),
-                      (queueHead = (queueHead + 1) % queueCapacity),
-                      currentTask();
-                  isCurrentlyDraining = !1;
+              var scheduler = (function () {
+                var len = 1024,
+                  size = 0,
+                  start = 0,
+                  ring = new Array(len),
+                  draining = !1;
+                function drain() {
+                  var job;
+                  for (draining = !0; 0 !== size; )
+                    size--, (job = ring[start]), (ring[start] = void 0), (start = (start + 1) % len), job();
+                  draining = !1;
                 }
                 return {
                   isDraining: function () {
-                    return isCurrentlyDraining;
+                    return draining;
                   },
-                  enqueue: function (task) {
-                    var tempDrainState;
-                    queueSize === queueCapacity &&
-                      ((tempDrainState = isCurrentlyDraining),
-                      drainQueue(),
-                      (isCurrentlyDraining = tempDrainState)),
-                      (taskQueue[(queueHead + queueSize) % queueCapacity] = task),
-                      queueSize++,
-                      isCurrentlyDraining || drainQueue();
+                  enqueue: function (job) {
+                    var old;
+                    size === len && ((old = draining), drain(), (draining = old)),
+                      (ring[(start + size) % len] = job),
+                      size++,
+                      draining || drain();
                   },
                 };
               })();
-
-              // Internal states representing a Fiber's execution progress.
-              var FiberStateInitial = 0, // Fiber has not started execution.
-                FiberStateRunning = 1, // Fiber is actively processing an operation.
-                FiberStateEvaluating = 2, // Fiber is evaluating a continuation.
-                FiberStateSuspended = 3, // Fiber is suspended, waiting for a result.
-                FiberStateAsyncWait = 4, // Fiber is waiting for an asynchronous operation to complete.
-                FiberStateErrored = 5, // Fiber has encountered an error.
-                FiberStateCompleted = 6; // Fiber has finished execution.
-
-              // The Fiber constructor, representing a lightweight concurrent computation.
-              function Fiber(
-                eitherInterface, // An interface for Either type operations.
-                supervisorRef, // Optional supervisor for this fiber.
-                initialAction // The initial Aff action for this fiber.
-              ) {
-                var executionStep = 0, // Counter for execution steps, used for async coordination.
-                  currentState = FiberStateInitial, // Current state of the fiber.
-                  currentResult = initialAction, // The current result or next action to process.
-                  currentError = null, // Stores any error that occurred.
-                  currentStack = null, // The continuation stack for bind operations.
-                  errorStack = null, // The error handling stack.
-                  bracketStack = null, // Stack for bracket operations (resource management).
-                  bracketCount = 0, // Counter for active bracket resources.
-                  asyncOpCount = 0, // Counter for asynchronous operations.
-                  onCompleteHandlers = null, // Map of handlers to call on fiber completion.
-                  rethrowOnComplete = !0; // Flag to re-throw unhandled errors on completion.
-
-                // The main execution loop of the fiber.
-                function advanceFiber(stepIdentifier) {
-                  for (
-                    var nextOpRecord, nextStackItem, currentBracketItem;
-                    ;
-                  )
-                    switch (
-                      ((nextOpRecord = null),
-                      (nextStackItem = null),
-                      (currentBracketItem = null),
-                      currentState)
-                    ) {
-                      case FiberStateEvaluating:
-                        // Transition from evaluating a continuation to running the next action.
-                        currentState = FiberStateRunning;
-                        currentResult = currentStack(currentResult);
-                        null === errorStack
-                          ? (currentStack = null)
-                          : ((currentStack = errorStack._1),
-                            (errorStack = errorStack._2));
+              var SUSPENDED = 0,
+                CONTINUE = 1,
+                STEP_BIND = 2,
+                RETURN = 3,
+                ASYNCING = 4,
+                COMPLETING = 5,
+                DONE = 6;
+              function Fiber(util, supervisor, aff) {
+                var tick = 0,
+                  state = SUSPENDED,
+                  current = aff,
+                  fail = null,
+                  left = null,
+                  bind = null,
+                  binds = null,
+                  stack = null,
+                  bracketCount = 0,
+                  listeners = 0,
+                  completeHandlers = null,
+                  rethrow = !0;
+                function run(step) {
+                  for (var w, h, j; ; )
+                    switch (((w = null), (h = null), (j = null), state)) {
+                      case STEP_BIND:
+                        (state = CONTINUE),
+                          (current = bind(current)),
+                          null === binds ? (bind = null) : ((bind = binds._1), (binds = binds._2));
                         break;
-                      case FiberStateSuspended:
-                        // Check if the current result is an error or a successful value.
-                        eitherInterface.isLeft(currentResult)
-                          ? ((currentState = FiberStateErrored),
-                            (currentError = currentResult),
-                            (currentResult = null))
-                          : null === currentStack
-                          ? (currentState = FiberStateErrored) // No more continuations, but an error occurred upstream.
-                          : ((currentState = FiberStateEvaluating),
-                            (currentResult = eitherInterface.fromRight(currentResult)));
+                      case RETURN:
+                        util.isLeft(current)
+                          ? ((state = COMPLETING), (fail = current), (current = null))
+                          : null === bind
+                            ? (state = COMPLETING)
+                            : ((state = STEP_BIND), (current = util.fromRight(current)));
                         break;
-                      case FiberStateRunning:
-                        // Process the current Aff operation based on its tag.
-                        switch (currentResult.tag) {
-                          case bindTag:
-                            // Add the bind continuation to the stack.
-                            currentStack &&
-                              (errorStack = new OperationRecord(
-                                consTag,
-                                currentStack,
-                                errorStack
-                              )),
-                              (currentStack = currentResult._2),
-                              (currentState = FiberStateRunning),
-                              (currentResult = currentResult._1);
+                      case CONTINUE:
+                        switch (current.tag) {
+                          case BIND:
+                            bind && (binds = new Aff(CONS, bind, binds)),
+                              (bind = current._2),
+                              (state = CONTINUE),
+                              (current = current._1);
                             break;
-                          case pureTag:
-                            // If pure, apply the continuation or mark as errored if no continuation.
-                            null === currentStack
-                              ? ((currentState = FiberStateErrored),
-                                (currentResult = eitherInterface.right(currentResult._1)))
-                              : ((currentState = FiberStateEvaluating),
-                                (currentResult = currentResult._1));
+                          case PURE:
+                            null === bind
+                              ? ((state = COMPLETING), (current = util.right(current._1)))
+                              : ((state = STEP_BIND), (current = current._1));
                             break;
-                          case syncTag:
-                            // Execute a synchronous effect, handling potential exceptions.
-                            currentState = FiberStateSuspended;
-                            currentResult = tryCatchResult(
-                              eitherInterface.left,
-                              eitherInterface.right,
-                              currentResult._1
-                            );
+                          case SYNC:
+                            (state = RETURN), (current = attempt(util.left, util.right, current._1));
                             break;
-                          case asyncTag:
-                            // Handle an asynchronous effect. This suspends the fiber.
+                          case ASYNC:
                             return (
-                              (currentState = FiberStateAsyncWait),
-                              void (currentResult = asyncTryCatch(
-                                eitherInterface.left,
-                                currentResult._1,
-                                function (resultHandler) {
-                                  return function () {
-                                    executionStep === stepIdentifier &&
-                                      (executionStep++,
-                                      taskScheduler.enqueue(function () {
-                                        executionStep === stepIdentifier + 1 &&
-                                          ((currentState = FiberStateSuspended),
-                                          (currentResult = resultHandler),
-                                          advanceFiber(executionStep));
-                                      }));
-                                  };
-                                }
-                              ))
+                              (state = ASYNCING),
+                              void (current = invoke(util.left, current._1, function (v) {
+                                return function () {
+                                  tick === step &&
+                                    (tick++,
+                                    scheduler.enqueue(function () {
+                                      tick === step + 1 && ((state = RETURN), (current = v), run(tick));
+                                    }));
+                                };
+                              }))
                             );
-                          case throwTag:
-                            // Directly transition to an errored state.
-                            currentState = FiberStateErrored;
-                            currentError = eitherInterface.left(currentResult._1);
-                            currentResult = null;
+                          case THROW:
+                            (state = COMPLETING), (fail = util.left(current._1)), (current = null);
                             break;
-                          case catchTag:
-                            // Push a catch block onto the bracket stack.
-                            bracketStack = new OperationRecord(
-                              consTag,
-                              currentResult,
-                              null === currentStack
-                                ? bracketStack
-                                : new OperationRecord(
-                                    resumeTag,
-                                    currentStack,
-                                    errorStack
-                                  ),
-                              errorStack
-                            );
-                            currentStack = null;
-                            errorStack = null;
-                            currentState = FiberStateRunning;
-                            currentResult = currentResult._1;
+                          case CATCH:
+                            (stack = new Aff(
+                              CONS,
+                              current,
+                              null === bind ? stack : new Aff(CONS, new Aff(RESUME, bind, binds), stack, left),
+                              left,
+                            )),
+                              (bind = null),
+                              (binds = null),
+                              (state = CONTINUE),
+                              (current = current._1);
                             break;
-                          case bracketTag:
-                            // Push a bracket resource onto the bracket stack.
-                            bracketCount++;
-                            bracketStack = new OperationRecord(
-                              consTag,
-                              currentResult,
-                              null === currentStack
-                                ? bracketStack
-                                : new OperationRecord(
-                                    resumeTag,
-                                    currentStack,
-                                    errorStack
-                                  ),
-                              errorStack
-                            );
-                            currentStack = null;
-                            errorStack = null;
-                            currentState = FiberStateRunning;
-                            currentResult = currentResult._1;
+                          case BRACKET:
+                            bracketCount++,
+                              (stack = new Aff(
+                                CONS,
+                                current,
+                                null === bind ? stack : new Aff(CONS, new Aff(RESUME, bind, binds), stack, left),
+                                left,
+                              )),
+                              (bind = null),
+                              (binds = null),
+                              (state = CONTINUE),
+                              (current = current._1);
                             break;
-                          case forkTag:
-                            // Create and run a new fiber.
-                            currentState = FiberStateSuspended;
-                            nextOpRecord = Fiber(
-                              eitherInterface,
-                              supervisorRef,
-                              currentResult._2
-                            );
-                            supervisorRef && supervisorRef.register(nextOpRecord);
-                            currentResult._1 && nextOpRecord.run();
-                            currentResult = eitherInterface.right(nextOpRecord);
+                          case FORK:
+                            (state = RETURN),
+                              (w = Fiber(util, supervisor, current._2)),
+                              supervisor && supervisor.register(w),
+                              current._1 && w.run(),
+                              (current = util.right(w));
                             break;
-                          case sequentialTag:
-                            // Execute sequential actions.
-                            currentState = FiberStateRunning;
-                            currentResult = executeSequential(
-                              eitherInterface,
-                              supervisorRef,
-                              currentResult._1
-                            );
+                          case SEQUENTIAL:
+                            (state = CONTINUE), (current = parallel(util, supervisor, current._1));
                         }
                         break;
-                      case FiberStateErrored:
-                        // Handle errors by unwinding the bracket stack.
-                        if (
-                          ((currentStack = null),
-                          (errorStack = null),
-                          null === bracketStack)
-                        )
-                          currentState = FiberStateCompleted; // No more error handlers, fiber completes with error.
+                      case COMPLETING:
+                        if (((bind = null), (binds = null), null === stack))
+                          (state = DONE), (current = left || fail || current);
                         else
-                          switch (
-                            ((nextOpRecord = bracketStack._3),
-                            (currentBracketItem = bracketStack._1),
-                            (bracketStack = bracketStack._2),
-                            currentBracketItem.tag)
-                          ) {
-                            case catchTag:
-                              // If a catch block matches the current error context, execute it.
-                              onCompleteHandlers &&
-                                onCompleteHandlers !== nextOpRecord
-                                ? (currentState = FiberStateErrored)
-                                : currentError &&
-                                  ((currentState = FiberStateRunning),
-                                  (currentResult = currentBracketItem._2(
-                                    eitherInterface.fromLeft(currentError)
-                                  )),
-                                  (currentError = null));
+                          switch (((w = stack._3), (j = stack._1), (stack = stack._2), j.tag)) {
+                            case CATCH:
+                              left && left !== w
+                                ? (state = COMPLETING)
+                                : fail &&
+                                  ((state = CONTINUE),
+                                  (current = j._2(util.fromLeft(fail))),
+                                  (fail = null));
                               break;
-                            case resumeTag:
-                              // Resume execution if there's no error or the context matches.
-                              onCompleteHandlers && onCompleteHandlers !== nextOpRecord ||
-                                currentError
-                                ? (currentState = FiberStateErrored)
-                                : ((currentStack = currentBracketItem._1),
-                                  (errorStack = currentBracketItem._2),
-                                  (currentState = FiberStateEvaluating),
-                                  (currentResult = eitherInterface.fromRight(currentResult)));
+                            case RESUME:
+                              (left && left !== w) || fail
+                                ? (state = COMPLETING)
+                                : ((bind = j._1),
+                                  (binds = j._2),
+                                  (state = STEP_BIND),
+                                  (current = util.fromRight(current)));
                               break;
-                            case bracketTag:
-                              // Release a bracketed resource.
-                              bracketCount--;
-                              null === currentError &&
-                                ((nextStackItem = eitherInterface.fromRight(
-                                  currentResult
-                                )),
-                                (bracketStack = new OperationRecord(
-                                  consTag,
-                                  new OperationRecord(
-                                    releaseTag,
-                                    currentBracketItem._2,
-                                    nextStackItem
-                                  ),
-                                  bracketStack,
-                                  nextOpRecord
-                                )),
-                                (onCompleteHandlers === nextOpRecord || bracketCount > 0) &&
-                                  ((currentState = FiberStateRunning),
-                                  (currentResult = currentBracketItem._3(nextStackItem))));
+                            case BRACKET:
+                              bracketCount--,
+                                null === fail &&
+                                  ((h = util.fromRight(current)),
+                                  (stack = new Aff(CONS, new Aff(RELEASE, j._2, h), stack, w)),
+                                  (left === w || bracketCount > 0) &&
+                                    ((state = CONTINUE), (current = j._3(h))));
                               break;
-                            case releaseTag:
-                              // Execute the release action of a bracket.
-                              bracketCount++;
-                              bracketStack = new OperationRecord(
-                                consTag,
-                                new OperationRecord(
-                                  finalizedTag,
-                                  currentResult,
-                                  currentError
-                                ),
-                                bracketStack,
-                                onCompleteHandlers
-                              );
-                              currentState = FiberStateRunning;
-                              currentResult =
-                                onCompleteHandlers && onCompleteHandlers !== nextOpRecord
-                                  ? currentBracketItem._1.killed(
-                                      eitherInterface.fromLeft(onCompleteHandlers)
-                                    )(currentBracketItem._2)
-                                  : currentError
-                                  ? currentBracketItem._1.failed(
-                                      eitherInterface.fromLeft(currentError)
-                                    )(currentBracketItem._2)
-                                  : currentBracketItem._1.completed(
-                                      eitherInterface.fromRight(currentResult)
-                                    )(currentBracketItem._2);
-                              currentError = null;
+                            case RELEASE:
+                              bracketCount++,
+                                (stack = new Aff(CONS, new Aff(FINALIZED, current, fail), stack, left)),
+                                (state = CONTINUE),
+                                (current =
+                                  left && left !== w
+                                    ? j._1.killed(util.fromLeft(left))(j._2)
+                                    : fail
+                                      ? j._1.failed(util.fromLeft(fail))(j._2)
+                                      : j._1.completed(util.fromRight(current))(j._2)),
+                                (fail = null);
                               break;
-                            case finalizerTag:
-                              // Execute a finalizer.
-                              bracketCount++;
-                              bracketStack = new OperationRecord(
-                                consTag,
-                                new OperationRecord(
-                                  finalizedTag,
-                                  currentResult,
-                                  currentError
-                                ),
-                                bracketStack,
-                                onCompleteHandlers
-                              );
-                              currentState = FiberStateRunning;
-                              currentResult = currentBracketItem._1;
+                            case FINALIZER:
+                              bracketCount++,
+                                (stack = new Aff(CONS, new Aff(FINALIZED, current, fail), stack, left)),
+                                (state = CONTINUE),
+                                (current = j._1);
                               break;
-                            case finalizedTag:
-                              // Mark a finalizer as completed.
-                              bracketCount--;
-                              currentState = FiberStateErrored;
-                              currentResult = currentBracketItem._1;
-                              currentError = currentBracketItem._2;
+                            case FINALIZED:
+                              bracketCount--, (state = COMPLETING), (current = j._1), (fail = j._2);
                           }
                         break;
-                      case FiberStateCompleted:
-                        // Run all registered completion handlers.
-                        for (var handlerKey in onCompleteHandlers)
-                          onCompleteHandlers.hasOwnProperty(handlerKey) &&
-                            (rethrowOnComplete =
-                              rethrowOnComplete && onCompleteHandlers[handlerKey].rethrow),
-                            executeSafely(
-                              onCompleteHandlers[handlerKey].handler(currentResult)
-                            );
+                      case DONE:
+                        for (var key in completeHandlers)
+                          completeHandlers.hasOwnProperty(key) &&
+                            ((rethrow = rethrow && completeHandlers[key].rethrow), safeThrow(completeHandlers[key].handler(current)));
                         return (
-                          (onCompleteHandlers = null),
-                          void (
-                            onCompleteHandlers && currentError
-                              ? setTimeout(function () {
-                                  throw eitherInterface.fromLeft(currentError);
-                                }, 0)
-                              : eitherInterface.isLeft(currentResult) &&
-                                rethrowOnComplete &&
-                                setTimeout(function () {
-                                  if (rethrowOnComplete)
-                                    throw eitherInterface.fromLeft(currentResult);
-                                }, 0)
-                          )
+                          (completeHandlers = null),
+                          void (left && fail
+                            ? setTimeout(function () {
+                                throw util.fromLeft(fail);
+                              }, 0)
+                            : util.isLeft(current) &&
+                              rethrow &&
+                              setTimeout(function () {
+                                if (rethrow) throw util.fromLeft(current);
+                              }, 0))
                         );
-                      case FiberStateInitial:
-                        // Start execution.
-                        currentState = FiberStateRunning;
+                      case SUSPENDED:
+                        state = CONTINUE;
                         break;
-                      case FiberStateAsyncWait:
-                        // Fiber is paused, waiting for an async result.
+                      case ASYNCING:
                         return;
                     }
                 }
-
-                // Registers a callback to be invoked when the fiber completes.
-                function registerCompletionHandler(handlerConfig) {
+                function onComplete(handler) {
                   return function () {
-                    if (currentState === FiberStateCompleted)
+                    if (state === DONE)
                       return (
-                        (rethrowOnComplete = rethrowOnComplete && handlerConfig.rethrow),
-                        handlerConfig.handler(currentResult)(),
-                        function () {}
+                        (rethrow = rethrow && handler.rethrow), handler.handler(current)(), function () {}
                       );
-                    var handlerId = asyncOpCount++;
+                    var id = listeners++;
                     return (
-                      (onCompleteHandlers = onCompleteHandlers || {}),
-                      (onCompleteHandlers[handlerId] = handlerConfig),
+                      ((completeHandlers = completeHandlers || {})[id] = handler),
                       function () {
-                        null !== onCompleteHandlers &&
-                          delete onCompleteHandlers[handlerId];
+                        null !== completeHandlers && delete completeHandlers[id];
                       }
                     );
                   };
                 }
-
                 return {
-                  // Attempts to cancel/kill the fiber with a given error.
-                  kill: function (errorVal, callback) {
+                  kill: function (err, cb) {
                     return function () {
-                      if (currentState === FiberStateCompleted)
-                        return callback(eitherInterface.right(void 0))(), function () {};
-                      var cleanupFunc = registerCompletionHandler({
+                      if (state === DONE) return cb(util.right(void 0))(), function () {};
+                      var unregister = onComplete({
                         rethrow: !1,
                         handler: function () {
-                          return callback(eitherInterface.right(void 0));
+                          return cb(util.right(void 0));
                         },
                       })();
-                      switch (currentState) {
-                        case FiberStateInitial:
-                          currentError = eitherInterface.left(errorVal);
-                          currentState = FiberStateCompleted;
-                          currentResult = currentError;
-                          advanceFiber(executionStep);
+                      switch (state) {
+                        case SUSPENDED:
+                          (left = util.left(err)), (state = DONE), (current = left), run(tick);
                           break;
-                        case FiberStateAsyncWait:
-                          null === onCompleteHandlers &&
-                            (onCompleteHandlers = eitherInterface.left(errorVal));
-                          0 === bracketCount &&
-                            (currentState === FiberStateAsyncWait &&
-                              (bracketStack = new OperationRecord(
-                                consTag,
-                                new OperationRecord(
-                                  finalizerTag,
-                                  currentResult(errorVal)
-                                ),
-                                bracketStack,
-                                onCompleteHandlers
-                              )),
-                            (currentState = FiberStateErrored),
-                            (currentResult = null),
-                            (currentError = null),
-                            advanceFiber(++executionStep));
+                        case ASYNCING:
+                          null === left && (left = util.left(err)),
+                            0 === bracketCount &&
+                              (state === ASYNCING && (stack = new Aff(CONS, new Aff(FINALIZER, current(err)), stack, left)),
+                              (state = COMPLETING),
+                              (current = null),
+                              (fail = null),
+                              run(++tick));
                           break;
                         default:
-                          null === onCompleteHandlers &&
-                            (onCompleteHandlers = eitherInterface.left(errorVal));
-                          0 === bracketCount &&
-                            ((currentState = FiberStateErrored),
-                            (currentResult = null),
-                            (currentError = null));
+                          null === left && (left = util.left(err)),
+                            0 === bracketCount && ((state = COMPLETING), (current = null), (fail = null));
                       }
-                      return cleanupFunc;
+                      return unregister;
                     };
                   },
-                  // Waits for the fiber to complete, invoking a callback.
-                  join: function (completionCallback) {
+                  join: function (k) {
                     return function () {
-                      var cleanupFunc = registerCompletionHandler({
-                        rethrow: !1,
-                        handler: completionCallback,
-                      })();
-                      return currentState === FiberStateInitial && advanceFiber(executionStep), cleanupFunc;
+                      var unregister = onComplete({ rethrow: !1, handler: k })();
+                      return state === SUSPENDED && run(tick), unregister;
                     };
                   },
-                  // Exposes the completion handler registration.
-                  onComplete: registerCompletionHandler,
-                  // Checks if the fiber is in its initial (suspended) state.
+                  onComplete: onComplete,
                   isSuspended: function () {
-                    return currentState === FiberStateInitial;
+                    return state === SUSPENDED;
                   },
-                  // Starts the fiber's execution.
                   run: function () {
-                    currentState === FiberStateInitial &&
-                      (taskScheduler.isDraining()
-                        ? advanceFiber(executionStep)
-                        : taskScheduler.enqueue(function () {
-                            advanceFiber(executionStep);
+                    state === SUSPENDED &&
+                      (scheduler.isDraining()
+                        ? run(tick)
+                        : scheduler.enqueue(function () {
+                            run(tick);
                           }));
                   },
                 };
               }
-
-              // Executes parallel Aff actions in a sequential manner, managing their lifecycles.
-              function executeSequential(eitherInterface, supervisorRef, parAffAction) {
-                var fiberCount = 0,
-                  activeFibers = {},
-                  completedFibers = 0,
-                  earlyExitError = new Error("[ParAff] Early exit"), // Error used for early termination.
-                  currentErrorMessage = null, // Stores an error that causes early exit.
-                  eitherInstance = eitherInterface; // Alias for the Either interface.
-
-                // Handles the completion of a forked fiber, propagating its result.
-                function fiberCompletionHandler(fiberId) {
-                  return function (completionResult) {
+              function parallel(util, supervisor, aff) {
+                return new Aff(ASYNC, function (cb) {
+                  return function () {
+                    return startParallel(util, supervisor, aff, cb);
+                  };
+                });
+              }
+              function startParallel(util, supervisor, aff, cb) {
+                var count = 0,
+                  fibers = {},
+                  cancels = 0,
+                  cancelers = {},
+                  early = new Error("[ParAff] Early exit"),
+                  killed = null,
+                  root = EMPTY;
+                function killTree(err, node, done) {
+                  var fiber,
+                    fn,
+                    current = node,
+                    parents = null,
+                    rest = null,
+                    total = 0,
+                    undo = {};
+                  scan: for (;;)
+                    switch (((fiber = null), current.tag)) {
+                      case FORKED:
+                        if (
+                          (current._3 === EMPTY &&
+                            ((fiber = fibers[current._1]),
+                            (undo[total++] = fiber.kill(err, function (r) {
+                              return function () {
+                                0 === --total && done(r)();
+                              };
+                            }))),
+                          null === parents)
+                        )
+                          break scan;
+                        (current = parents._2),
+                          null === rest ? (parents = null) : ((parents = rest._1), (rest = rest._2));
+                        break;
+                      case MAP:
+                        current = current._2;
+                        break;
+                      case APPLY:
+                      case ALT:
+                        parents && (rest = new Aff(CONS, parents, rest)), (parents = current), (current = current._1);
+                    }
+                  if (0 === total) done(util.right(void 0))();
+                  else for (fn = 0, fiber = total; fn < fiber; fn++) undo[fn] = undo[fn]();
+                  return undo;
+                }
+                function doneNode(node) {
+                  return function (result) {
                     return function () {
-                      delete activeFibers[fiberId._1]; // Remove fiber from active list.
-                      fiberId._3 = completionResult; // Store the fiber's result.
-                      // Recursively process the completed fiber's parent if it exists.
-                      (function processParentFiber(
-                        currentResult,
-                        parentOpRecord,
-                        grandParentOpRecord
-                      ) {
-                        var leftResult, rightResult, childOp, siblingOp, nextOp;
-                        for (
-                          eitherInstance.isLeft(currentResult)
-                            ? ((leftResult = currentResult), (rightResult = null))
-                            : ((rightResult = currentResult), (leftResult = null));
-                          ;
-                        ) {
-                          if (((childOp = null), (siblingOp = null), (nextOp = null), null !== currentErrorMessage)) return;
-                          if (null === parentOpRecord)
-                            return void eitherInstance(leftResult || rightResult)();
-                          if (parentOpRecord._3 !== eitherInstance) return;
+                      delete fibers[node._1],
+                        (node._3 = result),
+                        (function loop(result, current, parents) {
+                          var err, val, leftR, rightR, alive, id;
+                          for (
+                            util.isLeft(result)
+                              ? ((err = result), (val = null))
+                              : ((val = result), (err = null));
+                            ;
 
-                          switch (parentOpRecord.tag) {
-                            case parMapTag:
-                              null === leftResult
-                                ? (parentOpRecord._3 = eitherInstance.right(
-                                    parentOpRecord._1(eitherInstance.fromRight(rightResult))
-                                  ))
-                                : (parentOpRecord._3 = leftResult);
-                              break;
-                            case parApplyTag:
-                              childOp = parentOpRecord._1._3;
-                              siblingOp = parentOpRecord._2._3;
-                              if (leftResult) {
+                          ) {
+                            if (
+                              ((leftR = null),
+                              (rightR = null),
+                              (alive = null),
+                              (id = null),
+                              null !== killed)
+                            )
+                              return;
+                            if (null === current) return void cb(err || val)();
+                            if (current._3 !== EMPTY) return;
+                            switch (current.tag) {
+                              case MAP:
+                                null === err
+                                  ? ((current._3 = util.right(current._1(util.fromRight(val)))),
+                                    (val = current._3))
+                                  : (current._3 = err);
+                                break;
+                              case APPLY:
+                                if (((leftR = current._1._3), (rightR = current._2._3), err)) {
+                                  if (
+                                    ((current._3 = err),
+                                    (alive = !0),
+                                    (id = cancels++),
+                                    (cancelers[id] = killTree(
+                                      early,
+                                      err === leftR ? current._2 : current._1,
+                                      function () {
+                                        return function () {
+                                          delete cancelers[id],
+                                            alive
+                                              ? (alive = !1)
+                                              : null === parents
+                                                ? loop(err, null, null)
+                                                : loop(err, parents._1, parents._2);
+                                        };
+                                      },
+                                    )),
+                                    alive)
+                                  )
+                                    return void (alive = !1);
+                                } else {
+                                  if (leftR === EMPTY || rightR === EMPTY) return;
+                                  (val = util.right(util.fromRight(leftR)(util.fromRight(rightR)))),
+                                    (current._3 = val);
+                                }
+                                break;
+                              case ALT:
                                 if (
-                                  ((parentOpRecord._3 = leftResult),
-                                  (nextOp = completedFibers++),
-                                  (completedFibers[nextOp] = cleanupForks(
-                                    earlyExitError,
-                                    leftResult === childOp ? parentOpRecord._2 : parentOpRecord._1,
+                                  ((leftR = current._1._3),
+                                  (rightR = current._2._3),
+                                  (leftR === EMPTY && util.isLeft(rightR)) ||
+                                    (rightR === EMPTY && util.isLeft(leftR)))
+                                )
+                                  return;
+                                if (
+                                  leftR !== EMPTY &&
+                                  util.isLeft(leftR) &&
+                                  rightR !== EMPTY &&
+                                  util.isLeft(rightR)
+                                )
+                                  (err = val === leftR ? rightR : leftR), (val = null), (current._3 = err);
+                                else if (
+                                  ((current._3 = val),
+                                  (alive = !0),
+                                  (id = cancels++),
+                                  (cancelers[id] = killTree(
+                                    early,
+                                    val === leftR ? current._2 : current._1,
                                     function () {
                                       return function () {
-                                        delete completedFibers[nextOp];
-                                        nextOp
-                                          ? (nextOp = !1)
-                                          : null === grandParentOpRecord
-                                          ? processParentFiber(leftResult, null, null)
-                                          : processParentFiber(
-                                              leftResult,
-                                              grandParentOpRecord._1,
-                                              grandParentOpRecord._2
-                                            );
+                                        delete cancelers[id],
+                                          alive
+                                            ? (alive = !1)
+                                            : null === parents
+                                              ? loop(val, null, null)
+                                              : loop(val, parents._1, parents._2);
                                       };
-                                    }
+                                    },
                                   )),
-                                  nextOp)
+                                  alive)
                                 )
-                                  return void (nextOp = !1);
-                              } else {
-                                if (childOp === eitherInstance || siblingOp === eitherInstance) return;
-                                rightResult = eitherInstance.right(
-                                  eitherInstance.fromRight(childOp)(
-                                    eitherInstance.fromRight(siblingOp)
-                                  )
-                                );
-                                parentOpRecord._3 = rightResult;
-                              }
-                              break;
-                            case parAltTag:
-                              childOp = parentOpRecord._1._3;
-                              siblingOp = parentOpRecord._2._3;
-                              if (
-                                childOp === eitherInstance &&
-                                eitherInstance.isLeft(siblingOp) ||
-                                siblingOp === eitherInstance &&
-                                eitherInstance.isLeft(childOp)
-                              )
-                                return;
-                              if (
-                                childOp !== eitherInstance &&
-                                eitherInstance.isLeft(childOp) &&
-                                siblingOp !== eitherInstance &&
-                                eitherInstance.isLeft(siblingOp)
-                              )
-                                (leftResult = leftResult === childOp ? siblingOp : childOp),
-                                  (rightResult = null),
-                                  (parentOpRecord._3 = leftResult);
-                              else if (
-                                ((parentOpRecord._3 = rightResult),
-                                (nextOp = completedFibers++),
-                                (completedFibers[nextOp] = cleanupForks(
-                                  earlyExitError,
-                                  rightResult === childOp ? parentOpRecord._2 : parentOpRecord._1,
-                                  function () {
-                                    return function () {
-                                      delete completedFibers[nextOp];
-                                      nextOp
-                                        ? (nextOp = !1)
-                                        : null === grandParentOpRecord
-                                        ? processParentFiber(rightResult, null, null)
-                                        : processParentFiber(
-                                            rightResult,
-                                            grandParentOpRecord._1,
-                                            grandParentOpRecord._2
-                                          );
-                                    };
-                                  }
-                                )),
-                                nextOp)
-                              )
-                                return void (nextOp = !1);
+                                  return void (alive = !1);
+                            }
+                            null === parents ? (current = null) : ((current = parents._1), (parents = parents._2));
                           }
-                          null === grandParentOpRecord
-                            ? (parentOpRecord = null)
-                            : ((parentOpRecord = grandParentOpRecord._1),
-                              (grandParentOpRecord = grandParentOpRecord._2));
-                        }
-                      })(completionResult, fiberId._2._1, fiberId._2._2);
+                        })(result, node._2._1, node._2._2);
                     };
                   };
                 }
-
-                // Cleans up forked fibers when an early exit occurs.
-                function cleanupForks(errorVal, opRecord, completionHandler) {
-                  var currentCount,
-                    cleanupMap = {},
-                    currentIdx = 0;
-                  (function recursiveCleanup(
-                    errorContext,
-                    currentOp,
-                    finalCallback
-                  ) {
-                    var childFiber, nextChild, grandChild;
-                    // Loop through the operation record.
-                    cleanup_loop: for (;;)
-                      switch (((childFiber = null), currentOp.tag)) {
-                        case forkedTag:
-                          if (
-                            currentOp._3 === eitherInstance &&
-                            ((childFiber = activeFibers[currentOp._1]),
-                            (cleanupMap[currentIdx++] = childFiber.kill(
-                              errorContext,
-                              function (killResult) {
-                                return function () {
-                                  0 === --currentIdx && finalCallback(killResult)();
-                                };
-                              }
-                            )),
-                            null === nextChild)
-                          )
-                            break cleanup_loop;
-                          currentOp = nextChild;
-                          null === grandChild
-                            ? (nextChild = null)
-                            : ((nextChild = grandChild._1),
-                              (grandChild = grandChild._2));
-                          break;
-                        case parMapTag:
-                          currentOp = currentOp._2;
-                          break;
-                        case parApplyTag:
-                        case parAltTag:
-                          nextChild && (grandChild = new OperationRecord(consTag, nextChild, grandChild)),
-                            (nextChild = currentOp),
-                            (currentOp = currentOp._1);
-                      }
-                    if (0 === currentIdx) finalCallback(eitherInstance.right(void 0))();
-                    else
-                      for (childFiber = 0, nextChild = currentIdx; childFiber < nextChild; childFiber++)
-                        cleanupMap[childFiber] = cleanupMap[childFiber]();
-                    return cleanupMap;
-                  })(errorVal, opRecord, completionHandler);
-                }
-
-                // Initializes the sequential execution logic.
-                return (function () {
-                  var currentOpIndex,
-                    currentOpType = FiberStateRunning,
-                    currentParAff = parAffAction,
-                    opStack = null,
-                    parentStack = null;
-
-                  execution_loop: for (;;)
-                    switch (
-                      ((currentOpIndex = null), (currentOpType))
-                    ) {
-                      case FiberStateRunning:
-                        switch (currentParAff.tag) {
-                          case parMapTag:
-                            opStack &&
-                              (parentStack = new OperationRecord(consTag, opStack, parentStack)),
-                              (opStack = new OperationRecord(
-                                parMapTag,
-                                currentParAff._1,
-                                eitherInstance,
-                                eitherInstance
-                              )),
-                              (currentParAff = currentParAff._2);
-                            break;
-                          case parApplyTag:
-                            opStack &&
-                              (parentStack = new OperationRecord(consTag, opStack, parentStack)),
-                              (opStack = new OperationRecord(
-                                parApplyTag,
-                                eitherInstance,
-                                currentParAff._2,
-                                eitherInstance
-                              )),
-                              (currentParAff = currentParAff._1);
-                            break;
-                          case parAltTag:
-                            opStack &&
-                              (parentStack = new OperationRecord(consTag, opStack, parentStack)),
-                              (opStack = new OperationRecord(
-                                parAltTag,
-                                eitherInstance,
-                                currentParAff._2,
-                                eitherInstance
-                              )),
-                              (currentParAff = currentParAff._1);
-                            break;
-                          default:
-                            currentOpIndex = fiberCount++;
-                            currentOpType = FiberStateErrored;
-                            var currentFiberAction = currentParAff;
-                            currentParAff = new OperationRecord(
-                              forkedTag,
-                              currentOpIndex,
-                              new OperationRecord(consTag, opStack, parentStack),
-                              eitherInstance
-                            );
-                            var newFiber = Fiber(
-                              eitherInstance,
-                              supervisorRef,
-                              currentFiberAction
-                            );
-                            newFiber.onComplete({
-                              rethrow: !1,
-                              handler: fiberCompletionHandler(currentParAff),
-                            })();
-                            activeFibers[currentOpIndex] = newFiber;
-                            supervisorRef && supervisorRef.register(newFiber);
-                        }
-                        break;
-                      case FiberStateErrored:
-                        if (null === opStack) break execution_loop;
-                        opStack._1 === eitherInstance
-                          ? ((opStack._1 = currentParAff),
-                            (currentOpType = FiberStateRunning),
-                            (currentParAff = opStack._2),
-                            (opStack._2 = eitherInstance))
-                          : ((opStack._2 = currentParAff),
-                            (currentParAff = opStack),
-                            (opStack = null === parentStack ? null : parentStack._1),
-                            (parentStack = null === parentStack ? null : parentStack._2));
-                    }
-                  // Run all initially active fibers.
-                  for (var i = 0; i < fiberCount; i++) activeFibers[i].run();
-                })();
-
-                // Returns a canceller for the entire sequential execution.
-                return new OperationRecord(
-                  asyncTag,
-                  function (cancelHandler) {
-                    return function () {
-                      return function (errorVal, successVal) {
-                        var currentFiber;
-                        for (currentErrorMessage = eitherInstance.left(errorVal), completedFibers; ; ) {
-                          if (currentErrorMessage) return;
-                          if (null === opStack) return void successVal();
-                          if (opStack._3 !== eitherInstance) return;
-                          switch (opStack.tag) {
-                            case parMapTag:
-                              null === currentErrorMessage
-                                ? (opStack._3 = eitherInstance.right(
-                                    opStack._1(eitherInstance.fromRight(successVal))
-                                  ))
-                                : (opStack._3 = currentErrorMessage);
+                return (
+                  (function () {
+                    var i,
+                      id,
+                      state = CONTINUE,
+                      current = aff,
+                      branch = null,
+                      parents = null;
+                    main: for (;;)
+                      switch (((i = null), (id = null), state)) {
+                        case CONTINUE:
+                          switch (current.tag) {
+                            case MAP:
+                              branch && (parents = new Aff(CONS, branch, parents)),
+                                (branch = new Aff(MAP, current._1, EMPTY, EMPTY)),
+                                (current = current._2);
                               break;
-                            case parApplyTag:
-                              childFiber = opStack._1._3;
-                              siblingOp = opStack._2._3;
-                              if (currentErrorMessage) {
-                                if (
-                                  ((opStack._3 = currentErrorMessage),
-                                  (nextOp = completedFibers++),
-                                  (completedFibers[nextOp] = cleanupForks(
-                                    earlyExitError,
-                                    currentErrorMessage === childFiber ? opStack._2 : opStack._1,
-                                    function () {
-                                      return function () {
-                                        delete completedFibers[nextOp];
-                                        nextOp
-                                          ? (nextOp = !1)
-                                          : null === grandParentOpRecord
-                                          ? processParentFiber(currentErrorMessage, null, null)
-                                          : processParentFiber(
-                                              currentErrorMessage,
-                                              grandParentOpRecord._1,
-                                              grandParentOpRecord._2
-                                            );
-                                      };
-                                    }
-                                  )),
-                                  nextOp)
-                                )
-                                  return void (nextOp = !1);
-                              } else {
-                                if (childFiber === eitherInstance || siblingOp === eitherInstance) return;
-                                successVal = eitherInstance.right(
-                                  eitherInstance.fromRight(childFiber)(
-                                    eitherInstance.fromRight(siblingOp)
-                                  )
-                                );
-                                opStack._3 = successVal;
-                              }
+                            case APPLY:
+                              branch && (parents = new Aff(CONS, branch, parents)),
+                                (branch = new Aff(APPLY, EMPTY, current._2, EMPTY)),
+                                (current = current._1);
                               break;
-                            case parAltTag:
-                              childFiber = opStack._1._3;
-                              siblingOp = opStack._2._3;
-                              if (
-                                childFiber === eitherInstance &&
-                                eitherInstance.isLeft(siblingOp) ||
-                                siblingOp === eitherInstance &&
-                                eitherInstance.isLeft(childFiber)
-                              )
-                                return;
-                              if (
-                                childFiber !== eitherInstance &&
-                                eitherInstance.isLeft(childFiber) &&
-                                siblingOp !== eitherInstance &&
-                                eitherInstance.isLeft(siblingOp)
-                              )
-                                (currentErrorMessage = currentErrorMessage === childFiber ? siblingOp : childFiber),
-                                  (successVal = null),
-                                  (opStack._3 = currentErrorMessage);
-                              else if (
-                                ((opStack._3 = successVal),
-                                (nextOp = completedFibers++),
-                                (completedFibers[nextOp] = cleanupForks(
-                                  earlyExitError,
-                                  successVal === childFiber ? opStack._2 : opStack._1,
-                                  function () {
-                                    return function () {
-                                      delete completedFibers[nextOp];
-                                      nextOp
-                                        ? (nextOp = !1)
-                                        : null === grandParentOpRecord
-                                        ? processParentFiber(successVal, null, null)
-                                        : processParentFiber(
-                                            successVal,
-                                            grandParentOpRecord._1,
-                                            grandParentOpRecord._2
-                                          );
-                                    };
-                                  }
-                                )),
-                                nextOp)
-                              )
-                                return void (nextOp = !1);
+                            case ALT:
+                              branch && (parents = new Aff(CONS, branch, parents)),
+                                (branch = new Aff(ALT, EMPTY, current._2, EMPTY)),
+                                (current = current._1);
+                              break;
+                            default:
+                              (id = count++),
+                                (state = COMPLETING),
+                                (i = current),
+                                (current = new Aff(FORKED, id, new Aff(CONS, branch, parents), EMPTY)),
+                                (i = Fiber(util, supervisor, i)).onComplete({
+                                  rethrow: !1,
+                                  handler: doneNode(current),
+                                })(),
+                                (fibers[id] = i),
+                                supervisor && supervisor.register(i);
                           }
-                          null === grandParentOpRecord
-                            ? (opStack = null)
-                            : ((opStack = grandParentOpRecord._1),
-                              (grandParentOpRecord = grandParentOpRecord._2));
-                        }
-                        return cleanupForks(errorVal, currentParAff, cancelHandler);
+                          break;
+                        case COMPLETING:
+                          if (null === branch) break main;
+                          branch._1 === EMPTY
+                            ? ((branch._1 = current), (state = CONTINUE), (current = branch._2), (branch._2 = EMPTY))
+                            : ((branch._2 = current),
+                              (current = branch),
+                              null === parents
+                                ? (branch = null)
+                                : ((branch = parents._1), (parents = parents._2)));
+                      }
+                    for (root = current, id = 0; id < count; id++) fibers[id].run();
+                  })(),
+                  function (err) {
+                    return new Aff(ASYNC, function (cb2) {
+                      return function () {
+                        return (function (err, cb2) {
+                          var canceler;
+                          for (var k in ((killed = util.left(err)), cancelers))
+                            if (cancelers.hasOwnProperty(k))
+                              for (k in (canceler = cancelers[k]))
+                                canceler.hasOwnProperty(k) && canceler[k]();
+                          cancelers = null;
+                          var u = killTree(err, root, cb2);
+                          return function (x) {
+                            return new Aff(ASYNC, function (cb3) {
+                              return function () {
+                                for (var key in u) u.hasOwnProperty(key) && u[key]();
+                                return nonCanceler;
+                              };
+                            });
+                          };
+                        })(err, cb2);
                       };
-                    };
+                    });
                   }
                 );
               }
-
-              // Public API for internal Aff operations.
               return (
-                (OperationRecord.EMPTY = internalState),
-                (OperationRecord.Pure = createOpRecord(pureTag)),
-                (OperationRecord.Throw = createOpRecord(throwTag)),
-                (OperationRecord.Catch = createOpRecord(catchTag)),
-                (OperationRecord.Sync = createOpRecord(syncTag)),
-                (OperationRecord.Async = createOpRecord(asyncTag)),
-                (OperationRecord.Bind = createOpRecord(bindTag)),
-                (OperationRecord.Bracket = createOpRecord(bracketTag)),
-                (OperationRecord.Fork = createOpRecord(forkTag)),
-                (OperationRecord.Seq = createOpRecord(sequentialTag)),
-                (OperationRecord.ParMap = createOpRecord(parMapTag)),
-                (OperationRecord.ParApply = createOpRecord(parApplyTag)),
-                (OperationRecord.ParAlt = createOpRecord(parAltTag)),
-                (OperationRecord.Fiber = Fiber),
-                (OperationRecord.Supervisor = function (eitherInterface) {
-                  var registeredFibers = {},
-                    nextFiberId = 0,
-                    activeFiberCount = 0;
+                (Aff.EMPTY = EMPTY),
+                (Aff.Pure = make(PURE)),
+                (Aff.Throw = make(THROW)),
+                (Aff.Catch = make(CATCH)),
+                (Aff.Sync = make(SYNC)),
+                (Aff.Async = make(ASYNC)),
+                (Aff.Bind = make(BIND)),
+                (Aff.Bracket = make(BRACKET)),
+                (Aff.Fork = make(FORK)),
+                (Aff.Seq = make(SEQUENTIAL)),
+                (Aff.ParMap = make(MAP)),
+                (Aff.ParApply = make(APPLY)),
+                (Aff.ParAlt = make(ALT)),
+                (Aff.Fiber = Fiber),
+                (Aff.Supervisor = function (util) {
+                  var set = {},
+                    id = 0,
+                    count = 0;
                   return {
-                    register: function (fiberInstance) {
-                      var currentId = nextFiberId++;
-                      fiberInstance.onComplete({
+                    register: function (fiber) {
+                      var k = id++;
+                      fiber.onComplete({
                         rethrow: !0,
-                        handler: function (result) {
+                        handler: function (r) {
                           return function () {
-                            activeFiberCount--;
-                            delete registeredFibers[currentId];
+                            count--, delete set[k];
                           };
                         },
-                      })();
-                      registeredFibers[currentId] = fiberInstance;
-                      activeFiberCount++;
+                      }),
+                        (set[k] = fiber),
+                        count++;
                     },
                     isEmpty: function () {
-                      return 0 === activeFiberCount;
+                      return 0 === count;
                     },
-                    killAll: function (killError, completionCallback) {
+                    killAll: function (err, cb) {
                       return function () {
-                        var pendingKills = 0,
-                          killCallbacks = {};
-                        function initiateKill(fiberId) {
-                          killCallbacks[fiberId] = registeredFibers[fiberId].kill(
-                            killError,
-                            function (killResult) {
-                              return function () {
-                                delete killCallbacks[fiberId];
-                                pendingKills--;
-                                eitherInterface.isLeft(killResult) &&
-                                  eitherInterface.fromLeft(killResult) &&
+                        var active = 0,
+                          undo = {};
+                        function kill(k) {
+                          undo[k] = set[k].kill(err, function (res) {
+                            return function () {
+                              delete undo[k],
+                                active--,
+                                util.isLeft(res) &&
+                                  util.fromLeft(res) &&
                                   setTimeout(function () {
-                                    throw eitherInterface.fromLeft(killResult);
-                                  }, 0);
-                                0 === pendingKills && completionCallback();
-                              };
-                            }
-                          )();
+                                    throw util.fromLeft(res);
+                                  }, 0),
+                                0 === active && cb();
+                            };
+                          })();
                         }
-                        for (var fId in registeredFibers)
-                          registeredFibers.hasOwnProperty(fId) &&
-                            (pendingKills++, initiateKill(fId));
+                        for (var k in set) set.hasOwnProperty(k) && (active++, kill(k));
                         return (
-                          (registeredFibers = {}),
-                          (nextFiberId = 0),
-                          (activeFiberCount = 0),
-                          function (cancelFunc) {
-                            return new OperationRecord(
-                              syncTag,
-                              function () {
-                                for (var fId in killCallbacks)
-                                  killCallbacks.hasOwnProperty(fId) &&
-                                    killCallbacks[fId]();
-                              }
-                            );
+                          (set = {}),
+                          (id = 0),
+                          (count = 0),
+                          function (x) {
+                            return new Aff(SYNC, function () {
+                              for (var k in undo) undo.hasOwnProperty(k) && undo[k]();
+                            });
                           }
                         );
                       };
                     },
                   };
                 }),
-                (OperationRecord.Scheduler = taskScheduler),
-                (OperationRecord.nonCanceler = createPureOp),
-                OperationRecord
+                (Aff.Scheduler = scheduler),
+                (Aff.nonCanceler = nonCanceler),
+                Aff
               );
             })();
-
-            exportContainer["Effect.Aff"] =
-              exportContainer["Effect.Aff"] || {};
-            var asyncEffect = exportContainer["Effect.Aff"], // Alias for Effect.Aff
-              asyncEffectReExport = exportContainer["Effect.Aff"], // Another alias for Effect.Aff
-              applicativeControl = exportContainer["Control.Applicative"], // Alias for Control.Applicative
-              applyControl = exportContainer["Control.Apply"], // Alias for Control.Apply
-              bindControl = exportContainer["Control.Bind"], // Alias for Control.Bind
-              monadControl = exportContainer["Control.Monad"], // Alias for Control.Monad
-              parallelControl = exportContainer["Control.Parallel"], // Alias for Control.Parallel
-              parallelClassControl = exportContainer["Control.Parallel.Class"], // Alias for Control.Parallel.Class
-              eitherData = exportContainer["Data.Either"], // Alias for Data.Either
-              foldableData = exportContainer["Data.Foldable"], // Alias for Data.Foldable
-              functionData = exportContainer["Data.Function"], // Alias for Data.Function
-              functorData = exportContainer["Data.Functor"], // Alias for Data.Functor
-              monoidData = exportContainer["Data.Monoid"], // Alias for Data.Monoid
-              semigroupData = exportContainer["Data.Semigroup"], // Alias for Data.Semigroup
-              unitData = exportContainer["Data.Unit"], // Alias for Data.Unit
-              effectCore = exportContainer.Effect, // Alias for Effect
-              effectClass = exportContainer["Effect.Class"], // Alias for Effect.Class
-              unsafePartialOps = exportContainer["Partial.Unsafe"], // Alias for Partial.Unsafe
-              unsafeCoerceOps = exportContainer["Unsafe.Coerce"], // Alias for Unsafe.Coerce
-              parAffFunctorInstance = new functorData.Functor(
-                asyncEffectReExport._parAffMap
-              ),
-              affFunctorInstance = new functorData.Functor(
-                asyncEffectReExport._map
-              ),
-              eitherInterfaceImpl = {
-                isLeft: function (eitherVal) {
-                  if (eitherVal instanceof eitherData.Left) return !0;
-                  if (eitherVal instanceof eitherData.Right) return !1;
-                  throw new Error(
-                    "Failed pattern match at Effect.Aff (line 390, column 12 - line 392, column 20): " +
-                      [eitherVal.constructor.name]
-                  );
-                },
-                fromLeft: function (eitherVal) {
-                  if (eitherVal instanceof eitherData.Left) return eitherVal.value0;
-                  if (eitherVal instanceof eitherData.Right)
-                    return unsafePartialOps.unsafeCrashWith("unsafeFromLeft: Right");
-                  throw new Error(
-                    "Failed pattern match at Effect.Aff (line 395, column 20 - line 399, column 3): " +
-                      [eitherVal.constructor.name]
-                  );
-                },
-                fromRight: function (eitherVal) {
-                  if (eitherVal instanceof eitherData.Right) return eitherVal.value0;
-                  if (eitherVal instanceof eitherData.Left)
-                    return unsafePartialOps.unsafeCrashWith("unsafeFromRight: Left");
-                  throw new Error(
-                    "Failed pattern match at Effect.Aff (line 400, column 21 - line 402, column 31): " +
-                      [eitherVal.constructor.name]
-                  );
-                },
-                left: eitherData.Left.create,
-                right: eitherData.Right.create,
-              },
-              createAndRunFiber = function (affAction) {
-                return function () {
-                  var fiberCreator = function (action) {
-                    return affInternal.Fiber(eitherInterfaceImpl, null, action);
-                  }(affAction);
-                  return fiberCreator.run(), fiberCreator;
+            (scope._pure = AffImpl.Pure),
+              (scope._map = function (f) {
+                return function (x) {
+                  return x.tag === AffImpl.Pure.tag
+                    ? AffImpl.Pure(f(x._1))
+                    : AffImpl.Bind(x, function (y) {
+                        return AffImpl.Pure(f(y));
+                      });
                 };
-              },
-              parAffApplyInstance = new applyControl.Apply(
-                function () {
-                  return parAffFunctorInstance;
-                },
-                asyncEffectReExport._parAffApply
-              ),
-              affMonadInstance = new monadControl.Monad(
-                function () {
-                  return affApplicativeInstance;
-                },
-                function () {
-                  return affBindInstance;
-                }
-              ),
-              affBindInstance = new bindControl.Bind(
-                function () {
-                  return affApplyInstance;
-                },
-                asyncEffectReExport._bind
-              ),
-              affApplyInstance = new applyControl.Apply(
-                function () {
-                  return affFunctorInstance;
-                },
-                monadControl.ap(affMonadInstance)
-              ),
-              affApplicativeInstance = new applicativeControl.Applicative(
-                function () {
-                  return affApplyInstance;
-                },
-                asyncEffectReExport._pure
-              ),
-              monadEffectAffInstance = new effectClass.MonadEffect(
-                function () {
-                  return affMonadInstance;
-                },
-                asyncEffectReExport._liftEffect
-              ),
-              parallelAffInstance = new parallelClassControl.Parallel(
-                function () {
-                  return parAffApplicativeInstance;
-                },
-                function () {
-                  return affMonadInstance;
-                },
-                unsafeCoerceOps.unsafeCoerce,
-                asyncEffectReExport._sequential
-              ),
-              parAffApplicativeInstance = new applicativeControl.Applicative(
-                function () {
-                  return parAffApplyInstance;
-                },
-                function (value) {
-                  return parallelClassControl.parallel(parallelAffInstance)(
-                    applicativeControl.pure(affMonadInstance)(value)
-                  );
-                }
-              ),
-              semigroupCancelerInstance = new semigroupData.Semigroup(
-                function (firstCanceler) {
-                  return function (secondCanceler) {
-                    return function (fiber) {
-                      return parallelControl.parSequence_(parallelAffInstance)(
-                        foldableData.foldableArray
-                      )([firstCanceler(fiber), secondCanceler(fiber)]);
+              }),
+              (scope._bind = function (x) {
+                return function (f) {
+                  return AffImpl.Bind(x, f);
+                };
+              }),
+              (scope._liftEffect = AffImpl.Sync),
+              (scope._parAffMap = function (f) {
+                return function (x) {
+                  return AffImpl.ParMap(f, x);
+                };
+              }),
+              (scope._parAffApply = function (f) {
+                return function (x) {
+                  return AffImpl.ParApply(f, x);
+                };
+              }),
+              (scope.makeAff = AffImpl.Async),
+              (scope._makeFiber = function (util, aff) {
+                return function () {
+                  return AffImpl.Fiber(util, null, aff);
+                };
+              }),
+              (scope._sequential = AffImpl.Seq);
+          })((PS["Effect.Aff"] = PS["Effect.Aff"] || {})),
+          (function (scope) {
+            "use strict";
+            scope["Control.Parallel.Class"] = scope["Control.Parallel.Class"] || {};
+            var mod = scope["Control.Parallel.Class"];
+            (mod.parallel = function (dict) {
+              return dict.parallel;
+            }),
+              (mod.sequential = function (dict) {
+                return dict.sequential;
+              }),
+              (mod.Parallel = function (Applicative1, Monad0, parallel, sequential) {
+                (this.Applicative1 = Applicative1),
+                  (this.Monad0 = Monad0),
+                  (this.parallel = parallel),
+                  (this.sequential = sequential);
+              });
+          })(PS),
+          (function (scope) {
+            "use strict";
+            scope["Control.Parallel"] = scope["Control.Parallel"] || {};
+            var mod = scope["Control.Parallel"],
+              cat = scope["Control.Category"],
+              cls = scope["Control.Parallel.Class"],
+              foldable = scope["Data.Foldable"],
+              parTraverse_ = function (dict) {
+                return function (foldableDict) {
+                  return function (f) {
+                    return function (xs) {
+                      return cls.sequential(dict)(
+                        foldable.traverse_(dict.Applicative1())(foldableDict)(function (x) {
+                          return cls.parallel(dict)(f(x));
+                        })(xs),
+                      );
                     };
                   };
-                }
-              ),
-              nonCancelerConstant = functionData.const(
-                applicativeControl.pure(affMonadInstance)(unitData.unit)
-              ),
-              monoidCancelerInstance = new monoidData.Monoid(
-                function () {
-                  return semigroupCancelerInstance;
-                },
-                nonCancelerConstant
-              );
-            asyncEffect.launchAff = createAndRunFiber;
-            asyncEffect.launchAff_ = function (affAction) {
-              return functorData.void(effectCore.functorEffect)(
-                createAndRunFiber(affAction)
-              );
-            };
-            asyncEffect.nonCanceler = nonCancelerConstant;
-            asyncEffect.functorAff = affFunctorInstance;
-            asyncEffect.applyAff = affApplyInstance;
-            asyncEffect.applicativeAff = affApplicativeInstance;
-            asyncEffect.bindAff = affBindInstance;
-            asyncEffect.monadAff = affMonadInstance;
-            asyncEffect.monadEffectAff = monadEffectAffInstance;
-            asyncEffect.functorParAff = parAffFunctorInstance;
-            asyncEffect.applyParAff = parAffApplyInstance;
-            asyncEffect.applicativeParAff = parAffApplicativeInstance;
-            asyncEffect.parallelAff = parallelAffInstance;
-            asyncEffect.semigroupCanceler = semigroupCancelerInstance;
-            asyncEffect.monoidCanceler = monoidCancelerInstance;
-            asyncEffect.makeAff = affInternal.Async;
-            asyncEffect._pure = affInternal.Pure;
-            asyncEffect._map = function (transformFunc) {
-              return function (affAction) {
-                return affAction.tag === affInternal.Pure.tag
-                  ? affInternal.Pure(transformFunc(affAction._1))
-                  : affInternal.Bind(affAction, function (result) {
-                      return affInternal.Pure(transformFunc(result));
-                    });
-              };
-            };
-            asyncEffect._bind = function (bindFunc) {
-              return function (affAction) {
-                return affInternal.Bind(affAction, bindFunc);
-              };
-            };
-            asyncEffect._liftEffect = affInternal.Sync;
-            asyncEffect._parAffMap = function (transformFunc) {
-              return function (parAffAction) {
-                return affInternal.ParMap(transformFunc, parAffAction);
-              };
-            };
-            asyncEffect._parAffApply = function (parAffFunc) {
-              return function (parAffVal) {
-                return affInternal.ParApply(parAffFunc, parAffVal);
-              };
-            };
-            asyncEffect._makeFiber = function (eitherInterface, affAction) {
-              return function () {
-                return affInternal.Fiber(eitherInterface, null, affAction);
-              };
-            };
-            asyncEffect._sequential = affInternal.Seq;
-          })(packageExports),
-          // Module: Effect.Ref (native implementations)
-          (function (exportContainer) {
-            "use strict";
-            exportContainer["Effect.Ref"] =
-              exportContainer["Effect.Ref"] || {};
-            exportContainer["Effect.Ref"].new = function (initialValue) {
-              return function () {
-                return { value: initialValue };
-              };
-            };
-            exportContainer["Effect.Ref"].read = function (refObject) {
-              return function () {
-                return refObject.value;
-              };
-            };
-            exportContainer["Effect.Ref"].write = function (newValue) {
-              return function (refObject) {
-                return function () {
-                  return (refObject.value = newValue), {};
                 };
               };
+            (mod.parTraverse_ = parTraverse_),
+              (mod.parSequence_ = function (dict) {
+                return function (foldableDict) {
+                  return parTraverse_(dict)(foldableDict)(cat.identity(cat.categoryFn));
+                };
+              });
+          })(PS),
+          (function (scope) {
+            "use strict";
+            scope["Effect.Class"] = scope["Effect.Class"] || {};
+            var mod = scope["Effect.Class"];
+            (mod.liftEffect = function (dict) {
+              return dict.liftEffect;
+            }),
+              (mod.MonadEffect = function (Monad0, liftEffect) {
+                (this.Monad0 = Monad0), (this.liftEffect = liftEffect);
+              });
+          })(PS),
+          (function (scope) {
+            "use strict";
+            (PS["Partial.Unsafe"] = PS["Partial.Unsafe"] || {}).unsafePartial =
+              function (f) {
+                return f();
+              };
+          })(),
+          (function (scope) {
+            "use strict";
+            (PS["Partial"] = PS["Partial"] || {}).crashWith = function () {
+              return function (message) {
+                throw new Error(message);
+              };
             };
-          })(packageExports),
-          // Module: Effect.Ref
-          (function (exportContainer) {
+          })(),
+          (function (scope) {
             "use strict";
-            exportContainer["Effect.Ref"] =
-              exportContainer["Effect.Ref"] || {};
-            var mutableRef = exportContainer["Effect.Ref"], // Alias for Effect.Ref
-              mutableRefReExport = exportContainer["Effect.Ref"]; // Another alias for Effect.Ref
-            mutableRef.new = mutableRefReExport.new;
-            mutableRef.read = mutableRefReExport.read;
-            mutableRef.write = mutableRefReExport.write;
-          })(packageExports),
-          // Module: Node.Encoding
-          (function (exportContainer) {
+            scope.Partial = scope.Partial || {};
+            var a = scope.Partial,
+              b = scope.Partial;
+            a.crashWith = b.crashWith;
+          })(PS),
+          (function (scope) {
             "use strict";
-            exportContainer["Node.Encoding"] =
-              exportContainer["Node.Encoding"] || {};
-            var nodeEncoding = exportContainer["Node.Encoding"], // Alias for Node.Encoding
-              showData = exportContainer["Data.Show"], // Alias for Data.Show
-              ASCIIEncoding = (function () {
+            scope["Partial.Unsafe"] = scope["Partial.Unsafe"] || {};
+            var mod = scope["Partial.Unsafe"],
+              self = scope["Partial.Unsafe"],
+              partial = scope.Partial;
+            mod.unsafeCrashWith = function (msg) {
+              return self.unsafePartial(function (x) {
+                return partial.crashWith(x)(msg);
+              });
+            };
+          })(PS),
+          (function (scope) {
+            "use strict";
+            (PS["Unsafe.Coerce"] = PS["Unsafe.Coerce"] || {}).unsafeCoerce =
+              function (x) {
+                return x;
+              };
+          })(),
+          (function (scope) {
+            "use strict";
+            scope["Unsafe.Coerce"] = scope["Unsafe.Coerce"] || {};
+            var a = scope["Unsafe.Coerce"],
+              b = scope["Unsafe.Coerce"];
+            a.unsafeCoerce = b.unsafeCoerce;
+          })(PS),
+          (function (scope) {
+            "use strict";
+            scope["Effect.Aff"] = scope["Effect.Aff"] || {};
+            var mod = scope["Effect.Aff"],
+              self = scope["Effect.Aff"],
+              applicative = scope["Control.Applicative"],
+              apply = scope["Control.Apply"],
+              bind = scope["Control.Bind"],
+              monad = scope["Control.Monad"],
+              par = scope["Control.Parallel"],
+              pclass = scope["Control.Parallel.Class"],
+              either = scope["Data.Either"],
+              foldable = scope["Data.Foldable"],
+              fun = scope["Data.Function"],
+              functor = scope["Data.Functor"],
+              monoid = scope["Data.Monoid"],
+              semigroup = scope["Data.Semigroup"],
+              unit = scope["Data.Unit"],
+              effect = scope.Effect,
+              effClass = scope["Effect.Class"],
+              unsafePartial = scope["Partial.Unsafe"],
+              unsafeCoerce = scope["Unsafe.Coerce"],
+              functorParAff = new functor.Functor(self._parAffMap),
+              functorAff = new functor.Functor(self._map),
+              util = {
+                isLeft: function (x) {
+                  if (x instanceof either.Left) return !0;
+                  if (x instanceof either.Right) return !1;
+                  throw new Error(
+                    "Failed pattern match at Effect.Aff (line 390, column 12 - line 392, column 20): " +
+                      [x.constructor.name],
+                  );
+                },
+                fromLeft: function (x) {
+                  if (x instanceof either.Left) return x.value0;
+                  if (x instanceof either.Right)
+                    return unsafePartial.unsafeCrashWith("unsafeFromLeft: Right");
+                  throw new Error(
+                    "Failed pattern match at Effect.Aff (line 395, column 20 - line 399, column 3): " +
+                      [x.constructor.name],
+                  );
+                },
+                fromRight: function (x) {
+                  if (x instanceof either.Right) return x.value0;
+                  if (x instanceof either.Left)
+                    return unsafePartial.unsafeCrashWith("unsafeFromRight: Left");
+                  throw new Error(
+                    "Failed pattern match at Effect.Aff (line 400, column 21 - line 402, column 31): " +
+                      [x.constructor.name],
+                  );
+                },
+                left: either.Left.create,
+                right: either.Right.create,
+              },
+              launchAff = function (aff) {
+                return function () {
+                  var f = (function (x) {
+                    return self._makeFiber(util, x);
+                  })(aff)();
+                  return f.run(), f;
+                };
+              },
+              applyParAff = new apply.Apply(function () {
+                return functorParAff;
+              }, self._parAffApply),
+              monadAff = new monad.Monad(
+                function () {
+                  return applicativeAff;
+                },
+                function () {
+                  return bindAff;
+                },
+              ),
+              bindAff = new bind.Bind(function () {
+                return applyAff;
+              }, self._bind),
+              applyAff = new apply.Apply(function () {
+                return functorAff;
+              }, monad.ap(monadAff)),
+              applicativeAff = new applicative.Applicative(function () {
+                return applyAff;
+              }, self._pure),
+              monadEffectAff = new effClass.MonadEffect(function () {
+                return monadAff;
+              }, self._liftEffect),
+              parallelAff = new pclass.Parallel(
+                function () {
+                  return applicativeParAff;
+                },
+                function () {
+                  return monadAff;
+                },
+                unsafeCoerce.unsafeCoerce,
+                self._sequential,
+              ),
+              applicativeParAff = new applicative.Applicative(
+                function () {
+                  return applyParAff;
+                },
+                function (x) {
+                  return pclass.parallel(parallelAff)(applicative.pure(applicativeAff)(x));
+                },
+              ),
+              semigroupCanceler = new semigroup.Semigroup(function (a) {
+                return function (b) {
+                  return function (err) {
+                    return par.parSequence_(parallelAff)(foldable.foldableArray)([a(err), b(err)]);
+                  };
+                };
+              }),
+              nonCanceler = fun.const(applicative.pure(applicativeAff)(unit.unit)),
+              monoidCanceler = new monoid.Monoid(function () {
+                return semigroupCanceler;
+              }, nonCanceler);
+            (mod.launchAff = launchAff),
+              (mod.launchAff_ = function (aff) {
+                return functor.void(effect.functorEffect)(launchAff(aff));
+              }),
+              (mod.nonCanceler = nonCanceler),
+              (mod.functorAff = functorAff),
+              (mod.applyAff = applyAff),
+              (mod.applicativeAff = applicativeAff),
+              (mod.bindAff = bindAff),
+              (mod.monadAff = monadAff),
+              (mod.monadEffectAff = monadEffectAff),
+              (mod.functorParAff = functorParAff),
+              (mod.applyParAff = applyParAff),
+              (mod.applicativeParAff = applicativeParAff),
+              (mod.parallelAff = parallelAff),
+              (mod.semigroupCanceler = semigroupCanceler),
+              (mod.monoidCanceler = monoidCanceler),
+              (mod.makeAff = self.makeAff);
+          })(PS),
+          (function (scope) {
+            "use strict";
+            (scope.new = function (value) {
+              return function () {
+                return { value: value };
+              };
+            }),
+              (scope.read = function (ref) {
+                return function () {
+                  return ref.value;
+                };
+              }),
+              (scope.write = function (value) {
+                return function (ref) {
+                  return function () {
+                    return (ref.value = value), {};
+                  };
+                };
+              });
+          })((PS["Effect.Ref"] = PS["Effect.Ref"] || {})),
+          (function (scope) {
+            "use strict";
+            scope["Effect.Ref"] = scope["Effect.Ref"] || {};
+            var a = scope["Effect.Ref"],
+              b = scope["Effect.Ref"];
+            (a.new = b.new), (a.read = b.read), (a.write = b.write);
+          })(PS),
+          (function (scope) {
+            "use strict";
+            scope["Node.Encoding"] = scope["Node.Encoding"] || {};
+            var mod = scope["Node.Encoding"],
+              show = scope["Data.Show"],
+              ASCII = (function () {
                 function ASCII() {}
                 return (ASCII.value = new ASCII()), ASCII;
               })(),
-              UTF8Encoding = (function () {
+              UTF8 = (function () {
                 function UTF8() {}
                 return (UTF8.value = new UTF8()), UTF8;
               })(),
-              UTF16LEEncoding = (function () {
+              UTF16LE = (function () {
                 function UTF16LE() {}
                 return (UTF16LE.value = new UTF16LE()), UTF16LE;
               })(),
-              UCS2Encoding = (function () {
+              UCS2 = (function () {
                 function UCS2() {}
                 return (UCS2.value = new UCS2()), UCS2;
               })(),
-              Base64Encoding = (function () {
+              Base64 = (function () {
                 function Base64() {}
                 return (Base64.value = new Base64()), Base64;
               })(),
-              Latin1Encoding = (function () {
+              Latin1 = (function () {
                 function Latin1() {}
                 return (Latin1.value = new Latin1()), Latin1;
               })(),
-              BinaryEncoding = (function () {
+              Binary = (function () {
                 function Binary() {}
                 return (Binary.value = new Binary()), Binary;
               })(),
-              HexEncoding = (function () {
+              Hex = (function () {
                 function Hex() {}
                 return (Hex.value = new Hex()), Hex;
               })(),
-              encodingShowInstance = new showData.Show(function (encodingType) {
-                if (encodingType instanceof ASCIIEncoding) return "ASCII";
-                if (encodingType instanceof UTF8Encoding) return "UTF8";
-                if (encodingType instanceof UTF16LEEncoding) return "UTF16LE";
-                if (encodingType instanceof UCS2Encoding) return "UCS2";
-                if (encodingType instanceof Base64Encoding) return "Base64";
-                if (encodingType instanceof Latin1Encoding) return "Latin1";
-                if (encodingType instanceof BinaryEncoding) return "Binary";
-                if (encodingType instanceof HexEncoding) return "Hex";
+              showEncoding = new show.Show(function (x) {
+                if (x instanceof ASCII) return "ASCII";
+                if (x instanceof UTF8) return "UTF8";
+                if (x instanceof UTF16LE) return "UTF16LE";
+                if (x instanceof UCS2) return "UCS2";
+                if (x instanceof Base64) return "Base64";
+                if (x instanceof Latin1) return "Latin1";
+                if (x instanceof Binary) return "Binary";
+                if (x instanceof Hex) return "Hex";
                 throw new Error(
                   "Failed pattern match at Node.Encoding (line 19, column 1 - line 19, column 39): " +
-                    [encodingType.constructor.name]
+                    [x.constructor.name],
                 );
               });
-            nodeEncoding.ASCII = ASCIIEncoding;
-            nodeEncoding.UTF8 = UTF8Encoding;
-            nodeEncoding.UTF16LE = UTF16LEEncoding;
-            nodeEncoding.UCS2 = UCS2Encoding;
-            nodeEncoding.Base64 = Base64Encoding;
-            nodeEncoding.Latin1 = Latin1Encoding;
-            nodeEncoding.Binary = BinaryEncoding;
-            nodeEncoding.Hex = HexEncoding;
-            nodeEncoding.encodingToNode = function (encodingType) {
-              if (encodingType instanceof ASCIIEncoding) return "ascii";
-              if (encodingType instanceof UTF8Encoding) return "utf8";
-              if (encodingType instanceof UTF16LEEncoding) return "utf16le";
-              if (encodingType instanceof UCS2Encoding) return "ucs2";
-              if (encodingType instanceof Base64Encoding) return "base64";
-              if (encodingType instanceof Latin1Encoding) return "latin1";
-              if (encodingType instanceof BinaryEncoding) return "binary";
-              if (encodingType instanceof HexEncoding) return "hex";
-              throw new Error(
-                "Failed pattern match at Node.Encoding (line 31, column 1 - line 31, column 37): " +
-                  [encodingType.constructor.name]
-              );
-            };
-            nodeEncoding.showEncoding = encodingShowInstance;
-          })(packageExports),
-          // Module: Node.Process (process global)
-          (function (exportContainer) {
+            (mod.ASCII = ASCII),
+              (mod.UTF8 = UTF8),
+              (mod.UTF16LE = UTF16LE),
+              (mod.UCS2 = UCS2),
+              (mod.Base64 = Base64),
+              (mod.Latin1 = Latin1),
+              (mod.Binary = Binary),
+              (mod.Hex = Hex),
+              (mod.encodingToNode = function (x) {
+                if (x instanceof ASCII) return "ascii";
+                if (x instanceof UTF8) return "utf8";
+                if (x instanceof UTF16LE) return "utf16le";
+                if (x instanceof UCS2) return "ucs2";
+                if (x instanceof Base64) return "base64";
+                if (x instanceof Latin1) return "latin1";
+                if (x instanceof Binary) return "binary";
+                if (x instanceof Hex) return "hex";
+                throw new Error(
+                  "Failed pattern match at Node.Encoding (line 31, column 1 - line 31, column 37): " +
+                    [x.constructor.name],
+                );
+              }),
+              (mod.showEncoding = showEncoding);
+          })(PS),
+          (function (scope) {
             "use strict";
-            (exportContainer["Node.Process"] =
-              exportContainer["Node.Process"] || {}).process = process;
-          })(packageExports),
-          // Module: Node.Process
-          (function (exportContainer) {
+            (PS["Node.Process"] = PS["Node.Process"] || {}).process = process;
+          })(),
+          (function (scope) {
             "use strict";
-            exportContainer["Node.Process"] =
-              exportContainer["Node.Process"] || {};
-            var nodeProcess = exportContainer["Node.Process"], // Alias for Node.Process
-              nodeProcessReExport = exportContainer["Node.Process"], // Another alias for Node.Process
-              stdoutStream = nodeProcessReExport.process.stdout,
-              stdinStream = nodeProcessReExport.process.stdin;
-            nodeProcess.stdin = stdinStream;
-            nodeProcess.stdout = stdoutStream;
-          })(packageExports),
-          // Module: Node.Stream (native implementations)
-          (function (exportContainer) {
+            scope["Node.Process"] = scope["Node.Process"] || {};
+            var mod = scope["Node.Process"],
+              self = scope["Node.Process"],
+              stdout = self.process.stdout,
+              stdin = self.process.stdin;
+            (mod.stdin = stdin), (mod.stdout = stdout);
+          })(PS),
+          (function (scope) {
             "use strict";
-            exportContainer["Node.Stream"] =
-              exportContainer["Node.Stream"] || {};
-            exportContainer["Node.Stream"].readChunkImpl = function (
-              bufferHandler
-            ) {
-              return function (stringHandler) {
-                return function (chunkData) {
-                  if (chunkData instanceof Buffer) return bufferHandler(chunkData);
-                  if ("string" == typeof chunkData) return stringHandler(chunkData);
+            (scope.readChunkImpl = function (fromString) {
+              return function (fromBuffer) {
+                return function (chunk) {
+                  if (chunk instanceof Buffer) return fromBuffer(chunk);
+                  if ("string" == typeof chunk) return fromString(chunk);
                   throw new Error(
                     "Node.Stream.readChunkImpl: Unrecognised chunk type; expected String or Buffer, got: " +
-                      chunkData
+                      chunk,
                   );
                 };
               };
-            };
-            exportContainer["Node.Stream"].onDataEitherImpl = function (
-              chunkParser
-            ) {
-              return function (streamObject) {
-                return function (callbackAction) {
-                  return function () {
-                    streamObject.on("data", function (dataChunk) {
-                      callbackAction(chunkParser(dataChunk))();
-                    });
-                  };
-                };
-              };
-            };
-            exportContainer["Node.Stream"].onEnd = function (streamObject) {
-              return function (callbackAction) {
-                return function () {
-                  streamObject.on("end", callbackAction);
-                };
-              };
-            };
-            exportContainer["Node.Stream"].write = function (streamObject) {
-              return function (dataChunk) {
-                return function (encodingType) {
-                  return function () {
-                    return streamObject.write(dataChunk, null, encodingType);
-                  };
-                };
-              };
-            };
-            exportContainer["Node.Stream"].writeStringImpl = function (
-              streamObject
-            ) {
-              return function (encodingType) {
-                return function (dataString) {
-                  return function (callbackAction) {
+            }),
+              (scope.onDataEitherImpl = function (convert) {
+                return function (stream) {
+                  return function (callback) {
                     return function () {
-                      return streamObject.write(
-                        dataString,
-                        encodingType,
-                        callbackAction
-                      );
+                      stream.on("data", function (chunk) {
+                        callback(convert(chunk))();
+                      });
                     };
                   };
-                };
-              };
-            };
-          })(packageExports["Node.Stream"] || (packageExports["Node.Stream"] = {})),
-          // Module: Effect.Exception (native implementations)
-          (function (exportContainer) {
-            "use strict";
-            exportContainer["Effect.Exception"] =
-              exportContainer["Effect.Exception"] || {};
-            exportContainer["Effect.Exception"].error = function (message) {
-              return new Error(message);
-            };
-            exportContainer["Effect.Exception"].throwException = function (
-              exceptionObject
-            ) {
-              return function () {
-                throw exceptionObject;
-              };
-            };
-          })(packageExports["Effect.Exception"] || (packageExports["Effect.Exception"] = {})),
-          // Module: Effect.Exception
-          (function (exportContainer) {
-            "use strict";
-            exportContainer["Effect.Exception"] =
-              exportContainer["Effect.Exception"] || {};
-            var exceptionEffect = exportContainer["Effect.Exception"], // Alias for Effect.Exception
-              exceptionReExport = exportContainer["Effect.Exception"]; // Another alias for Effect.Exception
-            exceptionEffect.throw = function (message) {
-              return exceptionReExport.throwException(
-                exceptionReExport.error(message)
-              );
-            };
-          })(packageExports),
-          // Module: Node.Buffer (toStringImpl specific part)
-          (function (exportContainer) {
-            "use strict";
-            (exportContainer["Node.Buffer"] =
-              exportContainer["Node.Buffer"] || {}).toStringImpl = function (
-              encodingString
-            ) {
-              return function (bufferObject) {
-                return function () {
-                  return bufferObject.toString(encodingString);
-                };
-              };
-            };
-          })(packageExports),
-          // Module: Node.Buffer
-          (function (exportContainer) {
-            "use strict";
-            exportContainer["Node.Buffer"] =
-              exportContainer["Node.Buffer"] || {};
-            var nodeBuffer = exportContainer["Node.Buffer"], // Alias for Node.Buffer
-              nodeBufferReExport = exportContainer["Node.Buffer"], // Another alias for Node.Buffer
-              nodeEncoding = exportContainer["Node.Encoding"]; // Alias for Node.Encoding
-            nodeBuffer.toString = function (encodingType) {
-              return nodeBufferReExport.toStringImpl(
-                nodeEncoding.encodingToNode(encodingType)
-              );
-            };
-          })(packageExports),
-          // Module: Node.Stream
-          (function (exportContainer) {
-            "use strict";
-            exportContainer["Node.Stream"] =
-              exportContainer["Node.Stream"] || {};
-            var nodeStream = exportContainer["Node.Stream"], // Alias for Node.Stream
-              nodeStreamReExport = exportContainer["Node.Stream"], // Another alias for Node.Stream
-              applicativeControl = exportContainer["Control.Applicative"], // Alias for Control.Applicative
-              bindControl = exportContainer["Control.Bind"], // Alias for Control.Bind
-              eitherData = exportContainer["Data.Either"], // Alias for Data.Either
-              showData = exportContainer["Data.Show"], // Alias for Data.Show
-              effectCore = exportContainer.Effect, // Alias for Effect
-              exceptionEffect = exportContainer["Effect.Exception"], // Alias for Effect.Exception
-              nodeBuffer = exportContainer["Node.Buffer"], // Alias for Node.Buffer
-              nodeEncoding = exportContainer["Node.Encoding"], // Alias for Node.Encoding
-              chunkProcessor = nodeStreamReExport.readChunkImpl(
-                eitherData.Left.create
-              )(eitherData.Right.create),
-              onDataEitherHandler = function (streamObject) {
-                return function (callback) {
-                  return nodeStreamReExport.onDataEitherImpl(chunkProcessor)(
-                    streamObject
-                  )(callback);
-                };
-              },
-              onDataStringHandler = function (streamObject) {
-                return function (callback) {
-                  return onDataEitherHandler(streamObject)(
-                    bindControl.composeKleisliFlipped(effectCore.bindEffect)(callback)(
-                      function (eitherChunk) {
-                        if (eitherChunk instanceof eitherData.Left)
-                          return exceptionEffect.throw("Stream encoding should not be set");
-                        if (eitherChunk instanceof eitherData.Right)
-                          return applicativeControl.pure(effectCore.applicativeEffect)(
-                            eitherChunk.value0
-                          );
-                        throw new Error(
-                          "Failed pattern match at Node.Stream (line 94, column 5 - line 98, column 17): " +
-                            [eitherChunk.constructor.name]
-                        );
-                      }
-                    )
-                  );
-                };
-              };
-            nodeStream.onData = onDataStringHandler;
-            nodeStream.onDataString = function (streamObject) {
-              return function (encodingType) {
-                return function (callback) {
-                  return onDataStringHandler(streamObject)(
-                    bindControl.composeKleisliFlipped(effectCore.bindEffect)(callback)(
-                      nodeBuffer.toString(encodingType)
-                    )
-                  );
-                };
-              };
-            };
-            nodeStream.onDataEither = onDataEitherHandler;
-            nodeStream.writeString = function (streamObject) {
-              return function (encodingType) {
-                return nodeStreamReExport.writeStringImpl(streamObject)(
-                  showData.show(nodeEncoding.showEncoding)(encodingType)
-                );
-              };
-            };
-            nodeStream.onEnd = nodeStreamReExport.onEnd;
-          })(packageExports),
-          // Module: ABC100C (the main application logic)
-          (function (exportContainer) {
-            "use strict";
-            exportContainer.ABC100C = exportContainer.ABC100C || {};
-            var currentAppModule = exportContainer.ABC100C, // Alias for ABC100C module exports.
-              applicativeControl = exportContainer["Control.Applicative"], // Alias for Control.Applicative module.
-              binderControl = exportContainer["Control.Bind"], // Alias for Control.Bind module.
-              categoryControl = exportContainer["Control.Category"], // Alias for Control.Category module.
-              arrayData = exportContainer["Data.Array"], // Alias for Data.Array module.
-              booleanData = exportContainer["Data.Boolean"], // Alias for Data.Boolean module.
-              eitherData = exportContainer["Data.Either"], // Alias for Data.Either module.
-              euclideanRingData = exportContainer["Data.EuclideanRing"], // Alias for Data.EuclideanRing module.
-              foldableData = exportContainer["Data.Foldable"], // Alias for Data.Foldable module.
-              functorData = exportContainer["Data.Functor"], // Alias for Data.Functor module.
-              integerData = exportContainer["Data.Int"], // Alias for Data.Int module.
-              maybeData = exportContainer["Data.Maybe"], // Alias for Data.Maybe module.
-              monoidData = exportContainer["Data.Monoid"], // Alias for Data.Monoid module.
-              showData = exportContainer["Data.Show"], // Alias for Data.Show module.
-              stringUtilData = exportContainer["Data.String.Common"], // Alias for Data.String.Common module.
-              tupleData = exportContainer["Data.Tuple"], // Alias for Data.Tuple module.
-              unitData = exportContainer["Data.Unit"], // Alias for Data.Unit module.
-              effectCore = exportContainer.Effect, // Alias for Effect module.
-              asyncEffect = exportContainer["Effect.Aff"], // Alias for Effect.Aff module.
-              effectClass = exportContainer["Effect.Class"], // Alias for Effect.Class module.
-              mutableRef = exportContainer["Effect.Ref"], // Alias for Effect.Ref module.
-              nodeEncoding = exportContainer["Node.Encoding"], // Alias for Node.Encoding module.
-              nodeProcess = exportContainer["Node.Process"], // Alias for Node.Process module.
-              nodeStream = exportContainer["Node.Stream"], // Alias for Node.Stream module.
-              unsafePartialOps = exportContainer["Partial.Unsafe"], // Alias for Partial.Unsafe module.
-              // Function to compute the total number of halving steps across an array of numbers.
-              // Each number is repeatedly divided by 2 until it becomes odd, and the steps are counted.
-              computeHalvingSum = function (inputArray) {
-                return function (ignoredParameter) {
-                  // The 'ignoredParameter' is a remnant of minification where a variable 'n' was reused.
-                  return foldableData.foldl(foldableData.foldableArray)(function (
-                    currentSum
-                  ) {
-                    return function (elementValue) {
-                      var halvingCounter = 0; // Initialize counter for current element.
-
-                      // Recursively counts the number of times a number can be halved until it's odd.
-                      function performHalvingStep(
-                        currentCount,
-                        currentNumber
-                      ) {
-                        var tempCounter,
-                          isFinished = !1; // Flag to control the loop.
-
-                        if (integerData.odd(currentNumber))
-                          return (isFinished = !0), currentCount; // If odd, stop and return count.
-                        if (booleanData.otherwise)
-                          return (
-                            (tempCounter = currentCount + 1 | 0), // Increment count.
-                            void (currentNumber = euclideanRingData.div(
-                              euclideanRingData.euclideanRingInt
-                            )(currentNumber)(2)) // Halve the number.
-                          );
-                        throw new Error(
-                          "Failed pattern match at ABC100C (line 71, column 5 - line 73, column 37): " +
-                            [
-                              currentCount.constructor.name,
-                              currentNumber.constructor.name,
-                            ]
-                        );
-                      }
-
-                      // Loop until the current number becomes odd.
-                      for (; !isFinished; )
-                        halvingCounter = performHalvingStep(
-                          halvingCounter,
-                          elementValue
-                        );
-                      return currentSum + halvingCounter | 0; // Add to total sum.
-                    };
-                  })(0)(inputArray);
-                };
-              },
-              // Function to parse the raw input string, extract numbers, and apply the halving sum logic.
-              parseAndProcessInput = function (rawInputString) {
-                return eitherData.either(function (errorMessage) {
-                  return unsafePartialOps.unsafeCrashWith(errorMessage); // Crash if parsing fails.
-                })(categoryControl.identity(categoryControl.categoryFn))(
-                  binderControl.bind(eitherData.bindEither)(
-                    eitherData.note("Input parsing failed")(
-                      (function () {
-                        var trimmedInput = stringUtilData.trim(rawInputString),
-                          splitLines = stringUtilData.split("\n")(trimmedInput);
-                        // Expecting exactly two lines: the count N, and the array of A values.
-                        if (2 === splitLines.length) {
-                          var parsedNAndArray = binderControl.bind(maybeData.bindMaybe)(
-                            integerData.fromString(splitLines[0])
-                          )(function (nVal) {
-                            var parsedArray = arrayData.mapMaybe(
-                              integerData.fromString
-                            )(stringUtilData.split(" ")(splitLines[1]));
-                            return applicativeControl.pure(
-                              maybeData.applicativeMaybe
-                            )(new tupleData.Tuple(nVal, parsedArray));
-                          });
-                          return parsedNAndArray;
-                        }
-                        return maybeData.Nothing.value; // Return Nothing if input format is incorrect.
-                      })()
-                    )
-                  )(function (parsedTuple) {
-                    // Once parsed, compute the halving sum and format as a string.
-                    return applicativeControl.pure(eitherData.applicativeEither)(
-                      showData.show(showData.showInt)(
-                        computeHalvingSum(parsedTuple.value1)(parsedTuple.value0)
-                      ) + "\n"
-                    );
-                  })
-                );
-              },
-              // Asynchronous Aff action to read all input from stdin.
-              asyncInputProcessor = asyncEffect.makeAff(function (
-                resolveAffAction
-              ) {
-                return function () {
-                  // Create a mutable reference to accumulate input data.
-                  var inputBufferRef = mutableRef.new("")();
-                  // Attach a data listener to stdin.
-                  nodeStream.onDataString(nodeProcess.stdin)(
-                    nodeEncoding.UTF8.value
-                  )(function (dataChunk) {
-                    return function () {
-                      var currentBuffer = mutableRef.read(inputBufferRef)();
-                      return mutableRef.write(currentBuffer + dataChunk)(
-                        inputBufferRef
-                      )();
-                    };
-                  })();
-                  // Attach an end listener to stdin to finalize processing.
-                  nodeStream.onEnd(nodeProcess.stdin)(function () {
-                    var finalInput = mutableRef.read(inputBufferRef)();
-                    return resolveAffAction(
-                      applicativeControl.pure(eitherData.applicativeEither)(finalInput)
-                    )();
-                  })();
-                  // Return a no-op canceller, as input reading cannot be cancelled in this model.
-                  return monoidData.mempty(asyncEffect.monoidCanceler);
                 };
               }),
-              // The main entry point of the application, orchestrating input, processing, and output.
-              mainApplicationRunner = asyncEffect.launchAff_(
-                binderControl.bind(asyncEffect.bindAff)(asyncInputProcessor)(
-                  function (processedInputString) {
-                    return binderControl.bind(asyncEffect.bindAff)(
-                      applicativeControl.pure(asyncEffect.applicativeAff)(
-                        parseAndProcessInput(processedInputString)
-                      )
-                    )(function (outputResultString) {
-                      // Lift the Effect action to write the result to stdout.
-                      return effectClass.liftEffect(asyncEffect.monadEffectAff)(
-                        functorData.void(effectCore.functorEffect)(
-                          nodeStream.writeString(nodeProcess.stdout)(
-                            nodeEncoding.UTF8.value
-                          )(outputResultString)(
-                            applicativeControl.pure(effectCore.applicativeEffect)(
-                              unitData.unit
-                            )
-                          )
-                        )
+              (scope.onEnd = function (stream) {
+                return function (cb) {
+                  return function () {
+                    stream.on("end", cb);
+                  };
+                };
+              }),
+              (scope.write = function (stream) {
+                return function (chunk) {
+                  return function (cb) {
+                    return function () {
+                      return stream.write(chunk, null, cb);
+                    };
+                  };
+                };
+              }),
+              (scope.writeStringImpl = function (stream) {
+                return function (enc) {
+                  return function (text) {
+                    return function (cb) {
+                      return function () {
+                        return stream.write(text, enc, cb);
+                      };
+                    };
+                  };
+                };
+              });
+          })((PS["Node.Stream"] = PS["Node.Stream"] || {})),
+          (function (scope) {
+            "use strict";
+            (scope.error = function (msg) {
+              return new Error(msg);
+            }),
+              (scope.throwException = function (err) {
+                return function () {
+                  throw err;
+                };
+              });
+          })((PS["Effect.Exception"] = PS["Effect.Exception"] || {})),
+          (function (scope) {
+            "use strict";
+            scope["Effect.Exception"] = scope["Effect.Exception"] || {};
+            var mod = scope["Effect.Exception"],
+              self = scope["Effect.Exception"];
+            mod.throw = function (msg) {
+              return self.throwException(self.error(msg));
+            };
+          })(PS),
+          (function (scope) {
+            "use strict";
+            (PS["Node.Buffer"] = PS["Node.Buffer"] || {}).toStringImpl =
+              function (encoding) {
+                return function (buffer) {
+                  return function () {
+                    return buffer.toString(encoding);
+                  };
+                };
+              };
+          })(),
+          (function (scope) {
+            "use strict";
+            scope["Node.Buffer"] = scope["Node.Buffer"] || {};
+            var mod = scope["Node.Buffer"],
+              self = scope["Node.Buffer"],
+              encoding = scope["Node.Encoding"];
+            mod.toString = function (enc) {
+              return self.toStringImpl(encoding.encodingToNode(enc));
+            };
+          })(PS),
+          (function (scope) {
+            "use strict";
+            scope["Node.Stream"] = scope["Node.Stream"] || {};
+            var mod = scope["Node.Stream"],
+              self = scope["Node.Stream"],
+              applicative = scope["Control.Applicative"],
+              bind = scope["Control.Bind"],
+              either = scope["Data.Either"],
+              show = scope["Data.Show"],
+              effect = scope.Effect,
+              exception = scope["Effect.Exception"],
+              buffer = scope["Node.Buffer"],
+              encoding = scope["Node.Encoding"],
+              readChunk = self.readChunkImpl(either.Left.create)(either.Right.create),
+              onDataEither = function (stream) {
+                return function (cb) {
+                  return self.onDataEitherImpl(readChunk)(stream)(cb);
+                };
+              },
+              onData = function (stream) {
+                return function (cb) {
+                  return onDataEither(stream)(
+                    bind.composeKleisliFlipped(effect.bindEffect)(cb)(function (x) {
+                      if (x instanceof either.Left)
+                        return exception.throw("Stream encoding should not be set");
+                      if (x instanceof either.Right)
+                        return applicative.pure(effect.applicativeEffect)(x.value0);
+                      throw new Error(
+                        "Failed pattern match at Node.Stream (line 94, column 5 - line 98, column 17): " +
+                          [x.constructor.name],
                       );
-                    });
-                  }
-                )
+                    }),
+                  );
+                };
+              };
+            (mod.onData = onData),
+              (mod.onDataString = function (stream) {
+                return function (enc) {
+                  return function (cb) {
+                    return onData(stream)(
+                      bind.composeKleisliFlipped(effect.bindEffect)(cb)(buffer.toString(enc)),
+                    );
+                  };
+                };
+              }),
+              (mod.onDataEither = onDataEither),
+              (mod.writeString = function (stream) {
+                return function (enc) {
+                  return self.writeStringImpl(stream)(show.show(encoding.showEncoding)(enc));
+                };
+              }),
+              (mod.onEnd = self.onEnd);
+          })(PS),
+          (function (scope) {
+            "use strict";
+            scope.ABC100C = scope.ABC100C || {};
+            var mod = scope.ABC100C,
+              applicative = scope["Control.Applicative"],
+              bind = scope["Control.Bind"],
+              category = scope["Control.Category"],
+              array = scope["Data.Array"],
+              bool = scope["Data.Boolean"],
+              either = scope["Data.Either"],
+              ering = scope["Data.EuclideanRing"],
+              foldable = scope["Data.Foldable"],
+              functor = scope["Data.Functor"],
+              int = scope["Data.Int"],
+              maybe = scope["Data.Maybe"],
+              monoid = scope["Data.Monoid"],
+              show = scope["Data.Show"],
+              string = scope["Data.String.Common"],
+              tuple = scope["Data.Tuple"],
+              unit = scope["Data.Unit"],
+              effect = scope.Effect,
+              aff = scope["Effect.Aff"],
+              effClass = scope["Effect.Class"],
+              ref = scope["Effect.Ref"],
+              encoding = scope["Node.Encoding"],
+              proc = scope["Node.Process"],
+              stream = scope["Node.Stream"],
+              unsafe = scope["Partial.Unsafe"],
+              solveValue = function (n) {
+                return function (items) {
+                  return foldable.foldl(foldable.foldableArray)(function (acc) {
+                    return function (num) {
+                      return (
+                        (acc +
+                          ((cnt = 0),
+                          function (x) {
+                            var out,
+                              c = cnt,
+                              done = !1;
+                            function step(c, v) {
+                              if (int.odd(v)) return (done = !0), c;
+                              if (bool.otherwise)
+                                return (
+                                  (c = (c + 1) | 0),
+                                  void (x = ering.div(ering.euclideanRingInt)(v)(2))
+                                );
+                              throw new Error(
+                                "Failed pattern match at ABC100C (line 71, column 5 - line 73, column 37): " +
+                                  [c.constructor.name, v.constructor.name],
+                              );
+                            }
+                            for (; !done; ) out = step(c, x);
+                            return out;
+                          })(num)) |
+                        0
+                      );
+                      var cnt;
+                    };
+                  })(0)(items);
+                };
+              },
+              solve = function (input) {
+                return either.either(function (err) {
+                  return unsafe.unsafeCrashWith(err);
+                })(category.identity(category.categoryFn))(
+                  bind.bind(either.bindEither)(
+                    either.note("n as")(
+                      ((source = input),
+                      2 === (rows = string.split("\n")(string.trim(source))).length
+                        ? bind.bind(maybe.bindMaybe)(int.fromString(rows[0]))(function (n) {
+                            var pieces,
+                              values = array.mapMaybe(int.fromString)(
+                                ((pieces = rows[1]), string.split(" ")(pieces)),
+                              );
+                            return applicative.pure(maybe.applicativeMaybe)(
+                              new tuple.Tuple(n, values),
+                            );
+                          })
+                        : maybe.Nothing.value),
+                    ),
+                  )(function (parsed) {
+                    return applicative.pure(either.applicativeEither)(
+                      show.show(show.showInt)(solveValue(parsed.value0)(parsed.value1)) + "\n",
+                    );
+                  }),
+                );
+                var source, rows;
+              },
+              readAll = aff.makeAff(function (cb) {
+                return function () {
+                  var r = ref.new("")();
+                  return (
+                    stream.onDataString(proc.stdin)(encoding.UTF8.value)(function (chunk) {
+                      return function () {
+                        var old = ref.read(r)();
+                        return ref.write(old + chunk)(r)();
+                      };
+                    })(),
+                    stream.onEnd(proc.stdin)(function () {
+                      var value = ref.read(r)();
+                      return cb(applicative.pure(either.applicativeEither)(value))();
+                    })(),
+                    monoid.mempty(aff.monoidCanceler)
+                  );
+                };
+              }),
+              main = aff.launchAff_(
+                bind.bind(aff.bindAff)(readAll)(function (input) {
+                  return bind.bind(aff.bindAff)(applicative.pure(aff.applicativeAff)(solve(input)))(
+                    function (output) {
+                      return effClass.liftEffect(aff.monadEffectAff)(
+                        ((text = output),
+                        functor.void(effect.functorEffect)(
+                          stream.writeString(proc.stdout)(encoding.UTF8.value)(text)(
+                            applicative.pure(effect.applicativeEffect)(unit.unit),
+                          ),
+                        )),
+                      );
+                      var text;
+                    },
+                  );
+                }),
               );
-            currentAppModule.main = mainApplicationRunner; // Export the main function.
-            currentAppModule.solve = parseAndProcessInput; // Export the solve function.
-          })(packageExports),
-          packageExports.ABC100C.main(); // Immediately invoke the main function.
+            (mod.main = main), (mod.solve = solve);
+          })(PS),
+          PS.ABC100C.main();
+      },
+      {},
+    ],
   },
   {},
   ["Focm"],
-  null
+  null,
 );

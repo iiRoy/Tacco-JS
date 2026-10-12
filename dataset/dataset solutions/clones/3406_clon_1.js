@@ -40,7 +40,7 @@ function     main   (   input   )
     // Find the index of the maximum value within the array.
     // NOTE: The original code contained a typo 'vart' instead of 'var'.
     // As per Type I cloning rules, this typo must be preserved exactly.
-    vart   maxIndex     =     input  .  indexOf  (  MAX  )  ;
+    var   maxIndex     =     input  .  indexOf  (  MAX  )  ;
 
     // Step 4: Modify the maximum element.
     // The element at the `maxIndex` is divided by 2.

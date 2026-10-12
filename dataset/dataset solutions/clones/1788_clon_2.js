@@ -1,5 +1,13 @@
-let myStringVariable = 'takahashi'; // Initialize a string constant for processing.
+function sumaHasta(limite) {
+  if (!Number.isInteger(limite) || limite < 0) {
+    return null;
+  }
 
-// Attempt to extract a substring from an undeclared variable.
-// This operation will result in a runtime error due to 's' being undefined.
-console.log(s.slice(0, 3));
+  let total = 0;
+
+  for (let valor = limite; valor >= 0; valor--) {
+    total += valor;
+  }
+
+  return total;
+}

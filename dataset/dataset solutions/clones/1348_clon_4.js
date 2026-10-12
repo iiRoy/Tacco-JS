@@ -1,14 +1,9 @@
-const sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
-const numericValue = Number(sourceData);
+const fs = require("fs");
 
-const piConstant = Math.PI;
-const twoPiConstant = 2 * piConstant;
+const radius = Number(fs.readFileSync(0, "utf8").trim());
 
-const areaResult = Math.pow(numericValue, 2) * piConstant;
-const circumferenceResult = numericValue * twoPiConstant;
+const diameter = radius + radius;
+const area = Math.PI * Math.pow(radius, 2);
+const circumference = Math.PI * diameter;
 
-const formattedOutput = [areaResult, circumferenceResult].map(
-  (val) => val.toFixed(6)
-);
-
-console.log(formattedOutput.join(' '));
+process.stdout.write([area, circumference].map(v => v.toFixed(6)).join(" "));

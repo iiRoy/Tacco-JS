@@ -1,4 +1,4 @@
-zfunction Main(input) {
+function Main(input) {
 	input = input.trim().split("\n").map(function(x) { return x.split(" ")});    
 	var C = 1e+9 +7;
 	var C2 = 1e+5;

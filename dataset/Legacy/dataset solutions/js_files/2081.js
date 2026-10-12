@@ -1,0 +1,1 @@
+(function Main(S){return S.match(/hi/) ? 'Yes' : 'No'})(require("fs").readFileSync("/dev/stdin","utf8"));

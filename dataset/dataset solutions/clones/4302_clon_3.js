@@ -1,59 +1,53 @@
-const processInputAndSolve = (inputData) => {
-    const lines = inputData.trim().split("\n");
-
-    const [nodeCount, edgeCount] = lines[0].split(" ").map(Number);
-
-    const graphAdjacencyMap = new Map();
-
-    for (let edgeIdentifier = 1; edgeIdentifier <= edgeCount; edgeIdentifier++) {
-        const [nodeA, nodeB] = lines[edgeIdentifier].split(" ").map(Number);
-
-        if (!graphAdjacencyMap.has(nodeA)) {
-            graphAdjacencyMap.set(nodeA, new Map());
-        }
-        if (!graphAdjacencyMap.has(nodeB)) {
-            graphAdjacencyMap.set(nodeB, new Map());
-        }
-
-        graphAdjacencyMap.get(nodeA).set(nodeB, edgeIdentifier);
-        graphAdjacencyMap.get(nodeB).set(nodeA, edgeIdentifier);
+function formatLogMessage(a) {
+    return a;
+}
+// inputに入力データ全体が入る
+function Main(inputValue) {
+    const initialValue = inputValue[0].split(" ")[0] - 0;
+    var RenamedN = initialValue;
+    const initialValue1 = inputValue[0].split(" ")[1] - 0;
+    var RenamedM = initialValue1;
+    var listValue = {};
+    var leftFactor = 1;
+    while (leftFactor <= RenamedM) {
+        const initialValue2 = inputValue[leftFactor].split(" ")[0] - 0;
+        var firstValue = initialValue2;
+        const initialValue3 = inputValue[leftFactor].split(" ")[1] - 0;
+        var secondValue = initialValue3;
+        listValue[firstValue] = listValue[firstValue] || {};
+        listValue[secondValue] = listValue[secondValue] || {};
+        listValue[firstValue][secondValue] = leftFactor;
+        listValue[secondValue][firstValue] = leftFactor;
+        leftFactor++;
     }
-
-    let bridgeCandidateCount = 0;
-    const expectedTotalNodes = nodeCount;
-
-    for (let currentEdgeIndex = 1; currentEdgeIndex <= edgeCount; currentEdgeIndex++) {
-        const reachableNodeCount = calculateReachableNodesExcludingEdge(graphAdjacencyMap, currentEdgeIndex);
-        if (reachableNodeCount !== expectedTotalNodes) {
-            bridgeCandidateCount++;
-        }
+    const initialValue4 = 0;
+    var ansValue = initialValue4;
+    for (var leftFactor = 1; leftFactor <= RenamedM; leftFactor++) {
+        const conditionMet = check(listValue, leftFactor) != RenamedN;
+        if (conditionMet)
+            ansValue++;
     }
-
-    console.log(bridgeCandidateCount);
-};
-
-const calculateReachableNodesExcludingEdge = (graphStructure, excludedEdgeId) => {
-    const traversalQueue = [1];
-    const visitedNodes = new Set();
-
-    while (traversalQueue.length > 0) {
-        const currentNode = traversalQueue.shift();
-
-        if (visitedNodes.has(currentNode)) {
+    const messageText = formatLogMessage(ansValue);
+    console.log(messageText);
+}
+function check(listValue, leftFactor) {
+    var stackValue = [1];
+    var checkedValue = {};
+    while (stackValue.length > 0) {
+        var nowValue = stackValue.splice(0, 1)[0];
+        const conditionMet1 = checkedValue[nowValue];
+        if (conditionMet1)
             continue;
-        }
-        visitedNodes.add(currentNode);
-
-        const neighborsMap = graphStructure.get(currentNode);
-        if (neighborsMap) {
-            for (const [neighborNode, edgeId] of neighborsMap.entries()) {
-                if (edgeId !== excludedEdgeId) {
-                    traversalQueue.push(neighborNode);
-                }
+        checkedValue[nowValue] = true;
+        var nextValue = Object.keys(listValue[nowValue]);
+        nextValue.forEach(nxtValue => {
+            const conditionMet2 = listValue[nowValue][nxtValue] != leftFactor;
+            if (conditionMet2) {
+                stackValue.push(nxtValue);
             }
-        }
+        });
     }
-    return visitedNodes.size;
-};
-
-processInputAndSolve(require("fs").readFileSync("/dev/stdin", "utf8"));
+    const returnValue = Object.keys(checkedValue).length;
+    return returnValue;
+}
+Main(require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n"));

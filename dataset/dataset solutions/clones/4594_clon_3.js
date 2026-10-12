@@ -1,107 +1,100 @@
-const parseInteger = (str) => parseInt(str, 10);
+function pint(s)   { return parseInt(s, 10); }
+function pfloat(s) { return parseFloat(s);   }
+function even(s)   { return (s % 2) === 0;  }
+function odd(s)    { return (s % 2) !== 0;  }
+Array.prototype.sortNumAsc  = function ()  { return this.sort(function(a, b){ return a - b; }); }
+Array.prototype.sortNumDesc = function ()  { return this.sort(function(a, b){ return b - a; }); }
+Array.prototype.sortStrAsc  = function ()  { return this.sort();                  }
+Array.prototype.sortStrDesc = function ()  { return this.sort().reverse();        }
+Array.prototype.without     = function (x) { return this.filter(function(e){ return e !== x; }); }
 
-function findStartCoordinates(gridData, heightLimit, widthLimit) {
-  for (let rowIdx = 0; rowIdx < heightLimit; ++rowIdx) {
-    for (let colIdx = 0; colIdx < widthLimit; ++colIdx) {
-      if (gridData[rowIdx][colIdx] === 'S') {
-        return [rowIdx, colIdx];
+function main(lines) {
+  var arr = lines[0].split(' ').map(pint);
+  var H = arr[0];
+  var W = arr[1];
+  var K = arr[2];
+  var S = [-1, -1];
+  var stage = [];
+
+  for (var i = 1; i <= H; i++) {
+    stage.push(lines[i].split(''));
+  }
+
+  outer: for (var h = 0; h < H; h++) {
+    for (var w = 0; w < W; w++) {
+      if (stage[h][w] === 'S') {
+        S[0] = h;
+        S[1] = w;
+        break outer;
       }
     }
   }
-  return [-1, -1]; // Should not be reached in valid inputs
-}
 
-function processGridData(inputLines) {
-  const firstLineElements = inputLines[0].split(' ');
-  const gridDimensions = firstLineElements.map(parseInteger);
+  function search(h, w, i) {
+    var q = [[h, w, i]];
+    var head = 0;
 
-  const gridHeight = gridDimensions[0];
-  const gridWidth = gridDimensions[1];
-  const maxStepsAllowed = gridDimensions[2];
+    while (head < q.length) {
+      var cur = q[head++];
+      var y = cur[0];
+      var x = cur[1];
+      var d = cur[2];
 
-  const currentGridState = inputLines.slice(1).map(line => line.split(''));
+      if (d > K) continue;
+      if (y < 0 || H <= y || x < 0 || W <= x) continue;
 
-  const startPosition = findStartCoordinates(currentGridState, gridHeight, gridWidth);
-  const startRow = startPosition[0];
-  const startCol = startPosition[1];
+      var p = stage[y][x];
 
-  function explorePath(currentRow, currentCol, currentStepCount) {
-    // Guard clauses for boundary and step limit conditions
-    if (currentStepCount > maxStepsAllowed) {
-      return;
-    }
-    if (currentRow < 0 || currentRow >= gridHeight || currentCol < 0 || currentCol >= gridWidth) {
-      return;
-    }
+      if (
+        p === '.' || p === 'S' ||
+        ((typeof p === 'number') && p > d)
+      ) {
+        stage[y][x] = d;
 
-    const cellValue = currentGridState[currentRow][currentCol];
-
-    // If it's a wall, this path stops
-    if (cellValue === '#') {
-      return;
-    }
-
-    let shouldProceedWithUpdate = false;
-    if (cellValue === '.' || cellValue === 'S') {
-      shouldProceedWithUpdate = true;
-    } else if (typeof cellValue === 'number') {
-      // Only update if the current path offers a shorter step count
-      if (cellValue > currentStepCount) {
-        shouldProceedWithUpdate = true;
-      }
-    }
-
-    if (shouldProceedWithUpdate) {
-      currentGridState[currentRow][currentCol] = currentStepCount;
-
-      const nextStepCount = currentStepCount + 1;
-      explorePath(currentRow - 1, currentCol, nextStepCount); // Move Up
-      explorePath(currentRow + 1, currentCol, nextStepCount); // Move Down
-      explorePath(currentRow, currentCol - 1, nextStepCount); // Move Left
-      explorePath(currentRow, currentCol + 1, nextStepCount); // Move Right
-    }
-  }
-
-  explorePath(startRow, startCol, 0);
-
-  function calculateMinDistanceToAnyBorder(r, c) {
-    const distanceToBottom = (gridHeight - 1) - r;
-    const distanceToTop = r;
-    const distanceToRight = (gridWidth - 1) - c;
-    const distanceToLeft = c;
-
-    const allDistances = [distanceToBottom, distanceToTop, distanceToRight, distanceToLeft];
-    return Math.min(...allDistances);
-  }
-
-  let overallMinExitSteps = Infinity;
-  let immediateExitFound = false;
-
-  for (let row = 0; row < gridHeight; ++row) {
-    for (let col = 0; col < gridWidth; ++col) {
-      const cellContent = currentGridState[row][col];
-
-      if (typeof cellContent === 'number') {
-        const borderDistance = calculateMinDistanceToAnyBorder(row, col);
-
-        if (borderDistance === 0) {
-          overallMinExitSteps = 1;
-          immediateExitFound = true;
-          break; // Exit inner loop
+        if (d + 1 <= K) {
+          q.push([y - 1, x, d + 1]);
+          q.push([y + 1, x, d + 1]);
+          q.push([y, x - 1, d + 1]);
+          q.push([y, x + 1, d + 1]);
         }
-
-        const stepsRequiredToExit = Math.ceil(borderDistance / maxStepsAllowed) + 1;
-        overallMinExitSteps = Math.min(overallMinExitSteps, stepsRequiredToExit);
       }
-    }
-    if (immediateExitFound) {
-      break; // Exit outer loop
     }
   }
 
-  console.log(overallMinExitSteps);
+  search(S[0], S[1], 0);
+
+  function min_step_to_out(h, w) {
+    var a = H - 1 - h;
+    var b = h;
+    var c = W - 1 - w;
+    var d = w;
+    var m = Math.min(a, b);
+    return Math.min(m, Math.min(c, d));
+  }
+
+  var minimum = Infinity;
+
+  outer: for (var h = 0; h < H; h++) {
+    for (var w = 0; w < W; w++) {
+      var p = stage[h][w];
+
+      if (typeof p === 'number') {
+        var step = min_step_to_out(h, w);
+
+        if (step === 0) {
+          minimum = 1;
+          break outer;
+        } else {
+          var candidate = Math.ceil(step / K) + 1;
+          if (candidate < minimum) {
+            minimum = candidate;
+          }
+        }
+      }
+    }
+  }
+
+  console.log(minimum);
 }
 
-const fileData = require("fs").readFileSync("/dev/stdin", "utf8");
-const processedInputLines = fileData.split('\n').map(line => line.trim());
-processGridData(processedInputLines);
+main(require("fs").readFileSync("/dev/stdin", "utf8").split('\n').map(function(l){ return l.trim(); }));

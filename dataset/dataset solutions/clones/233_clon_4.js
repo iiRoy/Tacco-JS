@@ -1,51 +1,41 @@
-const fileSystemModule = require("fs");
+function exploreMagicalPaths(inscription, runes) {
+    const pendingPositions = [0];
+    const exploredPositions = new Set([0]);
+    let queueIndex = 0;
 
-const sourcePathIdentifier = "/dev/stdin";
+    while (queueIndex < pendingPositions.length) {
+        const currentPosition = pendingPositions[queueIndex];
+        queueIndex++;
 
-const textEncodingFormat = "utf8";
+        if (currentPosition === inscription.length) {
+            return true;
+        }
 
-const toleranceThreshold = 1e-10;
+        for (const rune of runes) {
+            const matchesHere =
+                inscription.startsWith(rune, currentPosition);
 
-const makePoint = (xValue, yValue) => ({
-    xCoordinate: xValue,
-    yCoordinate: yValue
-});
+            if (!matchesHere) {
+                continue;
+            }
 
-const formVector = (startPoint, endPoint) => ({
-    xComponent: endPoint.xCoordinate - startPoint.xCoordinate,
-    yComponent: endPoint.yCoordinate - startPoint.yCoordinate
-});
+            const nextPosition = currentPosition + rune.length;
 
-const computeDotProduct = (firstVector, secondVector) => (
-    firstVector.xComponent * secondVector.xComponent + firstVector.yComponent * secondVector.yComponent
-);
+            if (nextPosition === inscription.length) {
+                return true;
+            }
 
-const processInputData = (inputContent) => {
-    const contentLines = inputContent.trim().split('\n');
+            if (!exploredPositions.has(nextPosition)) {
+                exploredPositions.add(nextPosition);
+                pendingPositions.push(nextPosition);
+            }
+        }
+    }
 
-    contentLines.forEach(currentEntry => {
-        const componentStrings = currentEntry.split(' ');
-        
-        const numericalComponents = componentStrings.map(Number);
+    return false;
+}
 
-        const pointAlpha = makePoint(numericalComponents[0], numericalComponents[1]);
-        const pointBeta = makePoint(numericalComponents[2], numericalComponents[3]);
-        const pointGamma = makePoint(numericalComponents[4], numericalComponents[5]);
-        const pointDelta = makePoint(numericalComponents[6], numericalComponents[7]);
+const inscription = "dragonsword";
+const runes = ["dragon", "sword", "drag", "ons"];
 
-        const vectorOne = formVector(pointAlpha, pointBeta);
-        const vectorTwo = formVector(pointGamma, pointDelta);
-
-        const calculatedDotProduct = computeDotProduct(vectorOne, vectorTwo);
-        
-        const absoluteDotProductResult = Math.abs(calculatedDotProduct);
-
-        const comparisonOutcomeIrrelevant = absoluteDotProductResult < toleranceThreshold;
-
-        console.log('YES');
-    });
-};
-
-const rawFileContent = fileSystemModule.readFileSync(sourcePathIdentifier, textEncodingFormat);
-
-processInputData(rawFileContent);
+console.log(exploreMagicalPaths(inscription, runes)); // true

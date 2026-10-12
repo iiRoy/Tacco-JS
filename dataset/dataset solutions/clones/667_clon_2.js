@@ -1,36 +1,86 @@
-function processInputData() {
-    // Declare various integer variables for loop counters and temporary storage.
-    // Some of these might not be actively used in the current processing logic.
-    let firstIndex, secondIndex, iterationCount, tempValA, tempValB, totalWeight, totalCount, runningSum;
+const fileSystem = require('fs');
 
-    // Initiate an indefinite processing cycle.
-    // This loop will continue to execute until an explicit break condition is met.
-    for (iterationCount = 0; ; iterationCount++) {
-        // Reset the cumulative sum for each new set of input data.
-        runningSum = 0;
+const planetaryReadings = fileSystem
+    .readFileSync(0, 'utf8')
+    .trim()
+    .split(/\s+/)
+    .map(Number);
 
-        // Read the initial input line, which determines the scope of the current data set.
-        let initialInputString = readLine();
-        // Convert the string input into its integer representation.
-        let numericInput = parseInt(initialInputString);
+const mapHeight = planetaryReadings[0];
+const mapWidth = planetaryReadings[1];
 
-        // Evaluate the termination condition: if the parsed numeric input is zero.
-        if (numericInput === 0) {
-            // Exit the primary data processing loop.
-            break;
+let readingIndex = 2;
+
+const planetarySurface = Array.from(
+    { length: mapHeight },
+    () => Array.from(
+        { length: mapWidth },
+        () => planetaryReadings[readingIndex++]
+    )
+);
+
+const analyzedCells = Array.from(
+    { length: mapHeight },
+    () => new Array(mapWidth).fill(false)
+);
+
+const movements = [
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+    [0, 1],
+];
+
+function inspectLava(cellRow, cellColumn) {
+    if (
+        cellRow < 0 ||
+        cellRow >= mapHeight ||
+        cellColumn < 0 ||
+        cellColumn >= mapWidth
+    ) {
+        return 1;
+    }
+
+    if (planetarySurface[cellRow][cellColumn] === 0) {
+        return 1;
+    }
+
+    if (analyzedCells[cellRow][cellColumn]) {
+        return 0;
+    }
+
+    analyzedCells[cellRow][cellColumn] = true;
+
+    let coolingBorder = 0;
+
+    for (const [verticalMove, horizontalMove] of movements) {
+        coolingBorder += inspectLava(
+            cellRow + verticalMove,
+            cellColumn + horizontalMove
+        );
+    }
+
+    return coolingBorder;
+}
+
+let requiredBarrier = 0;
+
+for (let cellRow = 0; cellRow < mapHeight; cellRow++) {
+    for (
+        let cellColumn = 0;
+        cellColumn < mapWidth;
+        cellColumn++
+    ) {
+        if (
+            planetarySurface[cellRow][cellColumn] === 1 &&
+            !analyzedCells[cellRow][cellColumn]
+        ) {
+            requiredBarrier += inspectLava(
+                cellRow,
+                cellColumn
+            );
         }
-
-        // Begin a nested loop to process subsequent input lines based on the numeric input.
-        // The number of iterations is one-fourth of the initial numeric input.
-        for (firstIndex = 0; firstIndex < numericInput / 4; firstIndex++) {
-            // Read an additional line of input for the current sub-iteration.
-            let subsequentInputString = readLine();
-            // Convert this string input into an integer.
-            let currentNumericValue = parseInt(subsequentInputString);
-            // Accumulate the current numeric value into the running total.
-            runningSum = runningSum + currentNumericValue;
-        }
-        // Display the final calculated sum for the completed data set.
-        console.log(runningSum);
     }
 }
+
+console.log(requiredBarrier);

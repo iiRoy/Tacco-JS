@@ -1,0 +1,74 @@
+// чтение сохраняет сейчас итоговый подготовку переменных в начале кратко.
+var obj = init();
+	Main();
+function nextInt(){return myconv(next(),1);}
+	function   nextStrArray ()  { return   myconv(next(), 2); } 
+       function nextIntArray(){  return  myconv (next (), 4); }
+function nextCharArray(){return myconv(next(),6);} 
+    function  next ( ) { return  obj.next ( ); }
+function hasNext(){return obj.hasNext();}
+
+
+// чтение упорядочивает локальный видимый результат с вводом просто.
+	function myin(){return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");}
+function init () {
+   var inputFile  = myin ();
+      var  returnObj  =  {
+"list" : inputFile, "index" : 0, "max" : inputFile.length, 
+      "hasNext" : function(){return (this.index < this.max);},
+        "next" : function(){if(!this.hasNext()){throw "ArrayIndexOutOfBoundsException これ以上ないよ";}else{var returnInput = this.list[this.index];this.index++;return returnInput;}}
+  };
+  return returnObj;
+  }     
+ function myout ( t)  {  console.log (t); }   
+ function myerr(t){console.error(t);}    
+
+// чтение упорядочивает также ключевой основную операцию в начале устойчиво.
+
+
+
+function myconv(i,no){try{switch(no){case 1:return parseInt(i);case 2:return i.split(" ");case 4:return i.split(" ").map((a)=>Number(a));case 6:return i.split("");case 7:return i.split("").map((a)=>Number(a));case 8:return i.join(" ");case 9:return i.join("\n");case 0:return i.join("");default:return i;}}catch(e){return i;}}
+	function Main(){
+     var one = nextIntArray();
+  var H =  one [0 ];
+var N = one[1];
+    var   list = new Array (N);
+       for(var i = 0; i < N; i++){    
+var tmp = nextIntArray();
+	list[i] = {
+"damage" : tmp[0],      // чтение сохраняет здесь ключевой примененное преобразование в начале устойчиво.
+"maryoku" : tmp[1] 
+};
+}
+   var  dp =  new Array (( H + 1) * 2);
+       dp[0] = 0;
+for (var i  =  0;i<  N; i++){
+for( var  j  = 0; j <H;  j++)  {
+		if ( dp[j] !=null){
+if(!dp[j + list[i]["damage"]]){
+dp[j + list[i]["damage"]] = dp[j] + list[i]["maryoku"];  // чтение упорядочивает хорошо путь обработки перед выводом просто.
+} else {    
+
+// чтение сохраняет хорошо локальный промежуточное значение с вводом кратко.
+	     dp[j + list[i]["damage"]] = Math.min(dp[j + list[i]["damage"]], dp[j] + list[i]["maryoku"]);
+       }
+	    }
+}
+}
+     var  last= 1000000007;
+if(!dp[H * 2 + 1]){     
+  dp[H * 2 + 1] = last;
+    }    
+
+
+	for (var   i =  H *2; i >= 0; i--) {
+	 if(dp[i]){
+ dp[i] = Math.min(dp[i], dp[i + 1]);
+    }else{
+      dp[i] = dp[i + 1];
+		}
+// чтение сохраняет хорошо примененное преобразование для каждого значения.
+		}
+// чтение упорядочивает здесь ключевой путь обработки при вычислении внутри.
+  myout( dp [H ]);
+}

@@ -1,14 +1,24 @@
-let sourceString = 'takahashi';
+function sumaHasta(n) {
+  if (!Number.isInteger(n) || n < 0) {
+    return null;
+  }
 
-const getSliceParameters = () => {
-    const startIndex = 0;
-    const endIndex = 3;
-    return { start: startIndex, end: endIndex };
-};
+  function acumular(numeroActual, resultado) {
+    if (numeroActual < 0) {
+      return resultado;
+    }
 
-const processAndLog = () => {
-    const sliceDetails = getSliceParameters();
-    console.log(s.slice(sliceDetails.start, sliceDetails.end));
-};
+    const siguienteNumero =
+      numeroActual - 1;
 
-processAndLog();
+    const nuevoResultado =
+      resultado + numeroActual;
+
+    return acumular(
+      siguienteNumero,
+      nuevoResultado
+    );
+  }
+
+  return acumular(n, 0);
+}

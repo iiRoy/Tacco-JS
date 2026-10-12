@@ -1,16 +1,53 @@
-var input = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from stdin
-var Arr = (input.trim()).split("\n"); // Trim whitespace and split into lines
+function canEscapeTemple(platforms)
+{
+    // No existe una plataforma inicial
+    if(platforms.length === 0)
+    {
+        return false;
+    }
 
-Arr.forEach(function(v) { // Iterate over each line
-    var arr = v.split(" ").map(Number); // Split line by space and convert to numbers
-    var cnt = 0; // Initialize a counter
+    const reachable =
+        new Array(platforms.length)
+            .fill(false);
 
-    // Anonymous function to check for overlap
-    (function(xa1, ya1, xa2, ya2, xb1, yb1, xb2, yb2) {
-        // Check for horizontal overlap
-        if (xb2 >= xa1 && xb1 <= xa2) cnt++;
-        if (yb2 >= ya1 && yb1 <= ya2) cnt++;
-        }).apply(null, arr); // Apply the function with array elements as arguments
+    reachable[0] = true;
 
-    // Output "YES" if both overlaps occurred, otherwise "NO"
-    console.log((cnt == 2) ? "YES" : "NO");
+    // Explorar las plataformas
+    for(
+        let current = 0;
+        current < platforms.length;
+        current++
+    )
+    {
+        if(!reachable[current])
+        {
+            continue;
+        }
+
+        const limit =
+            Math.min(
+                current + platforms[current],
+                platforms.length - 1
+            );
+
+        for(
+            let next = current + 1;
+            next <= limit;
+            next++
+        )
+        {
+            reachable[next] = true;
+        }
+    }
+
+    return reachable[
+        platforms.length - 1
+    ];
+}
+
+const temple =
+    [2, 3, 1, 1, 4];
+
+console.log(
+    canEscapeTemple(temple)
+); // true

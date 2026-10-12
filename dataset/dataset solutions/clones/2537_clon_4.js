@@ -1,66 +1,54 @@
-function processGraphInput(inputData) {
-    inputData = inputData.split("\n");
-    if (inputData[inputData.length - 1] === '') {
-        inputData.pop();
-    }
+const fs = require("fs");
 
-    const firstLineParts = inputData[0].split(' ');
-    const nodeCount = Number(firstLineParts[0]);
-    const edgeCount = Number(firstLineParts[1]);
+const data = fs.readFileSync(0, "utf8").trim().split(/\s+/).map(Number);
+let p = 0;
 
-    const adjacencyMap = new Map();
-    for (let i = 1; i <= nodeCount; i++) {
-        adjacencyMap.set(i, new Set());
-    }
+const n = data[p++];
+const m = data[p++];
 
-    for (let i = 1; i < inputData.length; i++) {
-        const edgeParts = inputData[i].split(' ');
-        const sourceNode = Number(edgeParts[0]);
-        const targetNode = Number(edgeParts[1]);
-        adjacencyMap.get(sourceNode).add(targetNode);
-    }
+const graph = Array.from({ length: n + 1 }, () => []);
 
-    const cyclePath = locateShortestCycle(adjacencyMap, nodeCount);
-
-    if (cyclePath) {
-        const pathSegments = cyclePath.slice();
-        pathSegments.shift();
-        console.log(pathSegments.length);
-        console.log(pathSegments.join("\n"));
-    } else {
-        console.log(-1);
-    }
+for (let i = 0; i < m; i++) {
+  const from = data[p++];
+  const to = data[p++];
+  graph[from].push(to);
 }
 
-function locateShortestCycle(graphStructure, totalNodes) {
-    for (let initialNode = 1; initialNode <= totalNodes; initialNode++) {
-        const traversalQueue = [[initialNode, [initialNode]]];
-        const visitedNodesForCurrentBFS = new Set();
-        visitedNodesForCurrentBFS.add(initialNode);
+const state = Array(n + 1).fill(0);
+const stack = [];
+const index = Array(n + 1).fill(-1);
+let answer = null;
 
-        let queueHead = 0;
+function search(v) {
+  state[v] = 1;
+  index[v] = stack.length;
+  stack.push(v);
 
-        while (queueHead < traversalQueue.length) {
-            const [currentNodeInTraversal, currentPathSequence] = traversalQueue[queueHead++];
+  for (const to of graph[v]) {
+    if (answer) return;
 
-            const neighbors = graphStructure.get(currentNodeInTraversal);
-            if (neighbors) {
-                for (const nextNodeInPath of neighbors) {
-                    if (nextNodeInPath === initialNode) {
-                        const detectedCycle = currentPathSequence.concat([nextNodeInPath]);
-                        return detectedCycle;
-                    }
-
-                    if (!visitedNodesForCurrentBFS.has(nextNodeInPath)) {
-                        visitedNodesForCurrentBFS.add(nextNodeInPath);
-                        traversalQueue.push([nextNodeInPath, currentPathSequence.concat([nextNodeInPath])]);
-                    }
-                }
-            }
-        }
+    if (state[to] === 0) {
+      search(to);
+    } else if (state[to] === 1) {
+      answer = stack.slice(index[to]);
+      return;
     }
+  }
 
-    return null;
+  stack.pop();
+  index[v] = -1;
+  state[v] = 2;
 }
 
-processGraphInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+for (let i = 1; i <= n; i++) {
+  if (state[i] === 0) {
+    search(i);
+  }
+  if (answer) break;
+}
+
+if (!answer) {
+  console.log(-1);
+} else {
+  console.log(answer.length + "\n" + answer.join("\n"));
+}

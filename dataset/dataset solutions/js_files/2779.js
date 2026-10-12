@@ -16,9 +16,9 @@ var a = input.substr( 0,1 );
   var c = str[2];
   var d = str[3];
   
-  var f = 0；
+  var f = 0
   　if (a == b) {
-    if (a !== c) ( c == d){var f 1;}
+    if (a !== c) ( c == d);{var f = 1}
    }
   if (f == 1){console.log('Yes')}else{console.log('NO');}
 }

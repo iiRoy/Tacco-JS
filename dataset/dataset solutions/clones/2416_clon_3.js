@@ -1,178 +1,129 @@
 "use strict";
-
-const InputParserFactory = (function () {
-    class InputReader {
-        constructor(rawInput) {
-            this.sourceLines = rawInput.trim().split("\n");
-            this.currentLineIdx = 0;
-        }
-
-        _popNextTokenFromLine(lineTokens) {
-            const token = lineTokens.pop();
-            if (!lineTokens.length) {
-                this.currentLineIdx++;
-            }
-            return token;
-        }
-
-        readToken(asString = false) {
-            let currentLineData = this.sourceLines[this.currentLineIdx];
-            if (typeof currentLineData === "string") {
-                this.sourceLines[this.currentLineIdx] = currentLineData.split(" ").reverse();
-            }
-            const tokenValue = this._popNextTokenFromLine(this.sourceLines[this.currentLineIdx]);
-            return asString ? tokenValue : +tokenValue;
-        }
-
-        readLineTokens(asStrings = false) {
-            const line = this.sourceLines[this.currentLineIdx++].split(" ");
-            return asStrings ? line : line.map(val => +val);
-        }
-
-        readMatrixTokens(numRows, asStrings = false) {
-            const matrixRows = this.sourceLines.slice(this.currentLineIdx, this.currentLineIdx + numRows).map(row => row.split(" "));
-            this.currentLineIdx += numRows;
-            return asStrings ? matrixRows : matrixRows.map(row => row.map(val => +val));
-        }
-
-        readLinesAsTokens(numLines, asStrings = false) {
-            const lines = this.sourceLines.slice(this.currentLineIdx, this.currentLineIdx + numLines);
-            this.currentLineIdx += numLines;
-            return asStrings ? lines : lines.map(val => +val);
-        }
+var GET=(function(){
+  function f(s){return new g(s);}
+  function g(s){
+    this._s=s.trim().split("\n");
+    this._y=0;
+  }
+  g.prototype.a=function(f){
+    var s=this._s, y=this._y, r;
+    if(typeof s[y]==="string"){
+      s[y]=s[y].trim().split(" ").reverse();
     }
-
-    return function createInputReader(inputString) {
-        return new InputReader(inputString);
-    };
+    r=s[y].pop();
+    if(!s[y].length)this._y++;
+    return f?r:+r;
+  };
+  g.prototype.l=function(f){
+    var s=this._s[this._y++].split(" ");
+    return f?s:s.map(function(a){return +a;});
+  };
+  g.prototype.m=function(n,f){
+    var r=this._s.slice(this._y,this._y+=n).map(function(a){return a.split(" ");});
+    return f?r:r.map(function(a){return a.map(function(b){return +b;});});
+  };
+  g.prototype.r=function(n,f){
+    var r=this._s.slice(this._y,this._y+=n);
+    return f?r:r.map(function(a){return +a;});
+  };
+  return f;
 })();
+var o=GET(require("fs").readFileSync("/dev/stdin","utf8"));
 
-const reader = InputParserFactory(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-function initializeMultiDimArray(initialValue, ...dimensions) {
-    if (dimensions.length === 0) {
-        return initialValue;
+function xArray(v){
+  var a=arguments;
+  function build(d){
+    var len=a[d];
+    if(d===a.length-1){
+      return Array(len).fill(0).map(function(){return v;});
     }
-    const currentDimensionSize = dimensions[0];
-    const remainingDimensions = dimensions.slice(1);
-    return Array.from({ length: currentDimensionSize }, () => initializeMultiDimArray(initialValue, ...remainingDimensions));
+    return Array(len).fill(0).map(function(){return build(d+1);});
+  }
+  return build(1);
 }
 
-let solve;
-let performVerticalSplit;
+var ans,s;
 
-console.log(executeSolution());
+console.log(main());
 
-function executeSolution() {
-    const gridHeight = reader.readToken();
-    const gridWidth = reader.readToken();
-    const targetSegments = reader.readToken();
-    const charGrid = reader.readLinesAsTokens(gridHeight, true);
+function main(){
+  var h=o.a();
+  var w=o.a();
+  var k=o.a();
 
-    const outputGrid = initializeMultiDimArray(1, gridHeight, gridWidth);
+  s=o.r(h,1);
+  ans=xArray(0,h,w);
 
-    const fillRemainingGridArea = (startY, startX, endY, endX, segmentIdToAssign) => {
-        for (let r = startY; r < endY; r++) {
-            for (let c = startX; c < endX; c++) {
-                outputGrid[r][c] = segmentIdToAssign;
-            }
-        }
-    };
+  solve(0,0,h,w,1,k);
 
-    solve(0, 0, gridHeight, gridWidth, 1, targetSegments, outputGrid, charGrid, fillRemainingGridArea);
-
-    return outputGrid.map(row => row.join(" ")).join("\n");
+  return ans.map(function(a){
+    return a.join(" ");
+  }).join("\n");
 }
 
-performVerticalSplit = function(currentY, currentX, endY, endX, segmentId, targetSegments, rowHashCounts, outputGrid, charGrid, fillRemainingGridArea) {
-    const subGridHeight = endY - currentY;
-    let verticalSplitOffset = Math.floor((currentY + endY) / 2) - currentY;
-
-    if (rowHashCounts[verticalSplitOffset] === 0) {
-        let tempOffset = verticalSplitOffset;
-        while (tempOffset < subGridHeight - 1 && rowHashCounts[tempOffset] === 0) {
-            tempOffset++;
-        }
-        verticalSplitOffset = tempOffset;
-    } else if (rowHashCounts[verticalSplitOffset] === targetSegments) {
-        let tempOffset = verticalSplitOffset;
-        while (tempOffset > 0 && rowHashCounts[tempOffset] === targetSegments) {
-            tempOffset--;
-        }
-        verticalSplitOffset = tempOffset;
+function solve(y,x,h,w,id,k){
+  if(k<=1){
+    for(var y3=y;y3<h;y3++){
+      for(var x3=x;x3<w;x3++){
+        ans[y3][x3]=id;
+      }
     }
+    return;
+  }
 
-    const firstSegmentCount = rowHashCounts[verticalSplitOffset];
-    const splitPointY = currentY + verticalSplitOffset + 1;
+  var y2=xArray(0,h-y);
+  var x2=xArray(0,w-x);
 
-    solve(currentY, currentX, splitPointY, endX, segmentId, firstSegmentCount, outputGrid, charGrid, fillRemainingGridArea);
-    solve(splitPointY, currentX, endY, endX, segmentId + firstSegmentCount, targetSegments - firstSegmentCount, outputGrid, charGrid, fillRemainingGridArea);
-};
-
-solve = function(currentY, currentX, endY, endX, segmentId, targetSegments, outputGrid, charGrid, fillRemainingGridArea) {
-    if (targetSegments === 1) {
-        fillRemainingGridArea(currentY, currentX, endY, endX, segmentId);
-        return;
+  for(var y3=y;y3<h;y3++){
+    for(var x3=x;x3<w;x3++){
+      if(s[y3][x3]==="#"){
+        y2[y3-y]=y2[y3-y]+1;
+        x2[x3-x]=x2[x3-x]+1;
+      }
     }
+  }
 
-    const subGridHeight = endY - currentY;
-    const subGridWidth = endX - currentX;
+  for(var yy=1;yy<y2.length;yy++){
+    y2[yy]+=y2[yy-1];
+  }
+  for(var xx=1;xx<x2.length;xx++){
+    x2[xx]+=x2[xx-1];
+  }
 
-    const rowHashCounts = initializeMultiDimArray(0, subGridHeight);
-    const colHashCounts = initializeMultiDimArray(0, subGridWidth);
+  if(w-x===1){
+    return f(y,x,h,w,id,k,y2);
+  }
 
-    const populateHashCounts = () => {
-        for (let r = currentY; r < endY; r++) {
-            for (let c = currentX; c < endX; c++) {
-                if (charGrid[r][c] === "#") {
-                    rowHashCounts[r - currentY]++;
-                    colHashCounts[c - currentX]++;
-                }
-            }
-        }
-    };
-    populateHashCounts();
+  var xf=((x+w)>>1)-x;
 
-    const calculatePrefixSums = (arr) => {
-        for (let i = 1; i < arr.length; i++) {
-            arr[i] += arr[i - 1];
-        }
-    };
-    calculatePrefixSums(rowHashCounts);
-    calculatePrefixSums(colHashCounts);
+  while(xf<x2.length-1 && x2[xf]===0){
+    xf++;
+  }
+  if(x2[xf]===0 || x2[xf]===k){
+    return f(y,x,h,w,id,k,y2);
+  }
 
-    if (currentX + 1 === endX) {
-        performVerticalSplit(currentY, currentX, endY, endX, segmentId, targetSegments, rowHashCounts, outputGrid, charGrid, fillRemainingGridArea);
-        return;
+  solve(y,x,h,x+xf+1,id,x2[xf]);
+  solve(y,x+xf+1,h,w,id+x2[xf],k-x2[xf]);
+}
+
+function f(y,x,h,w,id,k,y2){
+  var yf=((y+h)>>1)-y;
+
+  while(yf<y2.length-1 && y2[yf]===0){
+    yf++;
+  }
+  while(yf>0 && y2[yf]===k){
+    yf--;
+  }
+
+  if(y2[yf]===0 || y2[yf]===k){
+    yf=0;
+    while(yf<y2.length-1 && (y2[yf]===0 || y2[yf]===k)){
+      yf++;
     }
+  }
 
-    let horizontalSplitOffset = Math.floor((currentX + endX) / 2) - currentX;
-
-    if (colHashCounts[horizontalSplitOffset] === 0) {
-        let tempOffset = horizontalSplitOffset;
-        while (tempOffset < subGridWidth - 1 && colHashCounts[tempOffset] === 0) {
-            tempOffset++;
-        }
-        horizontalSplitOffset = tempOffset;
-        if (colHashCounts[horizontalSplitOffset] === targetSegments) {
-            performVerticalSplit(currentY, currentX, endY, endX, segmentId, targetSegments, rowHashCounts, outputGrid, charGrid, fillRemainingGridArea);
-            return;
-        }
-    } else if (colHashCounts[horizontalSplitOffset] === targetSegments) {
-        let tempOffset = horizontalSplitOffset;
-        while (tempOffset > 0 && colHashCounts[tempOffset] === targetSegments) {
-            tempOffset--;
-        }
-        horizontalSplitOffset = tempOffset;
-        if (colHashCounts[horizontalSplitOffset] === 0 || colHashCounts[horizontalSplitOffset] === targetSegments) {
-            performVerticalSplit(currentY, currentX, endY, endX, segmentId, targetSegments, rowHashCounts, outputGrid, charGrid, fillRemainingGridArea);
-            return;
-        }
-    }
-
-    const firstSegmentCount = colHashCounts[horizontalSplitOffset];
-    const splitPointX = currentX + horizontalSplitOffset + 1;
-
-    solve(currentY, currentX, endY, splitPointX, segmentId, firstSegmentCount, outputGrid, charGrid, fillRemainingGridArea);
-    solve(currentY, splitPointX, endY, endX, segmentId + firstSegmentCount, targetSegments - firstSegmentCount, outputGrid, charGrid, fillRemainingGridArea);
-};
+  solve(y,x,y+yf+1,w,id,y2[yf]);
+  solve(y+yf+1,x,h,w,id+y2[yf],k-y2[yf]);
+}

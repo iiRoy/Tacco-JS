@@ -1,123 +1,141 @@
 "use strict";
-var rawData = require("fs").readFileSync("/dev/stdin", "utf8");
-var tokenStream = rawData.split(/ |\n/), tokenIndex = 0;
 
-function readInt() { return +tokenStream[tokenIndex++]; }
-function readString() { return tokenStream[tokenIndex++]; }
-function readBigInt() { return BigInt(tokenStream[tokenIndex++]); }
+var input = require("fs").readFileSync("/dev/stdin", "utf8");
+var cin = input.trim().split(/ |\n/), cid = 0;
 
-function readInts(count, asStrings) {
-    const values = tokenStream.slice(tokenIndex, tokenIndex + count);
-    tokenIndex += count;
-    return asStrings ? values : values.map(val => +val);
+function next(){ return Number(cin[cid++]); }
+function nextstr(){ return cin[cid++]; }
+function nextbig(){ return BigInt(cin[cid++]); }
+function nexts(n, a){
+  var ret = cin.slice(cid, cid + n);
+  cid += n;
+  if(a) return ret;
+  return ret.map(function(v){ return +v; });
+}
+function nextm(h, w, a){
+  var r = [];
+  for(var i = 0; i < h; i++){
+    var row = cin.slice(cid, cid + w);
+    cid += w;
+    r.push(a ? row : row.map(function(v){ return +v; }));
+  }
+  return r;
+}
+function xArray(v){
+  var a = arguments;
+  function make(d){
+    var len = a[d];
+    var arr = new Array(len);
+    if(d === a.length - 1){
+      for(var i = 0; i < len; i++) arr[i] = v;
+    }else{
+      for(var i = 0; i < len; i++) arr[i] = make(d + 1);
+    }
+    return arr;
+  }
+  return make(1);
 }
 
-function readMatrix(height, width, asStrings) {
-    const matrix = [];
-    for (let i = 0; i < height; i++) {
-        const row = tokenStream.slice(tokenIndex, tokenIndex + width);
-        tokenIndex += width;
-        matrix.push(asStrings ? row : row.map(val => +val));
-    }
-    return matrix;
+var mod = 998244353;
+
+function mul(){
+  var r = arguments[0];
+  for(var i = 1; i < arguments.length; i++){
+    r = ((r >> 16) * arguments[i] % mod * 65536 + (r & 65535) * arguments[i]) % mod;
+  }
+  return r;
 }
 
-// Type III: Replaced eval-based xArray with a recursive function for multi-dimensional array creation.
-function createMultiDimArray(initialValue, ...dimensions) {
-    if (dimensions.length === 0) {
-        return initialValue;
-    }
+var fac = [], finv = [], invs = [], pow2 = [];
 
-    const currentDimensionSize = dimensions[0];
-    const remainingDimensions = dimensions.slice(1);
-    const newArray = new Array(currentDimensionSize);
+function fset(n){
+  fac.length = n + 1;
+  fac[0] = 1;
+  fac[1] = 1;
 
-    for (let i = 0; i < currentDimensionSize; i++) {
-        newArray[i] = createMultiDimArray(initialValue, ...remainingDimensions);
-    }
-    return newArray;
+  for(var i = 2; i <= n; i++){
+    fac[i] = mul(fac[i - 1], i);
+  }
+
+  finv.length = n + 1;
+  finv[0] = 1;
+  finv[1] = 1;
+  finv[n] = inv(fac[n]);
+
+  for(i = n; i > 2; i--){
+    finv[i - 1] = mul(finv[i], i);
+  }
 }
 
-var primeModulus = 998244353;
-
-// Type III: Rewritten for clarity while preserving the original's overflow-prevention logic.
-function modMultiply() {
-    let currentProduct = arguments[0];
-    for (let i = 1; i < arguments.length; i++) {
-        const factor = arguments[i];
-        // This specific modular multiplication technique prevents overflow
-        // when currentProduct * factor might exceed JavaScript's Number.MAX_SAFE_INTEGER (2^53 - 1)
-        // before the modulo operation, by splitting currentProduct into 16-bit parts.
-        const highPart = Math.floor(currentProduct / 65536); // Equivalent to currentProduct >> 16
-        const lowPart = currentProduct & 65535;             // Equivalent to currentProduct % 65536
-
-        let termHigh = (highPart * factor) % primeModulus;
-        termHigh = (termHigh * 65536) % primeModulus; // Multiply by 2^16
-
-        let termLow = (lowPart * factor) % primeModulus;
-
-        currentProduct = (termHigh + termLow) % primeModulus;
-    }
-    return currentProduct;
+function inv(b){
+  var a = mod, u = 0, v = 1, t;
+  while(b){
+    t = a / b | 0;
+    a -= t * b;
+    u -= t * v;
+    t = a;
+    a = b;
+    b = t;
+    t = u;
+    u = v;
+    v = t;
+  }
+  u %= mod;
+  if(u < 0) u += mod;
+  return u;
 }
 
-// Type III: Removed unused modular arithmetic utility functions (fset, inv, pow, ncr, npr)
-// and unused arrays (fac, finv, invs, pow2) as they are not essential for the main logic's observable behavior.
-
-function normalizeMod(value) {
-    return (value % primeModulus + primeModulus) % primeModulus;
+function pow(a, n){
+  var r = 1;
+  while(n){
+    if(n & 1) r = mul(a, r);
+    a = mul(a, a);
+    n >>= 1;
+  }
+  return r;
 }
 
-var programResult = executeProgram();
-if (programResult !== undefined) console.log(programResult);
+function ncr(n, r){
+  if(r < 0 || r > n) return 0;
+  return mul(fac[n], finv[r], finv[n - r]);
+}
 
-function executeProgram() {
-    const [startRow, startCol, endRow, endCol] = readInts(4);
+function npr(n, r){
+  if(r < 0 || r > n) return 0;
+  return mul(fac[n], finv[n - r]);
+}
 
-    // Type III: Using the new createMultiDimArray function.
-    const dynamicProgTable = createMultiDimArray(0, endRow + 1, endCol + 1);
+function mput(n){
+  n %= mod;
+  if(n < 0) n += mod;
+  return n;
+}
 
-    // Initialize the base case for the DP table.
-    dynamicProgTable[startRow][startCol] = 1;
+var myOut = main();
+if(myOut !== undefined){
+  console.log(myOut);
+}
 
-    // Iterate through the DP table to fill it.
-    for (let currentRow = startRow; currentRow <= endRow; currentRow++) {
-        for (let currentCol = startCol; currentCol <= endCol; currentCol++) {
-            // Type III: Skip the initial cell as it's already set and its calculation
-            // would involve invalid (currentRow-1) or (currentCol-1) indices if startRow/startCol is 0.
-            // The original code implicitly handles this by dp[<invalid>] being 0.
-            if (currentRow === startRow && currentCol === startCol) {
-                continue;
-            }
+function main(){
+  var data = nexts(4);
+  var a = data[0];
+  var b = data[1];
+  var c = data[2];
+  var d = data[3];
 
-            let currentCellValue = 0;
+  var dp = xArray(0, c + 1, d + 1);
+  dp[a][b] = 1;
 
-            // Type III: Split the complex DP update into multiple steps with intermediate variables
-            // and explicit boundary checks for clarity.
-            // Contribution from the cell directly above (currentRow-1, currentCol)
-            if (currentRow > 0) {
-                const valueFromAbove = dynamicProgTable[currentRow - 1][currentCol];
-                const termFromAbove = modMultiply(valueFromAbove, currentCol);
-                currentCellValue = normalizeMod(currentCellValue + termFromAbove);
-            }
+  for(var y = a; y <= c; y++){
+    for(var x = b; x <= d; x++){
+      var addY = dp[y - 1][x] * x;
+      var addX = dp[y][x - 1] * y;
+      var sub = mul(dp[y - 1][x - 1], y - 1, x - 1);
 
-            // Contribution from the cell directly to the left (currentRow, currentCol-1)
-            if (currentCol > 0) {
-                const valueFromLeft = dynamicProgTable[currentRow][currentCol - 1];
-                const termFromLeft = modMultiply(valueFromLeft, currentRow);
-                currentCellValue = normalizeMod(currentCellValue + termFromLeft);
-            }
-
-            // Subtraction for the overlap from the diagonal cell (currentRow-1, currentCol-1)
-            // This term is subtracted because it's counted twice (once from above, once from left).
-            if (currentRow > 0 && currentCol > 0) {
-                const valueFromDiagonal = dynamicProgTable[currentRow - 1][currentCol - 1];
-                const termToSubtract = modMultiply(valueFromDiagonal, currentRow - 1, currentCol - 1);
-                currentCellValue = normalizeMod(currentCellValue - termToSubtract);
-            }
-            
-            dynamicProgTable[currentRow][currentCol] = currentCellValue;
-        }
+      dp[y][x] = dp[y][x] + addY + addX - sub;
+      dp[y][x] %= mod;
     }
-    return normalizeMod(dynamicProgTable[endRow][endCol]);
+  }
+
+  return mput(dp[c][d]);
 }

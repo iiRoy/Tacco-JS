@@ -1,0 +1,5 @@
+var input = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n')
+var N = parseInt(input[0])
+var count = new Array(N).fill(0)
+input[1].split(' ').map(Number).forEach(v => { count[v-1] ++ })
+count.forEach(v => console.log(v))

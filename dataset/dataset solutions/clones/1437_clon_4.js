@@ -1,21 +1,59 @@
-process.stdin.on("data", function(inputBuffer) {
-    const processedInput = inputBuffer.toString().trim();
-    const numericStrings = processedInput.split(" ");
+function determineSudokuConsistency(puzzle) {
+    if (
+        puzzle.length !== 9 ||
+        puzzle.some(line => line.length !== 9)
+    ) {
+        return false;
+    }
 
-    const calculationComponents = [
-        [numericStrings[0], numericStrings[2]],
-        [numericStrings[1], numericStrings[3]]
-    ];
+    const horizontalMasks = new Array(9).fill(0);
+    const verticalMasks = new Array(9).fill(0);
+    const regionMasks = new Array(9).fill(0);
 
-    const squaredValues = calculationComponents.map(segmentPair => {
-        const combinedString = segmentPair[0] + segmentPair[1];
-        const numericalRepresentation = Number(combinedString);
-        return numericalRepresentation * numericalRepresentation;
-    });
+    for (let cellIndex = 0; cellIndex < 81; cellIndex++) {
+        const horizontalPosition =
+            Math.floor(cellIndex / 9);
 
-    const totalSumOfSquares = squaredValues.reduce((accumulated, currentVal) => accumulated + currentVal, 0);
+        const verticalPosition =
+            cellIndex % 9;
 
-    const finalResult = totalSumOfSquares ** 0.5;
+        const cellValue =
+            puzzle[horizontalPosition][verticalPosition];
 
-    console.log(finalResult.toFixed(8));
-}).resume();
+        if (cellValue === ".") {
+            continue;
+        }
+
+        const numericValue = Number(cellValue);
+
+        if (
+            !Number.isInteger(numericValue) ||
+            numericValue < 1 ||
+            numericValue > 9
+        ) {
+            return false;
+        }
+
+        const digitBit =
+            1 << (numericValue - 1);
+
+        const regionIndex =
+            Math.floor(horizontalPosition / 3) * 3 +
+            Math.floor(verticalPosition / 3);
+
+        const digitIsRepeated =
+            (horizontalMasks[horizontalPosition] & digitBit) !== 0 ||
+            (verticalMasks[verticalPosition] & digitBit) !== 0 ||
+            (regionMasks[regionIndex] & digitBit) !== 0;
+
+        if (digitIsRepeated) {
+            return false;
+        }
+
+        horizontalMasks[horizontalPosition] |= digitBit;
+        verticalMasks[verticalPosition] |= digitBit;
+        regionMasks[regionIndex] |= digitBit;
+    }
+
+    return true;
+}

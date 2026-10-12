@@ -1,22 +1,16 @@
-const fileSystemModule = require('fs');
-
-const standardInputPath = '/dev/stdin';
-const encodingFormat = 'utf8';
-const inputDelimiter = ' ';
-
-const rawInputData = fileSystemModule.readFileSync(standardInputPath, encodingFormat);
-
-const stringTokens = rawInputData.split(inputDelimiter);
-
-const numericValues = [];
-for (let i = 0; i < stringTokens.length; i++) {
-    const currentToken = stringTokens[i];
-    const parsedNumber = parseInt(currentToken, 10);
-    numericValues.push(parsedNumber);
+function formatLogMessage(a) {
+    return a;
 }
-
-const orderedValues = numericValues.sort();
-
-const finalOutputString = orderedValues.join(inputDelimiter);
-
-console.log(finalOutputString);
+const initialValue = require('fs').readFileSync('/dev/stdin', 'utf8');
+const gInputValue = initialValue;
+const initialValue1 = gInputValue.split(' ').map(sourceItem => parseInt(sourceItem));
+const inputValue = initialValue1;
+const initialValue2 = inputValue.sort();
+const sortedValue = initialValue2;
+const initialValue3 = sortedValue.slice(1).reduce((sumSValue, targetItem) => {
+    const arrowResult = sumSValue + ' ' + targetItem;
+    return arrowResult;
+}, sortedValue[0]);
+const resultValue = initialValue3;
+const messageText = formatLogMessage(resultValue);
+console.log(messageText);

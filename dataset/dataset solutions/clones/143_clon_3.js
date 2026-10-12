@@ -1,51 +1,36 @@
-const fileSystemHandler = require('fs');
+var fs = require('fs'),
+length = fs.fstatSync(process.stdin.fd).size,
+buffer = Buffer.alloc(length),
+bytesRead = fs.readSync(process.stdin.fd, buffer, 0, length, 0),
+input = buffer.toString('utf8', 0, bytesRead).split('\n');
 
-function calculateSlope(yCoord1, xCoord1, yCoord2, xCoord2) {
-    return (yCoord1 - yCoord2) / (xCoord1 - xCoord2);
-}
+main();
 
-function readStandardInput() {
-    const standardInputFd = process.stdin.fd;
-    const fileStats = fileSystemHandler.fstatSync(standardInputFd);
-    const dataSize = fileStats.size;
-
-    const rawDataBuffer = Buffer.alloc(dataSize);
-    const actualBytesCount = fileSystemHandler.readSync(standardInputFd, rawDataBuffer, 0, dataSize, 0);
-
-    return rawDataBuffer.toString('utf8', 0, actualBytesCount).split('\n');
-}
-
-const processedLines = readStandardInput();
-
-function executeCoordinateAnalysis() {
-    const effectiveLineCount = processedLines.length - 1;
-
-    for (let lineIdx = 0; lineIdx < effectiveLineCount; lineIdx++) {
-        const currentCoordSet = processedLines[lineIdx].split(',').map(Number);
-
-        let positiveSlopeTally = 0;
-        let negativeSlopeTally = 0;
-
-        const updateSlopeTallies = (slopeValue) => {
-            if (slopeValue >= 0) {
-                positiveSlopeTally++;
-            } else {
-                negativeSlopeTally++;
-            }
-        };
-
-        const slopeOne = calculateSlope(currentCoordSet[1], currentCoordSet[0], currentCoordSet[3], currentCoordSet[2]);
-        const slopeTwo = calculateSlope(currentCoordSet[3], currentCoordSet[2], currentCoordSet[5], currentCoordSet[4]);
-        const slopeThree = calculateSlope(currentCoordSet[5], currentCoordSet[4], currentCoordSet[7], currentCoordSet[6]);
-        const slopeFour = calculateSlope(currentCoordSet[7], currentCoordSet[6], currentCoordSet[1], currentCoordSet[0]);
-
-        updateSlopeTallies(slopeOne);
-        updateSlopeTallies(slopeTwo);
-        updateSlopeTallies(slopeThree);
-        updateSlopeTallies(slopeFour);
-
-        console.log(positiveSlopeTally % 2 ? 'YES' : 'NO');
+function main(){
+  for(var i = 0, len = input.length; i < len; i++){
+    if(i === len - 1 && input[i] === ''){
+      continue;
     }
-}
 
-executeCoordinateAnalysis();
+    var c = input[i].split(',');
+    var p = 0, n = 0;
+
+    var ab = (Number(c[1]) - Number(c[3])) / (Number(c[0]) - Number(c[2]));
+    var bc = (Number(c[3]) - Number(c[5])) / (Number(c[2]) - Number(c[4]));
+    var cd = (Number(c[5]) - Number(c[7])) / (Number(c[4]) - Number(c[6]));
+    var da = (Number(c[7]) - Number(c[1])) / (Number(c[6]) - Number(c[0]));
+
+    var slopes = [ab, bc, cd, da];
+
+    for(var j = 0; j < slopes.length; j++){
+      if(slopes[j] >= 0){
+        p++;
+      }else{
+        n++;
+      }
+    }
+
+    var result = (p % 2 === 1) ? 'YES' : 'NO';
+    console.log(result);
+  }
+}

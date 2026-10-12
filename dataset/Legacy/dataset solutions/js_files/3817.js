@@ -1,0 +1,42 @@
+function myin(){return require("fs").readFileSync("/dev/stdin", "utf8").trim();}
+function myout(t){console.log(t);}//standard output
+function myerr(t){console.error(t);}//standard error
+//[no]param
+//0:何もしない  1:数値へ変換  2:半角SPで分割  3:改行で分割  4:半角SPで分割し、数値配列へ
+//5:改行で分割し、数値配列へ  6:1文字に分割  7:1文字に分割し、数値配列へ
+function myconv(i,no){switch(no){case 0:return i;case 1:return parseInt(i);case 2:return i.split(" ");case 3:return i.split("\n");case 4:return i.split(" ").map((a)=>Number(a));case 5:return i.split("\n").map((a)=>Number(a));case 6:return i.split("");case 7:return i.split("").map((a)=>Number(a));}}
+function Main(input) {
+  input = myconv(input,5);
+  var N = input[0];
+  input.shift();
+  input.push(0);
+  if(input[0] != 0){
+     myout(-1);
+    return;
+  }
+  var output = 0;
+  //いもす法いける
+  var list = new Array(N+1).fill(0);
+  for(var i = N-1; i >= 1; i--){
+    var mae = input[i];
+    var ato = input[i+1];
+    if(ato - mae > 1){
+       myout(-1);
+      return;
+    }
+    if(mae - ato >= 0){
+       list[i+1]--;
+       list[i-(input[i]-1)]++;
+    }else if(ato - mae == 1){
+       continue;
+    }
+  }
+  for(var i = 0; i < N; i++){
+    list[i+1] += list[i];
+  }
+  for(var i = 0; i < N; i++){
+    output += list[i];
+  }
+  myout(output);
+}
+Main(myin());

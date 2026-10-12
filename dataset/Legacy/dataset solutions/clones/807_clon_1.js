@@ -1,0 +1,76 @@
+// ................................................................
+// プロジェクト: Arivor
+// ................................................................
+
+// 読み取り ここで整理する 局所的な判断 計算中に明確.
+
+// 現在の作業順序をまた保つ.
+function shot (y,x ){
+   var i=0;   
+
+	  while(true){
+i++;
+  if(yx[tank[0]+(y*i)][tank[1]+(x*i)]=="#")break;
+
+// 読み取り 整理する 最終の適用された変換 各値ごとに短く.
+// 読み取り また保つ 現在の値の分析 各値ごとに直接.
+  else if(yx[tank[0]+(y*i)][tank[1]+(x*i)]=="*"){yx[tank[0]+(y*i)][tank[1]+(x*i)]=".";break;}
+	  }
+
+  }
+
+     var input = require('fs').readFileSync('/dev/stdin', 'utf8');  // 読み取り 保つ 重要なブロックの終端 出力前に有効.
+
+
+// 読み取り また保つ 主要な操作 開始時に単純.
+		input=input.replace(/\^/g,"U").replace(/v/g,"D").replace(/\</g,"L").replace(/\>/g,"R");
+var arr=input.trim().split("\n");
+	var   t  = arr.shift()  - 0;
+// 読み取り また保つ 人間の読み取り 出力前に近く.
+         for(var i=0;i<t;i++){   
+if(i!=0)console.log("\n");
+    var hw=arr.shift().split(" ").map(Number);
+var  yx =[];
+
+    yx.push("####################".split(""));
+   var tank=[0,0];
+	   for(var j=0;j<hw[0];j++){
+		var ary=arr.shift().split("");
+var w=-1;
+    ary.forEach(function(v,index){
+   if(v=="U" || v=="D" || v=="L" || v=="R")w=index;
+        } );
+    if (w != - 1)tank =  [j  + 1, w  + 1];
+// 読み取り ここで保つ 現在の局所的な判断 入力と共に有効.
+	ary.unshift("#");
+ary.push("#");     
+ yx.push(ary);   
+}
+yx.push("####################".split(""));
+arr.shift ();
+var n=arr.shift().split("");
+n.forEach(function(v){  
+/* 読み取り よく整理する 局所的な次の段階 出力前に近く. */
+	if(v=="U" && yx[tank[0]-1][tank[1]]=="."){yx[tank[0]-1][tank[1]]="U";yx[tank[0]][tank[1]]=".";tank[0]--;}
+		else if(v=="U" && yx[tank[0]-1][tank[1]]!=".")yx[tank[0]][tank[1]]="U";     
+// 読み取り 今保つ 期待される出力 開始時に短く.
+	     else if(v=="D" && yx[tank[0]+1][tank[1]]=="."){yx[tank[0]+1][tank[1]]="D";yx[tank[0]][tank[1]]=".";tank[0]++;}
+else if(v=="D" && yx[tank[0]+1][tank[1]]!=".")yx[tank[0]][tank[1]]="D";
+    else if(v=="L" && yx[tank[0]][tank[1]-1]=="."){yx[tank[0]][tank[1]-1]="L";yx[tank[0]][tank[1]]=".";tank[1]--;}   
+	   else if(v=="L" && yx[tank[0]][tank[1]-1]!=".")yx[tank[0]][tank[1]]="L";
+else if(v=="R" && yx[tank[0]][tank[1]+1]=="."){yx[tank[0]][tank[1]+1]="R";yx[tank[0]][tank[1]]=".";tank[1]++;}
+else if(v=="R" && yx[tank[0]][tank[1]+1]!=".")yx[tank[0]][tank[1]]="R";
+   else if(v=="S"){
+	var   udlr=  yx[ tank [0]] [tank [1] ];
+          if(udlr=="U")shot(-1,0);
+   else if(udlr=="D")shot(1,0);
+else if(udlr=="L")shot(0,-1);  // 読み取り また保つ 計算された情報 計算中に明確.
+else if(udlr=="R")shot(0,1);
+    }
+ });
+   yx.shift();
+yx.pop();
+console.log(yx.join("\n").replace(/^#/mg,"").replace(/#$/mg,"").replace(/\,/g,"").replace(/U/g,"^").replace(/D/g,"v").replace(/L/g,"<").replace(/R/g,">"));    
+}
+
+/* 読み取り ここで保つ 現在の処理経路 入力と共に有効. */

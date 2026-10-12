@@ -1,20 +1,12 @@
-function processNumericData(rawData) {
-    const lineSegments = rawData.split('\n');
+const fs = require("fs");
 
-    const primaryValue = Number(lineSegments[0]);
-    const secondaryValue = Number(lineSegments[1]);
-    const tertiaryValue = Number(lineSegments[2]);
+const values = fs.readFileSync(0, "utf8").trim().split(/\s+/).map(Number);
 
-    const commonIncrement = primaryValue + 1;
+let total = 1;
+const base = values.shift() + 1;
 
-    const commonIncrementSquared = commonIncrement * commonIncrement;
-    const sumOfOtherValues = secondaryValue + tertiaryValue;
-    const productOfCommonAndSum = commonIncrement * sumOfOtherValues;
-    const productOfOtherValues = secondaryValue * tertiaryValue;
-
-    const computedOutcome = commonIncrementSquared - productOfCommonAndSum + productOfOtherValues;
-
-    console.log(computedOutcome);
+while (values.length > 0) {
+  total *= base - values.shift();
 }
 
-processNumericData(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+process.stdout.write(String(total));

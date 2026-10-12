@@ -1,19 +1,36 @@
-// This script processes two numerical command-line arguments.
+const fileSystem = require('fs');
 
-// Retrieve the command-line arguments, excluding 'node' and the script path.
-const cliInputs = process.argv.slice(2);
+const transmissionParts = fileSystem
+    .readFileSync(0, 'utf8')
+    .trim()
+    .split(/\s+/);
 
-// Check if exactly two arguments were provided by the user.
-if (cliInputs.length === 2) {
-  // Parse the first argument into an integer.
-  const valOne = parseInt(cliInputs[0], 10);
-  // Parse the second argument into an integer.
-  const valTwo = parseInt(cliInputs[1], 10);
+const spaceshipCount = Number(transmissionParts[0]);
+const navigationKeys = transmissionParts.slice(
+    1,
+    spaceshipCount + 1
+);
 
-  // Perform floor division on the two values and add one.
-  // Math.floor ensures integer division behavior similar to Java's Math.floorDiv.
-  const finalOutcome = Math.floor(valOne / valTwo) + 1;
+let sharedSector = navigationKeys[0] || '';
 
-  // Output the computed result to the console.
-  console.log(finalOutcome);
+for (
+    let shipIndex = 1;
+    shipIndex < navigationKeys.length;
+    shipIndex++
+) {
+    while (
+        !navigationKeys[shipIndex].startsWith(sharedSector)
+    ) {
+        sharedSector = sharedSector.slice(0, -1);
+    }
+
+    if (sharedSector === '') {
+        break;
+    }
 }
+
+console.log(
+    sharedSector === ''
+        ? 'SIN PREFIJO'
+        : sharedSector
+);

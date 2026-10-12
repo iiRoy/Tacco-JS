@@ -1,23 +1,44 @@
-import java.io.*;
-public class AOJ1041
-{
-	public static void main(String[] args) throws IOException
-	{
-		BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
-		int j,k,i,b,c,W,N,S;
+const fs = require('fs');
 
-		for(i=0;;i++){
-			S=0;
-		String str1 =br.readLine();
-		int n=Integer.parseInt(str1);
-		if(n==0)
-			break;
-			for(j=0;j<n/4;j++){
-			String str2 =br.readLine();
-			int a =Integer.parseInt(str2);
-			S=S+a;
-			}
-			System.out.println(S);
-	}
+const data = fs
+    .readFileSync(0, 'utf8')
+    .trim()
+    .split(/\s+/)
+    .map(Number);
+
+const n = data[0];
+const intervals = [];
+
+let cursor = 1;
+
+for (let i = 0; i < n; i++) {
+    intervals.push([
+        data[cursor],
+        data[cursor + 1],
+    ]);
+
+    cursor += 2;
 }
+
+intervals.sort((a, b) => a[0] - b[0]);
+
+let currentStart = intervals[0][0];
+let currentEnd = intervals[0][1];
+let protectedLength = 0;
+
+for (let i = 1; i < intervals.length; i++) {
+    const nextStart = intervals[i][0];
+    const nextEnd = intervals[i][1];
+
+    if (nextStart <= currentEnd) {
+        currentEnd = Math.max(currentEnd, nextEnd);
+    } else {
+        protectedLength += currentEnd - currentStart;
+        currentStart = nextStart;
+        currentEnd = nextEnd;
+    }
 }
+
+protectedLength += currentEnd - currentStart;
+
+console.log(protectedLength);

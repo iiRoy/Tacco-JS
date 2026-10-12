@@ -1,5 +1,5 @@
 var input = require('fs').readFileSync('/dev/stdin', 'utf8');
-var Arr = input.trim().split("\n").map(Number);
+var Arr = (input.trim()).split("\n").map(Number);
 var L = Arr.shift();
 var arr = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 

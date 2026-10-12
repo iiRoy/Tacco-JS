@@ -1,8 +1,12 @@
-const outputData = [
-  [Math.pow(2, 2)],
-  [Number("2"), parseFloat("5.0"), Math.trunc(2.9), Math.round(4.7)]
-];
+function produceOppositeDigitOrder(value) {
+    const magnitude = Math.abs(value);
 
-outputData.forEach(lineItems => {
-  console.log(...lineItems);
-});
+    const transformedValue = Number(
+        String(magnitude)
+            .split("")
+            .reverse()
+            .join("")
+    );
+
+    return Math.sign(value) * transformedValue;
+}

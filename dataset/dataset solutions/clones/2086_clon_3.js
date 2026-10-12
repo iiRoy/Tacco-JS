@@ -1,102 +1,81 @@
-const fileSystem = require("fs");
-
-const NO_SUCH_ELEMENT_ERROR_MESSAGE = "NoSuchElementException:次に要素は無いよ";
-
-function createInputReader(sourceDataLines) {
-  let currentLinePosition = 0;
-  const totalAvailableLines = sourceDataLines.length;
-
-  const checkHasMoreLines = () => currentLinePosition < totalAvailableLines;
-
-  const retrieveNextLine = () => {
-    if (!checkHasMoreLines()) {
-      throw NO_SUCH_ELEMENT_ERROR_MESSAGE;
+var input = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+var obj = {
+  "list": input,
+  "index": 0,
+  "max": input.length,
+  "hasNext": function(){
+    return this.index < this.max;
+  },
+  "next": function(){
+    if(!this.hasNext()){
+      throw "NoSuchElementException";
     }
-    const lineContent = sourceDataLines[currentLinePosition];
-    currentLinePosition++;
-    return lineContent;
-  };
+    var returnObj = this.list[this.index++];
+    return returnObj;
+  }
+};
 
-  return {
-    checkHasMoreLines,
-    retrieveNextLine
-  };
-}
+Main();
 
-const rawInputContent = fileSystem.readFileSync("/dev/stdin", "utf8").trim().split("\n");
-const globalInputHandler = createInputReader(rawInputContent);
+function next(){return obj.next();}
+function nextInt(){return myconv(next(), 1);}
+function nextStrArray(){return myconv(next(), 2);}
+function nextIntArray(){return myconv(next(), 4);}
+function nextCharArray(){return myconv(next(), 6);}
+function hasNext(){return obj.hasNext();}
+function myout(t){process.stdout.write(String(t) + "\n");}
+function myerr(t){console.error(t);}
 
-const parseStringAsInt = (strValue) => parseInt(strValue, 10);
-const convertStringToNumber = (strValue) => Number(strValue);
-
-function processDataConversion(inputValue, conversionMode) {
-  const conversionStrategies = {
-    1: (val) => parseStringAsInt(val),
-    2: (val) => val.split(" "),
-    4: (val) => val.split(" ").map(convertStringToNumber),
-    6: (val) => val.split(""),
-    7: (val) => val.split("").map(convertStringToNumber),
-    8: (val) => val.join(" "),
-    9: (val) => val.join("\n"),
-    0: (val) => val.join("")
-  };
-
-  try {
-    const handler = conversionStrategies[conversionMode];
-    if (typeof handler === 'function') {
-      return handler(inputValue);
+function myconv(i, no){
+  try{
+    switch(no){
+      case 1:
+        return parseInt(i, 10);
+      case 2:
+        return i.trim().split(" ");
+      case 4:
+        return i.trim().split(" ").map(function(a){return Number(a);});
+      case 6:
+        return i.split("");
+      case 7:
+        return i.split("").map(function(a){return Number(a);});
+      case 8:
+        return i.join(" ");
+      case 9:
+        return i.join("\n");
+      case 0:
+        return i.join("");
+      default:
+        return i;
     }
-    return inputValue;
-  } catch (error) {
-    return inputValue;
+  }catch(e){
+    return i;
   }
 }
 
-function getNextInputLine() { return globalInputHandler.retrieveNextLine(); }
-function readNextInteger() { return processDataConversion(getNextInputLine(), 1); }
-function readNextStringArray() { return processDataConversion(getNextInputLine(), 2); }
-function readNextIntegerArray() { return processDataConversion(getNextInputLine(), 4); }
-function readNextCharacterArray() { return processDataConversion(getNextInputLine(), 6); }
-function hasMoreInput() { return globalInputHandler.checkHasMoreLines(); }
+function Main(){
+  var one = nextIntArray();
+  var A = one[0];
+  var B = one[1];
+  var M = one[2];
 
-function outputResult(data) { console.log(data); }
-function outputError(data) { console.error(data); }
+  var alist = nextIntArray();
+  var blist = nextIntArray();
 
-function calculateArrayMinimum(numericArray) {
-  if (!Array.isArray(numericArray) || numericArray.length === 0) {
-    return Infinity;
-  }
-  return Math.min(...numericArray);
-}
+  var minA = Math.min.apply(null, alist);
+  var minB = Math.min.apply(null, blist);
+  var min = minA + minB;
 
-function executeMainProgram() {
-  const initialParameters = readNextIntegerArray();
-  const countAItems = initialParameters[0];
-  const countBItems = initialParameters[1];
-  const numberOfDiscountOffers = initialParameters[2];
+  for(var i = 0; i < M && hasNext(); i++){
+    var tmp = nextIntArray();
+    var aIndex = tmp[0] - 1;
+    var bIndex = tmp[1] - 1;
+    var tmpMin = alist[aIndex] + blist[bIndex] - tmp[2];
 
-  const priceListForA = readNextIntegerArray();
-  const priceListForB = readNextIntegerArray();
-
-  const minPriceFromA = calculateArrayMinimum(priceListForA);
-  const minPriceFromB = calculateArrayMinimum(priceListForB);
-
-  let overallMinimumCost = minPriceFromA + minPriceFromB;
-
-  if (numberOfDiscountOffers > 0) {
-    for (let offerIndex = 0; offerIndex < numberOfDiscountOffers; offerIndex++) {
-      const currentOfferDetails = readNextIntegerArray();
-      const itemASelectionIndex = currentOfferDetails[0] - 1;
-      const itemBSelectionIndex = currentOfferDetails[1] - 1;
-      const discountValue = currentOfferDetails[2];
-
-      const costWithCurrentOffer = priceListForA[itemASelectionIndex] + priceListForB[itemBSelectionIndex] - discountValue;
-
-      overallMinimumCost = Math.min(costWithCurrentOffer, overallMinimumCost);
+    if(tmpMin < min){
+      min = tmpMin;
     }
   }
 
-  outputResult(overallMinimumCost);
+  myout(min);
 }
-
-executeMainProgram();

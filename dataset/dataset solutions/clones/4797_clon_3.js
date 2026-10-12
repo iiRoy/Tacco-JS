@@ -1,10 +1,15 @@
-function displayOutput(messageContent) {
-    console.log(messageContent);
+function contains(sortedValues, target) {
+  let index = 0;
+
+  while (index < sortedValues.length) {
+    const currentValue = sortedValues[index];
+
+    if (currentValue === target) {
+      return true;
+    }
+
+    index += 1;
+  }
+
+  return false;
 }
-
-const primaryConfirmation = "Yes";
-displayOutput(primaryConfirmation);
-
-const numericElements = [1, 3, 3, 2, 2, 1, 1, 2, 3];
-const formattedNumericString = numericElements.join(' ');
-displayOutput(formattedNumericString);

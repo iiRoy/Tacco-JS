@@ -1,108 +1,84 @@
-var compilerTools = compilerTools || {};
-compilerTools.scope = {};
-compilerTools.ASSUME_ES5 = false;
-compilerTools.ASSUME_NO_NATIVE_MAP = false;
-compilerTools.ASSUME_NO_NATIVE_SET = false;
-compilerTools.SIMPLE_FROUND_POLYFILL = false;
+var $jscomp=$jscomp||{};
+$jscomp.scope={};
+$jscomp.ASSUME_ES5=!1;
+$jscomp.ASSUME_NO_NATIVE_MAP=!1;
+$jscomp.ASSUME_NO_NATIVE_SET=!1;
+$jscomp.SIMPLE_FROUND_POLYFILL=!1;
+$jscomp.defineProperty=$jscomp.ASSUME_ES5||"function"==typeof Object.defineProperties?Object.defineProperty:function(a,b,c){
+  if(a!=Array.prototype&&a!=Object.prototype){
+    a[b]=c.value;
+  }
+};
+$jscomp.getGlobal=function(a){
+  if("undefined"!=typeof window&&window===a)return a;
+  if("undefined"!=typeof global&&null!=global)return global;
+  return a;
+};
+$jscomp.global=$jscomp.getGlobal(this);
 
-compilerTools.defineProperty =
-  compilerTools.ASSUME_ES5 || typeof Object.defineProperties == "function"
-    ? Object.defineProperty
-    : function (target, key, descriptor) {
-        if (target != Array.prototype && target != Object.prototype) {
-          target[key] = descriptor.value;
-        }
-      };
-
-compilerTools.getGlobal = function (value) {
-  return typeof window != "undefined" && window === value
-    ? value
-    : typeof global != "undefined" && global != null
-    ? global
-    : value;
+$jscomp.polyfill=function(a,b,c,d){
+  if(b){
+    c=$jscomp.global;
+    a=a.split(".");
+    for(d=0;d<a.length-1;d++){
+      var e=a[d];
+      if(!(e in c))c[e]={};
+      c=c[e];
+    }
+    a=a[a.length-1];
+    d=c[a];
+    b=b(d);
+    if(b!=d&&null!=b){
+      $jscomp.defineProperty(c,a,{configurable:!0,writable:!0,value:b});
+    }
+  }
 };
 
-compilerTools.global = compilerTools.getGlobal(this);
-
-compilerTools.polyfill = function (path, factory, esVersion, browserVersion) {
-  if (factory) {
-    var root = compilerTools.global;
-    path = path.split(".");
-
-    for (var index = 0; index < path.length - 1; index++) {
-      var part = path[index];
-      if (!(part in root)) {
-        root[part] = {};
+$jscomp.polyfill("Array.from",function(a){
+  return a?a:function(a,c,d){
+    c=null!=c?c:function(a){return a;};
+    var b=[],f="undefined"!=typeof Symbol&&Symbol.iterator&&a[Symbol.iterator];
+    if("function"==typeof f){
+      a=f.call(a);
+      for(var g=0,h;!(h=a.next()).done;){
+        b.push(c.call(d,h.value,g++));
       }
-      root = root[part];
+    }else{
+      for(f=a.length,g=0;g<f;g++){
+        b.push(c.call(d,a[g],g));
+      }
     }
+    return b;
+  };
+},"es6","es3");
 
-    path = path[path.length - 1];
-    var oldValue = root[path];
-    factory = factory(oldValue);
+function main(a){
+  var b=a.trim().split("\n");
+  a=parseInt(b[0],10);
+  var c=[];
+  var d=0;
+  b[1]=b[1].split(" ");
 
-    if (factory != oldValue && factory != null) {
-      compilerTools.defineProperty(root, path, {
-        configurable: true,
-        writable: true,
-        value: factory
-      });
-    }
-  }
-};
-
-compilerTools.polyfill(
-  "Array.from",
-  function (nativeFrom) {
-    return nativeFrom
-      ? nativeFrom
-      : function (source, mapper, context) {
-          mapper = mapper != null ? mapper : function (item) { return item; };
-          var result = [];
-          var iterator = typeof Symbol != "undefined" && Symbol.iterator && source[Symbol.iterator];
-
-          if (typeof iterator == "function") {
-            source = iterator.call(source);
-            for (var position = 0; !(iterator = source.next()).done;) {
-              result.push(mapper.call(context, iterator.value, position++));
-            }
-          } else {
-            for (iterator = source.length, position = 0; position < iterator; position++) {
-              result.push(mapper.call(context, source[position], position));
-            }
-          }
-
-          return result;
-        };
-  },
-  "es6",
-  "es3"
-);
-
-function main(inputText) {
-  var rows = inputText.split("\n");
-  var totalNumbers = parseInt(rows[0]);
-  var originalValues = [];
-
-  rows[1] = rows[1].split(" ");
-
-  for (var i = 0; i < totalNumbers; ++i) {
-    originalValues.push(parseInt(rows[1][i]));
+  while(d<a){
+    c[c.length]=parseInt(b[1][d],10);
+    d++;
   }
 
-  var sortedValues = Array.from(originalValues);
-  sortedValues.sort();
+  b=Array.from(c);
+  b.sort();
 
-  console.log(originalValues, sortedValues);
+  console.log(c,b);
 
-  var mismatchCount = 0;
-  for (var j = 0; j < totalNumbers; ++j) {
-    if (originalValues[j] != sortedValues[j]) {
-      mismatchCount += 1;
+  var e=0;
+  d=0;
+  for(;e<a;++e){
+    if(c[e]!=b[e]){
+      d+=1;
     }
   }
 
-  console.log(2 >= mismatchCount ? "YES" : "NO");
+  var f=2>=d?"YES":"NO";
+  console.log(f);
 }
 
-main(require("fs").readFileSync("/dev/stdin", "utf8"));
+main(require("fs").readFileSync("/dev/stdin","utf8"));

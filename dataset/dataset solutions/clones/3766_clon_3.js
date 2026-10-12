@@ -1,32 +1,33 @@
-var storedLines = [];
+var inputLines = [];
 
-const inputModule = require('readline');
+var readline = require('readline');
 
-const lineProcessor = inputModule.createInterface({
+var rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-lineProcessor.on('line', function (currentInputLine) {
-    storedLines.push(currentInputLine);
+rl.on('line', function (x) {
+    inputLines[inputLines.length] = x;
 });
 
-lineProcessor.on("close", function () {
-    const MAX_ITERATION_LIMIT = 999;
-    const firstLineContent = storedLines[0];
-    const numberStrings = firstLineContent.split(" ");
+rl.on("close", function () {
+    var first = inputLines[0].split(" ");
+    var a = parseInt(first[0], 10);
+    var b = parseInt(first[1], 10);
 
-    const valueA = Number(numberStrings[0]);
-    const valueB = Number(numberStrings[1]);
+    var diff = b - a;
+    var h = Array(1000).fill(0);
+    var answer = 0;
 
-    const difference = valueB - valueA;
-    const cumulativeSums = new Array(MAX_ITERATION_LIMIT + 1).fill(0);
+    for (var i = 1; i < h.length; i++) {
+        h[i] = h[i - 1] + i;
 
-    for (let currentIdx = 1; currentIdx <= MAX_ITERATION_LIMIT; currentIdx++) {
-        cumulativeSums[currentIdx] = cumulativeSums[currentIdx - 1] + currentIdx;
-        if (difference === currentIdx) {
-            console.log(cumulativeSums[currentIdx] - valueB);
-            return 0;
+        if (diff === i) {
+            answer = h[i] - b;
+            break;
         }
     }
+
+    console.log(answer);
 });

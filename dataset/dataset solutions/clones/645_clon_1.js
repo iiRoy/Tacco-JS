@@ -1,82 +1,38 @@
-//
-// This is the primary class definition for our application.
-// It encapsulates the main logic for calculating costs.
-//
-public class Main
-{
+/* Comparador de ciclos del dragón cósmico */
+const fs=require('fs');
 
-        //
-        // This is the standard entry point for any Java program.
-        // It receives command-line arguments as an array of Strings.
-        //
-        public static void main ( String [ ] args )
-        {
+const tokens=fs
+.readFileSync(0,'utf8')
+.trim()
+.split(/\s+/);
 
-                //
-                // The program logic is executed only if precisely five
-                // command-line arguments are provided by the user.
-                //
-                if ( args . length == 5 )
-                {
+const n=Number(tokens[0]);
 
-                        //
-                        // Declaration and initialization of integer variables
-                        // by parsing the command-line arguments.
-                        // Each argument is converted from String to int.
-                        //
-                        int     N =     Integer . valueOf ( args [ 0 ] ) ; // Total quantity or amount.
+const firstCycle=tokens.slice(1,n+1);
+const secondCycle=tokens.slice(n+1,2*n+1);
 
-                        int     A =     Integer . valueOf ( args [ 1 ] ) ; // Capacity for the first option.
+let equivalent=false;
 
-                        int     B =     Integer . valueOf ( args [ 2 ] ) ; // Cost per unit for the first option.
+// Probar cada posible punto de inicio
+for(let offset=0;offset<n;offset++){
+    let matches=true;
 
-                        int     C =     Integer . valueOf ( args [ 3 ] ) ; // Capacity for the second option.
+    for(let position=0;position<n;position++){
+        const rotatedPosition=(position+offset)%n;
 
-                        int     D =     Integer . valueOf ( args [ 4 ] ) ; // Cost per unit for the second option.
+        if(firstCycle[rotatedPosition]!==secondCycle[position]){
+            matches=false;
+            break;
+        }
+    }
 
+    /* Los dos observadores registraron el mismo ciclo */
+    if(matches){
+        equivalent=true;
+        break;
+    }
+}
 
-                        //
-                        // Calculate the number of units required for the first option.
-                        // This implements a ceiling division logic:
-                        // if N is perfectly divisible by A, it's N/A; otherwise, it's N/A + 1.
-                        //
-                        int num1 = N % A == 0
-                                   ? Math . floorDiv ( N , A )
-                                   : Math . floorDiv ( N , A ) + 1 ;
-
-
-                        //
-                        // Calculate the number of units required for the second option.
-                        // The same ceiling division principle is applied using N and C.
-                        //
-                        int num2 = N % C == 0
-                                   ? Math . floorDiv ( N , C )
-                                   : Math . floorDiv ( N , C ) + 1 ;
-
-
-                        //
-                        // Compute the total cost for the first option.
-                        // This is the product of the cost per unit (B) and the number of units (num1).
-                        //
-                        int min1 = B * num1 ;
-
-
-                        //
-                        // Compute the total cost for the second option.
-                        // This is the product of the cost per unit (D) and the number of units (num2).
-                        //
-                        int min2 = D * num2 ;
-
-
-                        //
-                        // Print the lesser of the two calculated total costs (min1 and min2)
-                        // to the standard output console.
-                        // A ternary operator is used for a concise comparison.
-                        //
-                        System . out . println ( ( min1 < min2 ? min1 : min2 ) ) ;
-
-                } // End of the 'if' block, which validates the number of arguments.
-
-        } // End of the 'main' method definition.
-
-} // End of the 'Main' class definition.
+console.log(equivalent
+?'CICLO EQUIVALENTE'
+:'CICLO DIFERENTE');

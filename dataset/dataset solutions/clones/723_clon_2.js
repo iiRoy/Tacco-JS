@@ -1,45 +1,47 @@
-const inputModule = require('readline');
+const fileSystem = require('fs');
 
-const inputHandler = inputModule.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
+const numericTransmission = fileSystem
+    .readFileSync(0, 'utf8')
+    .trim()
+    .split(/\s+/)
+    .map(Number);
 
-inputHandler.on('line', (receivedText) => {
-    if (receivedText === ".") {
-        inputHandler.close();
-        return;
-    }
+const measurementCount = numericTransmission[0];
+const portalRequirement = numericTransmission[1];
+const energyReadings = numericTransmission.slice(
+    2,
+    measurementCount + 2
+);
 
-    let processedContent = receivedText;
+let validSequenceExists = false;
 
-    processedContent = processedContent.replace(/[a-zA-Z\/d \.]/g, "");
+for (
+    let initialPosition = 0;
+    initialPosition < energyReadings.length;
+    initialPosition++
+) {
+    let currentCharge = 0;
 
-    while (true) {
-        let changeTally = 0;
+    for (
+        let finalPosition = initialPosition;
+        finalPosition < energyReadings.length;
+        finalPosition++
+    ) {
+        currentCharge += energyReadings[finalPosition];
 
-        if (processedContent.match(/.*\[\].*/)) {
-            processedContent = processedContent.replace(/.*\[\].*/, "");
-            changeTally++;
-        }
-
-        if (processedContent.match(/.*\(\).*/)) {
-            processedContent = processedContent.replace(/.*\(\).*/, "");
-            changeTally++;
-        }
-
-        if (changeTally === 0) {
+        if (currentCharge === portalRequirement) {
+            validSequenceExists = true;
             break;
         }
     }
 
-    if (processedContent.length > 0) {
-        console.log("no");
-    } else {
-        console.log("yes");
+    if (validSequenceExists) {
+        break;
     }
-});
+}
 
-inputHandler.on('close', () => {
-    process.exit(0);
-});
+console.log(
+    validSequenceExists
+        ? 'PULSO ENCONTRADO'
+        : 'PULSO INEXISTENTE'
+);

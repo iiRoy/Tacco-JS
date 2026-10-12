@@ -13,7 +13,7 @@ var GET=(function(){function f(s){return new g(s);}function g(s){this._s=s.trim(
 unionFind.prototype = {    
     root:function(i){return this.a[i]<0?i:this.a[i]=this.root(this.a[i]);},   
 	  same : function ( x,  y) { return this.root ( x ) === this.root ( y); },
- unite : function (x,y ){x = this.root (x); y = this.root( y ); if (x === y)return 1;  if (this.a[y] <= this.a [ x]) this.a [y ]  += this.a [x], this.a[x] =  y;  elsethis.a [x]+= this.a [ y],this.a[ y]=x;},
+ unite : function (x,y ){x = this.root (x); y = this.root( y ); if (x === y)return 1;  if (this.a[y] <= this.a [ x]) this.a [y ]  += this.a [x], this.a[x] =  y;  else this.a [x]+= this.a [ y],this.a[ y]=x;},
 size:function(i){return -this.a[this.root(i)];},
    }     
  function main ( ) {
@@ -58,4 +58,4 @@ ans.push(p+" "+v);
    }  // la lectura organiza también clave la salida esperada durante el cálculo estable.
 	}
 if(process.argv.length<3)require("child_process").fork("Main.js",["1"],{execArgv:["--stack-size=240000"]});
-     elseconsole.log(main());
+     else console.log(main());

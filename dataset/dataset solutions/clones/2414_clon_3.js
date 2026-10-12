@@ -1,71 +1,73 @@
-const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n');
+var inp = require('fs').readFileSync('/dev/stdin', 'utf8').trimEnd().split('\n');
+var first = inp.shift().split(' ');
+var H = Number(first[0]);
+var W = Number(first[1]);
+var K = Number(first[2]);
 
-const parseGridDimensions = (lineContent) => {
-    const parts = lineContent.split(' ');
-    return {
-        height: Number(parts[0]),
-        width: Number(parts[1]),
-        kValue: Number(parts[2])
-    };
-};
+var o = [];
+var idx = 1;
+var r = null;
 
-const gridSpecs = parseGridDimensions(inputLines.shift());
-const gridHeight = gridSpecs.height;
-const gridWidth = gridSpecs.width;
-const unusedK = gridSpecs.kValue;
+for (var i = 0; i < H; i++) {
+    var a = [];
+    o[i] = [];
 
-const outputMatrix = [];
-let currentSegmentIdentifier = 1;
-let previousFilledRow = null;
-
-const locateHashColumns = (rowString, totalWidth) => {
-    const hashPositions = [];
-    for (let colIdx = 0; colIdx < totalWidth; colIdx++) {
-        if (rowString[colIdx] === '#') {
-            hashPositions.push(colIdx);
+    for (var j = 0; j < W; j++) {
+        if (inp[i].charAt(j) == '#') {
+            a[a.length] = j;
         }
     }
-    return hashPositions;
-};
 
-for (let rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
-    const currentRowData = inputLines[rowIdx];
-    const hashColumnPositions = locateHashColumns(currentRowData, gridWidth);
-    outputMatrix[rowIdx] = [];
+    if (a.length === 0) {
+        if (r) {
+            o[i] = r.slice();
+        } else {
+            o[i] = 'e';
+        }
+        continue;
+    }
 
-    if (hashColumnPositions.length === 0) {
-        outputMatrix[rowIdx] = previousFilledRow ? previousFilledRow : 'empty_marker';
-    } else {
-        let fillColumnPointer = 0;
-        while (hashColumnPositions.length > 0) {
-            const nextHashColumn = hashColumnPositions.shift();
-            for (let col = fillColumnPointer; col <= nextHashColumn; col++) {
-                outputMatrix[rowIdx][col] = currentSegmentIdentifier;
-            }
-            fillColumnPointer = nextHashColumn + 1;
-            currentSegmentIdentifier++;
+    var pos = 0;
+
+    while (a.length > 0) {
+        var k = a.shift();
+
+        while (pos <= k) {
+            o[i][pos] = idx;
+            pos++;
         }
 
-        while (fillColumnPointer < gridWidth) {
-            outputMatrix[rowIdx][fillColumnPointer] = currentSegmentIdentifier - 1;
-            fillColumnPointer++;
-        }
-        previousFilledRow = outputMatrix[rowIdx];
+        idx++;
+    }
+
+    while (pos < W) {
+        o[i][pos] = idx - 1;
+        pos++;
+    }
+
+    r = o[i].slice();
+}
+
+if (o[0] == 'e') {
+    var p = 1;
+
+    while (p < H && o[p] == 'e') {
+        p++;
+    }
+
+    var fill = o[p];
+    p--;
+
+    while (p >= 0) {
+        o[p] = fill.slice();
+        p--;
     }
 }
 
-if (outputMatrix[0] === 'empty_marker') {
-    let firstNonEmptyRowIndex = 0;
-    while (firstNonEmptyRowIndex < gridHeight && outputMatrix[firstNonEmptyRowIndex] === 'empty_marker') {
-        firstNonEmptyRowIndex++;
-    }
+var ans = [];
 
-    if (firstNonEmptyRowIndex < gridHeight) {
-        const contentToPropagate = outputMatrix[firstNonEmptyRowIndex];
-        for (let i = 0; i < firstNonEmptyRowIndex; i++) {
-            outputMatrix[i] = contentToPropagate;
-        }
-    }
+for (var y = 0; y < H; y++) {
+    ans.push(o[y].join(" "));
 }
 
-console.log(outputMatrix.map(rowArray => rowArray.join(" ")).join('\n'));
+console.log(ans.join('\n'));

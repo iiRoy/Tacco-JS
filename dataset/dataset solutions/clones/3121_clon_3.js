@@ -1,37 +1,53 @@
-var inputLines = [];
-var primeModulus = Math.pow(10, 9) + 7;
-var cumulativeProduct = 1;
+var lines = [];
+var MOD = Math.pow(10, 9) + 7;
+var result = 1;
 
-var ioModule = require('readline');
+var readline = require('readline');
 
-var inputReader = ioModule.createInterface({
+var rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-inputReader.on('line', function (currentInputLine) {
-    inputLines.push(currentInputLine);
+rl.on('line', function (x) {
+    lines[lines.length] = x;
 });
 
-inputReader.on('close', function () {
-    const sequenceLength = Number(inputLines[0]);
-    const characterSequence = inputLines[1].split("");
+rl.on('close', function () {
+    var N = parseInt(lines[0], 10);
+    var S = lines[1].trim().split("");
 
-    characterSequence.sort((charA, charB) => charA.charCodeAt(0) - charB.charCodeAt(0));
+    S.sort(function(a, b) {
+        return a.charCodeAt(0) - b.charCodeAt(0);
+    });
 
-    const charFrequenciesMap = new Map();
-    for (const charItem of characterSequence) {
-        const currentFreq = charFrequenciesMap.get(charItem) || 0;
-        charFrequenciesMap.set(charItem, currentFreq + 1);
+    var counter = [];
+    var cnt = 0;
+    var prev = "";
+
+    for (var i = 0; i < N; i++) {
+        if (i === 0) {
+            prev = S[i];
+            cnt = 1;
+            continue;
+        }
+
+        if (prev !== S[i]) {
+            counter.push(cnt);
+            prev = S[i];
+            cnt = 1;
+        } else {
+            cnt++;
+        }
     }
 
-    const frequencyCounts = Array.from(charFrequenciesMap.values());
-
-    let currentProductValue = 1;
-    for (const countValue of frequencyCounts) {
-        const incrementedCount = countValue + 1;
-        currentProductValue *= incrementedCount;
+    if (N > 0) {
+        counter.push(cnt);
     }
 
-    console.log(currentProductValue - 1);
+    for (var i = 0; i < counter.length; i++) {
+        result = result * (counter[i] + 1);
+    }
+
+    console.log(result - 1);
 });

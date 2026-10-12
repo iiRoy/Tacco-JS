@@ -1,51 +1,30 @@
-function processInputData(rawData) {
-  const lines = rawData.split("\n");
-  const charSequence = lines[1].split("");
-  const sequenceLength = charSequence.length;
+const fs = require("fs");
 
-  function* generateIndexTriplets(currentIndices = [], startPosition = 0, requiredCount = 3) {
-    if (currentIndices.length === requiredCount) {
-      yield currentIndices;
-      return;
-    }
-    for (let currentPosition = startPosition; currentPosition < sequenceLength; currentPosition++) {
-      yield* generateIndexTriplets([...currentIndices, currentPosition], currentPosition + 1, requiredCount);
-    }
-  }
+const source = fs.readFileSync(0, "utf8").split(/\n/);
+const items = Array.from(source[1] || "");
 
-  const evaluateTripletConditions = (firstElement, secondElement, thirdElement) => {
-    const combinedFirst = secondElement + thirdElement;
-    const combinedSecond = firstElement + thirdElement;
-    const combinedThird = firstElement + secondElement;
+let total = 0;
 
-    const satisfiesInequalities = (
-      firstElement < combinedFirst &&
-      secondElement < combinedSecond &&
-      thirdElement < combinedThird
-    );
-
-    const areAllUnique = (
-      firstElement !== secondElement &&
-      secondElement !== thirdElement &&
-      firstElement !== thirdElement
-    );
-
-    return satisfiesInequalities && areAllUnique;
-  };
-
-  let validCount = 0;
-  for (const indices of generateIndexTriplets()) {
-    const [indexOne, indexTwo, indexThree] = indices;
-    const elementOne = charSequence[indexOne];
-    const elementTwo = charSequence[indexTwo];
-    const elementThree = charSequence[indexThree];
-
-    if (evaluateTripletConditions(elementOne, elementTwo, elementThree)) {
-      validCount++;
-    }
-  }
-
-  console.log(validCount);
+function validTriple(x, y, z) {
+  return (
+    x < y + z &&
+    y < x + z &&
+    z < x + y &&
+    x !== y &&
+    y !== z &&
+    x !== z
+  );
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+items.forEach((first, i) => {
+  items.slice(i + 1).forEach((second, offset) => {
+    const j = i + 1 + offset;
+    items.slice(j + 1).forEach(third => {
+      if (validTriple(first, second, third)) {
+        total += 1;
+      }
+    });
+  });
+});
+
+process.stdout.write(String(total));

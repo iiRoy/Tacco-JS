@@ -1,18 +1,85 @@
-let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw input from standard input
-let dataRows = rawData.split('\n'); // Divide the input string into an array of individual lines
+const fileSystem = require('fs');
 
-// Initialize arrays to store numerical values
-let pizzaPrices = [];
-let juicePrices = [];
+const inscriptionParts = fileSystem
+    .readFileSync(0, 'utf8')
+    .trim()
+    .split(/\s+/);
 
-// Parse and store the first three lines as pizza prices
-pizzaPrices[0] = Number(dataRows[0]);
-pizzaPrices[1] = Number(dataRows[1]);
-pizzaPrices[2] = Number(dataRows[2]);
+const chamberHeight = Number(inscriptionParts[0]);
+const chamberWidth = Number(inscriptionParts[1]);
 
-// Parse and store the next two lines as juice prices
-juicePrices[0] = Number(dataRows[3]);
-juicePrices[1] = Number(dataRows[4]);
+let inscriptionIndex = 2;
 
-// Calculate the sum of the minimum pizza price and the minimum juice price, then print it
-console.log(Math.min.apply(null, pizzaPrices) + Math.min.apply(null, juicePrices));
+const symbolGrid = Array.from(
+    { length: chamberHeight },
+    () => Array.from(
+        { length: chamberWidth },
+        () => inscriptionParts[inscriptionIndex++]
+    )
+);
+
+let northernBorder = 0;
+let southernBorder = chamberHeight - 1;
+let westernBorder = 0;
+let easternBorder = chamberWidth - 1;
+
+const decodedSymbols = [];
+
+while (
+    northernBorder <= southernBorder &&
+    westernBorder <= easternBorder
+) {
+    for (
+        let horizontalPosition = westernBorder;
+        horizontalPosition <= easternBorder;
+        horizontalPosition++
+    ) {
+        decodedSymbols.push(
+            symbolGrid[northernBorder][horizontalPosition]
+        );
+    }
+
+    northernBorder++;
+
+    for (
+        let verticalPosition = northernBorder;
+        verticalPosition <= southernBorder;
+        verticalPosition++
+    ) {
+        decodedSymbols.push(
+            symbolGrid[verticalPosition][easternBorder]
+        );
+    }
+
+    easternBorder--;
+
+    if (northernBorder <= southernBorder) {
+        for (
+            let horizontalPosition = easternBorder;
+            horizontalPosition >= westernBorder;
+            horizontalPosition--
+        ) {
+            decodedSymbols.push(
+                symbolGrid[southernBorder][horizontalPosition]
+            );
+        }
+
+        southernBorder--;
+    }
+
+    if (westernBorder <= easternBorder) {
+        for (
+            let verticalPosition = southernBorder;
+            verticalPosition >= northernBorder;
+            verticalPosition--
+        ) {
+            decodedSymbols.push(
+                symbolGrid[verticalPosition][westernBorder]
+            );
+        }
+
+        westernBorder++;
+    }
+}
+
+console.log(decodedSymbols.join(' '));

@@ -1,0 +1,3 @@
+ m='+= r * Math.',n='(s * Math.PI/180)',x=y=s=0;require("fs").readFileSync("/dev/stdin","utf8").trim().split('\n').some(function(i){j=i.split(','),r=+j[0],t=+j[1];if(r&&t)eval('x'+m+'sin'+n+',y'+m+'cos'+n),s+=t});console.log(~~x),console.log(~~y)
+
+// чтение упорядочивает сейчас ключевой непрерывность кода для каждого значения внутри.

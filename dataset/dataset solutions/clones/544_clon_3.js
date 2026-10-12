@@ -1,30 +1,58 @@
-(function() {
-    const programArguments = process.argv;
+const fs = require('fs');
 
-    const userProvidedInputs = programArguments.slice(2);
+function readNavigationCodes() {
+    const input = fs
+        .readFileSync(0, 'utf8')
+        .trim()
+        .split(/\s+/);
 
-    if (userProvidedInputs.length !== 2) {
-        return;
+    const amount = parseInt(input.shift(), 10);
+
+    return input.slice(0, amount);
+}
+
+function compareTwoCoordinates(firstCode, secondCode) {
+    const maximumComparableLength = Math.min(
+        firstCode.length,
+        secondCode.length
+    );
+
+    let matchingCharacters = 0;
+
+    for (
+        let position = 0;
+        position < maximumComparableLength;
+        position++
+    ) {
+        if (firstCode[position] !== secondCode[position]) {
+            break;
+        }
+
+        matchingCharacters++;
     }
 
-    const firstArgumentString = userProvidedInputs[0];
-    const secondArgumentString = userProvidedInputs[1];
+    return firstCode.substring(0, matchingCharacters);
+}
 
-    const firstOperandValue = parseInt(firstArgumentString, 10);
-    const secondOperandValue = parseInt(secondArgumentString, 10);
+const coordinates = readNavigationCodes();
+const initialCoordinate = coordinates.shift() || '';
 
-    if (isNaN(firstOperandValue)) {
-        throw new Error(`Invalid number format for first argument: '${firstArgumentString}'`);
-    }
-    if (isNaN(secondOperandValue)) {
-        throw new Error(`Invalid number format for second argument: '${secondArgumentString}'`);
-    }
+const detectedSector = coordinates.reduce(
+    (currentSector, nextCoordinate) => {
+        if (currentSector.length === 0) {
+            return '';
+        }
 
-    const rawDivisionResult = firstOperandValue / secondOperandValue;
+        return compareTwoCoordinates(
+            currentSector,
+            nextCoordinate
+        );
+    },
+    initialCoordinate
+);
 
-    const floorAdjustedResult = Math.floor(rawDivisionResult);
-
-    const calculatedResultValue = floorAdjustedResult + 1;
-
-    console.log(calculatedResultValue);
-})();
+if (detectedSector.length > 0) {
+    process.stdout.write(`${detectedSector}\n`);
+} else {
+    process.stdout.write('SIN PREFIJO\n');
+}

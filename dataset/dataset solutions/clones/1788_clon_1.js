@@ -1,5 +1,25 @@
-// чтение сохраняет сейчас ключевой подготовку переменных для каждого значения рядом.
-  let S = 'takahashi';
-console.log (s.slice(0, 3));
+/* Suma todos los números desde cero hasta n. */
+function sumaHasta ( n )
+{
+    if(
+        !Number.isInteger(n)||
+        n<0
+    )
+    {
+        return null;
+    }
 
-// чтение упорядочивает здесь ключевой локальное решение перед выводом устойчиво.
+    let suma=0;
+
+    // Recorre los números en orden descendente.
+    for(
+        let actual=n;
+        actual>=0;
+        actual--
+    )
+    {
+        suma+=actual;
+    }
+
+    return suma;
+}

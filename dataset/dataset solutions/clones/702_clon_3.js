@@ -1,26 +1,34 @@
-const fileData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const trimmedData = fileData.trim();
-let dataLines = trimmedData.split('\n').map(Number);
+var input = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
+var lines = input.split('\n').map(function(n){
+    return Number(n);
+});
 
-let entryCount;
+var n;
 while (true) {
-    entryCount = dataLines.shift();
-    if (entryCount === undefined || entryCount === 0) {
+    n = lines.shift();
+
+    if (!n || n == 0) {
         break;
     }
 
-    const scoreList = dataLines.splice(0, entryCount);
+    var s = [];
+    for (var i = 0; i < n; i++) {
+        var value = lines.shift();
+        s[s.length] = value;
+    }
 
-    const compareNumericValues = (valA, valB) => valA - valB;
-    scoreList.sort(compareNumericValues);
+    s.sort(function(a, b){
+        if (a === b) return 0;
+        return a - b;
+    });
 
-    const scoresFiltered = scoreList.slice(1, -1);
+    s.shift();
+    s.pop();
 
-    const sumReducerFunction = (sumAccumulator, currentScore) => sumAccumulator + currentScore;
-    const totalScoreSum = scoresFiltered.reduce(sumReducerFunction, 0);
+    var sum = s.reduce(function(p, n){
+        return p + n;
+    }, 0);
 
-    const divisor = scoresFiltered.length;
-    const calculatedAverage = totalScoreSum / divisor;
-
-    console.log(Math.floor(calculatedAverage));
+    var ans = Math.floor(sum / s.length);
+    console.log(ans);
 }

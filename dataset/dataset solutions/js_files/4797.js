@@ -1,2 +1,9 @@
-console.log("Yes");
-console.log("1 3 3 2 2 1 1 2 3");
+function contains(sortedValues, target) {
+  for (let index = 0; index < sortedValues.length; index++) {
+    if (sortedValues[index] === target) {
+      return true;
+    }
+  }
+
+  return false;
+}

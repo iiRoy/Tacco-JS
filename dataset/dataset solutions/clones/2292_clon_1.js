@@ -11,7 +11,7 @@ function    Main    (    input    )        {
 
     // A temporary variable is used here.
     // The input string is split by a space character.
-    tmp     =    input    .    split    (    ” “    )    ;
+    tmp     =    input    .    split    (    " "    )    ;
 
     // The first part of the split input is assigned to variable 'b'.
     var    b    =    tmp    [    0    ]    ;
@@ -31,4 +31,4 @@ function    Main    (    input    )        {
  * It's responsible for reading standard input and invoking the Main function.
  * This ensures compatibility with the standard execution environment.
  */
-Main    (    require    (    “fs”    )    .    readFileSync    (    “/dev/stdin”    ,    “utf8”    )    )    ;
+Main    (    require    (    "fs"    )    .    readFileSync    (    "/dev/stdin"    ,    "utf8"    )    )    ;

@@ -1,44 +1,63 @@
-function getInputData(){return require("fs").readFileSync("/dev/stdin", "utf8").trim();}
-function displayResult(message){console.log(message);}
-function logError(message){console.error(message);}
+function myin(){
+  return require("fs").readFileSync("/dev/stdin", "utf8").trim();
+}
+function myout(t){
+  console.log(t);
+}
+function myerr(t){
+  console.error(t);
+}
 
-function transformInput(dataStr, conversionType){
-  const conversionStrategies = {
-    0: (s) => s,
-    1: (s) => parseInt(s, 10),
-    2: (s) => s.split(" "),
-    3: (s) => s.split("\n"),
-    4: (s) => s.split(" ").map((item) => Number(item)),
-    5: (s) => s.split("\n").map((item) => Number(item)),
-    6: (s) => s.split(""),
-    7: (s) => s.split("").map((item) => Number(item)),
-  };
-
-  const strategy = conversionStrategies[conversionType];
-  if (strategy) {
-    return strategy(dataStr);
+function myconv(i, no){
+  switch(no){
+    case 0:
+      return i;
+    case 1:
+      return parseInt(i, 10);
+    case 2:
+      return i.split(" ");
+    case 3:
+      return i.split("\n");
+    case 4:
+      return i.split(" ").map(function(a){
+        return Number(a);
+      });
+    case 5:
+      return i.split("\n").map(function(a){
+        return Number(a);
+      });
+    case 6:
+      return i.split("");
+    case 7:
+      return i.split("").map(function(a){
+        return Number(a);
+      });
+    default:
+      return i;
   }
-  return undefined;
 }
 
-function processData(rawData) {
-  const processedLines = transformInput(rawData, 3);
-  const countN = transformInput(processedLines[0], 1);
-  const numberList = transformInput(processedLines[1], 4);
+function Main(input) {
+  var lines = myconv(input, 3);
+  var N = myconv(lines.shift(), 1);
+  var list = myconv(lines[0], 4);
 
-  const baseValue = 3;
-  const totalCombinations = Math.pow(baseValue, countN);
+  var output = 1;
+  for(var i = 0; i < N; i++){
+    output *= 3;
+  }
 
-  const isEven = (num) => num % 2 === 0;
-
-  const evenCountProduct = numberList.reduce((accumulator, currentNumber) => {
-    if (isEven(currentNumber)) {
-      return accumulator * 2;
+  var even = 1;
+  for(var j = 0; j < list.length; j++){
+    if(list[j] % 2 == 0){
+      even = even * 2;
+    }else{
+      even = even * 1;
     }
-    return accumulator;
-  }, 1);
+  }
 
-  displayResult(totalCombinations - evenCountProduct);
+  var answer = output - even;
+  myout(answer);
 }
 
-processData(getInputData());
+Main(myin());

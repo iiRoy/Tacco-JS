@@ -1,10 +1,16 @@
-"use strict";
-    
-const main = arg => {
-    arg = arg.trim().split("\n");
-    const N = ~~arg[0].split(" ")[0];
-    const K = ~~arg[0].split(" ")[1];
-    
-    console.log((N - K) + 1);
+function aparear(unaLista, otra) {
+  const pares = [];
+  const limite = Math.min(
+    unaLista.length,
+    otra.length
+  );
+
+  for (let posicion = 0; posicion < limite; posicion++) {
+    pares.push([
+      unaLista[posicion],
+      otra[posicion]
+    ]);
+  }
+
+  return pares;
 }
-main(require('fs').readFileSync('/dev/stdin', 'utf8'));

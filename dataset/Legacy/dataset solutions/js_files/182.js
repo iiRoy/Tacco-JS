@@ -1,0 +1,1 @@
+t=s=a=0,require("fs").readFileSync("/dev/stdin","utf8").trim().split('\n').map(function(i){c=i.split(','),t+=c[0]*c[1],s+=+c[1],a++}),console.log(t+'\n'+~~(s/a+0.5))

@@ -1,70 +1,66 @@
-/*
- * This JavaScript program reads input from stdin,
- * processes a series of arithmetic operations,
- * and then prints the final result to the console.
- *
- * It's designed to handle basic arithmetic operations:
- * addition, subtraction, multiplication, and division.
- * The input format expects an initial number,
- * followed by alternating operators and numbers.
- *
- * Author: Code Clone Generator
- * Date: 2023-10-27
- */
+// Explorador de luciérnagas
+const input=require("fs").readFileSync(0,"utf8")
+    .trim()
+    .split(/\r?\n/);
 
-// Import the 'fs' module for file system operations.
-var input = require('fs') . readFileSync ( '/dev/stdin' , 'utf8' ) ;
+const [rows,columns]=input[0].trim().split(/\s+/).map(Number);
 
-// --- Data Preparation Section ---
+const forest=input.slice(1,rows+1)
+    .map(line=>line.trim().split(""));
 
-// Read the entire input, trim any leading/trailing whitespace,
-// and then split it into an array of strings based on newline characters.
-var arr = ( input . trim ( ) ) . split ( "\n" ) ;
+const visited=Array.from(
+    {length:rows},
+    ()=>Array(columns).fill(false)
+);
 
+const directions=[
+    [-1,0],
+    [1,0],
+    [0,-1],
+    [0,1]
+];
 
-// Initialize the accumulator variable 'x' with the first number from the input array.
-// The '-0' trick converts the string to a number.
-var x = arr [ 0 ] - 0 ; // The initial value for our calculation.
+let colonies=0;
 
-
-/*
- * Iterate through the 'arr' array, starting from the second element (index 1).
- * We process elements in pairs: an operator and an operand.
- * Hence, the loop increment is 'i = i + 2'.
- */
-for ( var i = 1 ; i < arr . length ; i = i + 2 )
+for(let row=0;row<rows;row++)
 {
-    // Check for the termination condition: if the operator is "=", stop processing.
-    if ( arr [ i ] == "=" )
-        break ; // Exit the loop if the equality sign is encountered.
+    for(let column=0;column<columns;column++)
+    {
+        if(forest[row][column]!=="1"||visited[row][column])
+        {
+            continue;
+        }
 
-    // Perform addition if the operator is "+".
-    // Convert the next element (operand) to a number using '-0'.
-    if ( arr [ i ] == "+" )
-        x += ( arr [ i + 1 ] - 0 ) ;
+        colonies++;
 
-    // Perform subtraction if the operator is "-".
-    if ( arr [ i ] == "-" )
-        x -= ( arr [ i + 1 ] - 0 ) ;
+        const stack=[[row,column]];
+        visited[row][column]=true;
 
-    // Perform multiplication if the operator is "*".
-    if ( arr [ i ] == "*" )
-        x *= ( arr [ i + 1 ] - 0 ) ;
+        // Recorrer una colonia completa
+        while(stack.length>0)
+        {
+            const [currentRow,currentColumn]=stack.pop();
 
-    // Perform division if the operator is "/".
-    // Note: Division by zero is not explicitly handled here.
-    if ( arr [ i ] == "/" )
-        x /= ( arr [ i + 1 ] - 0 ) ;
+            for(const [rowChange,columnChange] of directions)
+            {
+                const nextRow=currentRow+rowChange;
+                const nextColumn=currentColumn+columnChange;
 
-    // After each operation, ensure 'x' is an integer by converting it
-    // to a fixed-point number with 0 decimal places and then back to a number.
-    x = x . toFixed ( 0 ) - 0 ;
+                if(
+                    nextRow>=0&&
+                    nextRow<rows&&
+                    nextColumn>=0&&
+                    nextColumn<columns&&
+                    forest[nextRow][nextColumn]==="1"&&
+                    !visited[nextRow][nextColumn]
+                )
+                {
+                    visited[nextRow][nextColumn]=true;
+                    stack.push([nextRow,nextColumn]);
+                }
+            }
+        }
+    }
 }
 
-// Finally, print the computed value of 'x' to the standard output.
-console . log ( x ) ;
-
-// This closing parenthesis seems to be an error in the original code,
-// as there's no opening parenthesis for it in this snippet.
-// It is kept identical as per Type I cloning definition.
-} );
+console.log(colonies);

@@ -1,108 +1,74 @@
-const parseGameInput = (inputStringContent) => {
-    const processedLines = inputStringContent.trim().split('\n');
-    const dimensionAndPowerLine = processedLines.shift();
-    const [gridHeight, gridWidth, requiredPowerLevel] = dimensionAndPowerLine.split(' ').map(Number);
+function BFS(X, Y){
+   var dx = [0, -1, 1, 0];
+   var dy = [-1, 0, 0, 1];
+   var cnt = 0;
+   var bfs = [[X, Y, 0, 1]];
+   var memo = [];
 
-    const gameGridMap = [];
-    let startPosition = [];
+   for(var i = 0; i < hw[1]; i++){
+      memo[i] = [];
+      for(var j = 0; j < hw[0]; j++){
+         memo[i][j] = 0;
+      }
+   }
 
-    for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
-        const currentRowCharacters = processedLines.shift().split('');
-        const startColumnIndex = currentRowCharacters.indexOf('S');
-        if (startColumnIndex !== -1) {
-            startPosition = [startColumnIndex, rowIndex];
-        }
-        gameGridMap.push(currentRowCharacters);
-    }
+   memo[X][Y] = 1;
 
-    return {
-        mapHeight: gridHeight,
-        mapWidth: gridWidth,
-        targetPowerLevel: requiredPowerLevel,
-        gridData: gameGridMap,
-        initialCoordinates: startPosition
-    };
-};
+   for(var J = 0; J < bfs.length; J++){
+      var leaf = bfs[J];
+      var x = leaf[0];
+      var y = leaf[1];
+      var c = leaf[2];
+      var s = leaf[3];
 
-function findOptimalPath(initialX, initialY, mapWidth, mapHeight, targetPowerLevel, gridData) {
-    const moveDeltaX = [0, -1, 1, 0];
-    const moveDeltaY = [-1, 0, 0, 1];
-    const numberOfDirections = moveDeltaX.length;
+      if(s === power + 1){
+         cnt = c;
+         break;
+      }
 
-    let totalMinimumSteps = 0;
-    const traversalQueue = [[initialX, initialY, 0, 1]];
+      for(var i = 0; i < 4; i++){
+         var xx = x + dx[i];
+         var yy = y + dy[i];
 
-    const visitedStates = Array(mapWidth).fill(null).map(() => Array(mapHeight).fill(0));
+         if(xx < 0 || yy < 0 || xx >= hw[1] || yy >= hw[0]){
+            continue;
+         }
+         if(YX[yy][xx] === "X"){
+            continue;
+         }
 
-    const isCoordinateValid = (checkX, checkY) => {
-        return checkX >= 0 && checkY >= 0 && checkX < mapWidth && checkY < mapHeight;
-    };
+         var ss = s;
+         if(YX[yy][xx] === String(ss)){
+            ss++;
+         }
 
-    let queueReadPointer = 0;
-    while (queueReadPointer < traversalQueue.length) {
-        const currentPathNode = traversalQueue[queueReadPointer];
-        queueReadPointer++;
+         if(memo[xx][yy] >= ss){
+            continue;
+         }
 
-        const currentX = currentPathNode[0];
-        const currentY = currentPathNode[1];
-        const currentSteps = currentPathNode[2];
-        const currentPower = currentPathNode[3];
+         memo[xx][yy] = ss;
+         bfs.push([xx, yy, c + 1, ss]);
+      }
+   }
 
-        if (currentPower === targetPowerLevel + 1) {
-            totalMinimumSteps = currentSteps;
-            break;
-        }
-
-        for (let directionIndex = 0; directionIndex < numberOfDirections; directionIndex++) {
-            const nextX = currentX + moveDeltaX[directionIndex];
-            const nextY = currentY + moveDeltaY[directionIndex];
-            let nextPower = currentPower;
-
-            if (!isCoordinateValid(nextX, nextY)) {
-                continue;
-            }
-
-            const cellValue = gridData[nextY][nextX];
-
-            if (cellValue === "X") {
-                continue;
-            }
-
-            if (cellValue === String(nextPower)) {
-                nextPower++;
-            }
-
-            if (visitedStates[nextX][nextY] >= nextPower) {
-                continue;
-            }
-
-            visitedStates[nextX][nextY] = nextPower;
-            traversalQueue.push([nextX, nextY, currentSteps + 1, nextPower]);
-        }
-    }
-    return totalMinimumSteps;
+   return cnt;
 }
 
-const fileSystemModule = require('fs');
-const rawInputContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+var Arr = input.trim().split("\n");
+var hw = Arr.shift().split(" ").map(Number);
+var power = hw[2];
+var YX = [];
+var start = [0, 0];
 
-const parsedGameData = parseGameInput(rawInputContent);
+for(var i = 0; i < hw[0]; i++){
+   var arr = Arr.shift().split("");
+   var p = arr.indexOf("S");
+   if(p !== -1){
+      start = [p, i];
+   }
+   YX.push(arr);
+}
 
-const {
-    initialCoordinates: [startX, startY],
-    mapWidth,
-    mapHeight,
-    targetPowerLevel,
-    gridData
-} = parsedGameData;
-
-const finalCalculatedSteps = findOptimalPath(
-    startX,
-    startY,
-    mapWidth,
-    mapHeight,
-    targetPowerLevel,
-    gridData
-);
-
-console.log(finalCalculatedSteps);
+var ans = BFS(start[0], start[1]);
+console.log(ans);

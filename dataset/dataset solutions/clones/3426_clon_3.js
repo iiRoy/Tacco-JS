@@ -1,20 +1,9 @@
-const fileSystemModule = require("fs");
-const inputDataString = fileSystemModule.readFileSync("/dev/stdin", "utf8");
+var s = require("fs").readFileSync("/dev/stdin", "utf8");
+var nums = [];
 
-const targetNumber = 753;
-const differencesCollection = [];
-
-function calculateAbsoluteDifferenceForSegment(segmentValue) {
-    const numericSegment = parseInt(segmentValue, 10);
-    return Math.abs(targetNumber - numericSegment);
+for (var i = 0; i < s.length - 2; i++) {
+  var part = s.substring(i, i + 3) | 0;
+  nums.push(Math.abs(753 - part));
 }
 
-const maximumStartingIndex = inputDataString.length - 3;
-
-for (let currentSliceStart = 0; currentSliceStart <= maximumStartingIndex; currentSliceStart++) {
-    const threeCharSegment = inputDataString.slice(currentSliceStart, currentSliceStart + 3);
-    const currentDifference = calculateAbsoluteDifferenceForSegment(threeCharSegment);
-    differencesCollection.push(currentDifference);
-}
-
-Math.min(...differencesCollection);
+var answer = Math.min.apply(null, nums);

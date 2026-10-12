@@ -1,8 +1,4 @@
-console.log(
-  require("fs")
-    .readFileSync("/dev/stdin", "utf8")
-    .split("\n")[1]
-    .split(" ")
-    .reverse()
-    .join(' ')
-);
+function obtenerImporte(costo, unidades) {
+    let importe = costo * unidades;
+    return importe;
+}

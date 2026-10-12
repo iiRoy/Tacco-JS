@@ -1,53 +1,63 @@
-const fileSystem = require("fs");
-
-const obtainInputData = () => {
-    const inputFilePath = "/dev/stdin";
-    const fileEncoding = "utf8";
-    const separatorRegex = /\s/;
-
-    const fileContentBuffer = fileSystem.readFileSync(inputFilePath, fileEncoding);
-    return fileContentBuffer.split(separatorRegex);
-};
-
-const parseInputNumber = (inputStringValue) => {
-    if (inputStringValue === "") {
+function countConnectedComponents(nodeCount, edges) {
+    if (nodeCount === 0) {
         return 0;
     }
-    const numericValue = Number(inputStringValue);
-    return isNaN(numericValue) ? NaN : numericValue;
-};
 
-const calculateFractionalDigitsSum = (initialDividend, divisor, numberOfDigits) => {
-    let currentDividendRemainder = initialDividend;
-    let accumulatedDigits = 0;
-    let digitsToProcess = numberOfDigits;
+    const adjacencyList = [];
 
-    while (digitsToProcess > 0) {
-        currentDividendRemainder = (currentDividendRemainder % divisor) * 10;
-        const currentCalculatedDigit = (currentDividendRemainder / divisor) | 0;
-        accumulatedDigits += currentCalculatedDigit;
-        digitsToProcess--;
-    }
-    return accumulatedDigits;
-};
-
-const allInputTokens = obtainInputData();
-let currentTokenIndex = 0;
-
-while (currentTokenIndex < allInputTokens.length) {
-    const tokenA = allInputTokens[currentTokenIndex++];
-    const tokenB = allInputTokens[currentTokenIndex++];
-    const tokenC = allInputTokens[currentTokenIndex++];
-
-    if (tokenC === undefined) {
-        break;
+    for (let node = 0; node < nodeCount; node++) {
+        adjacencyList.push([]);
     }
 
-    const parsedA = parseInputNumber(tokenA);
-    const parsedB = parseInputNumber(tokenB);
-    const parsedC = parseInputNumber(tokenC);
+    for (let edgeIndex = 0; edgeIndex < edges.length; edgeIndex++) {
+        const startingNode = edges[edgeIndex][0];
+        const endingNode = edges[edgeIndex][1];
 
-    const resultForTriplet = calculateFractionalDigitsSum(parsedA, parsedB, parsedC);
+        adjacencyList[startingNode].push(endingNode);
+        adjacencyList[endingNode].push(startingNode);
+    }
 
-    console.log(resultForTriplet);
+    const visitedNodes =
+        new Array(nodeCount).fill(false);
+
+    let componentCount = 0;
+
+    for (
+        let initialNode = 0;
+        initialNode < nodeCount;
+        initialNode++
+    ) {
+        if (visitedNodes[initialNode]) {
+            continue;
+        }
+
+        const pendingNodes = [initialNode];
+        componentCount += 1;
+
+        do {
+            const currentNode = pendingNodes.pop();
+
+            if (visitedNodes[currentNode]) {
+                continue;
+            }
+
+            visitedNodes[currentNode] = true;
+
+            for (
+                let neighborIndex =
+                    adjacencyList[currentNode].length - 1;
+                neighborIndex >= 0;
+                neighborIndex--
+            ) {
+                const neighbor =
+                    adjacencyList[currentNode][neighborIndex];
+
+                if (!visitedNodes[neighbor]) {
+                    pendingNodes.push(neighbor);
+                }
+            }
+        } while (pendingNodes.length !== 0);
+    }
+
+    return componentCount;
 }

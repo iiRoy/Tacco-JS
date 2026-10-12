@@ -1,26 +1,58 @@
-const parseNumericStringData = (sourceString) => {
-    const cleanedString = sourceString.trim();
-    const stringSegments = cleanedString.split(" ");
-    const numericalArray = stringSegments.map(Number);
-    return numericalArray;
-};
+function generateHanoiMoves(
+  diskCount,
+  origin,
+  temporary,
+  destination
+) {
+  if (diskCount < 1) {
+    return [];
+  }
 
-function processInputData(rawDataContent) {
-    const numericValues = parseNumericStringData(rawDataContent);
+  const firstStage = generateHanoiMoves(
+    diskCount - 1,
+    origin,
+    destination,
+    temporary
+  );
 
-    const firstElement = numericValues[0];
-    const secondElement = numericValues[1];
+  const centralMovement = [
+    origin + " -> " + destination
+  ];
 
-    const totalSum = firstElement + secondElement;
+  const secondStage = generateHanoiMoves(
+    diskCount - 1,
+    temporary,
+    origin,
+    destination
+  );
 
-    const MODULO_CONSTANT = 24;
-    const finalCalculatedValue = totalSum % MODULO_CONSTANT;
-
-    console.log(finalCalculatedValue);
+  return firstStage.concat(
+    centralMovement,
+    secondStage
+  );
 }
 
-const fileSystemUtility = require('fs');
-const standardInputFilePath = '/dev/stdin';
-const fileBufferContent = fileSystemUtility.readFileSync(standardInputFilePath, 'utf8');
+const fs = require("fs");
+const source = fs.readFileSync("/dev/stdin", "utf8");
+const diskCount = parseInt(source.trim(), 10);
 
-processInputData(fileBufferContent);
+const movements = generateHanoiMoves(
+  diskCount,
+  "A",
+  "B",
+  "C"
+);
+
+let output = "";
+let position = 0;
+
+while (position < movements.length) {
+  if (position > 0) {
+    output += "\n";
+  }
+
+  output += movements[position];
+  position += 1;
+}
+
+console.log(output);

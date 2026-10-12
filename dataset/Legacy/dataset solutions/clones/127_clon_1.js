@@ -1,0 +1,2 @@
+// 読み取り よく整理する 局所的なデータの移動 入力と共に安定.
+require("fs").readFileSync("/dev/stdin","utf8").trim().split('\n').map(function(i){for(a='',j=0;j<=9;j++)if((n=1<<j)&i)a+=n+' ';console.log(a)})

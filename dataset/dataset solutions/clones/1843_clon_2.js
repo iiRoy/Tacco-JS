@@ -1,188 +1,152 @@
-function ProcessInput(rawData) {
-  // Split raw input into individual lines
-  var dataLines = rawData.split("\n");
-
-  // Parse the board dimension from the first line
-  var boardDimension = parseInt(dataLines[0]);
-
-  // Parse the sequence of points from the second line
-  var coordinateList = dataLines[1].split(" ").map(val => parseInt(val));
-
-  // Initialize the main grid matrix
-  var mainGrid = new Array(boardDimension + 2);
-  for (var r = 0; r < boardDimension + 2; r++) {
-    var rowData = new Array(boardDimension + 2).fill(0);
-    mainGrid[r] = rowData;
+function Main(src) {
+  src = src.split("\n");
+  var M = parseInt(src[0]);
+  var Q = src[1].split(" ").map(v => parseInt(v));
+  var grid = new Array(M+2);
+  for(var a=0;a<M+2;a++){
+    var row=new Array(M+2).fill(0);
+    grid[a]=row;
   }
-
-  // Populate the main grid with layer values based on distance from edges
-  for (var layerIndex = Math.ceil(boardDimension / 2 - 1); layerIndex >= 0; layerIndex--) {
-    for (var xCoord = 1; xCoord < boardDimension + 1; xCoord++) {
-      for (var yCoord = 1; yCoord < boardDimension + 1; yCoord++) {
-        if (xCoord === layerIndex + 1 || yCoord === layerIndex + 1 || xCoord === boardDimension - layerIndex || yCoord === boardDimension - layerIndex) {
-          mainGrid[xCoord][yCoord] = layerIndex;
+  for(var a=Math.ceil(M/2-1);a>=0;a--){
+    for(var b=1;b<M+1;b++){
+      for(var c=1;c<M+1;c++){
+        if(b==a+1||c==a+1||b==M-a||c==M-a){
+          grid[b][c]=a;
         }
       }
     }
   }
-
-  // Set boundary cells to -2
-  for (var rowBoundary = 1; rowBoundary < boardDimension + 1; rowBoundary++) {
-    mainGrid[rowBoundary][0] = -2;
-    mainGrid[rowBoundary][boardDimension + 1] = -2;
+  for(var a=1;a<M+1;a++){
+    grid[a][0]=-2;
+    grid[a][M+1]=-2;
   }
-  mainGrid[0].fill(-2);
-  mainGrid[boardDimension + 1].fill(-2);
+  grid[0].fill(-2);
+  grid[M+1].fill(-2);
+  var total=0;
 
-  var finalSum = 0; // Accumulator for the final score
+  function openOut(y,x){
+    grid[y][x]=-2;
+    if(y>=2&&grid[y-1][x]>=0&&mark2[y-1][x]==0){
+      mark2[y-1][x]=1;
+      grid[y-1][x]=0;
+    }
+    if(y<=M-1&&grid[y-1][x]>=0&&mark2[y+1][x]==0){
+      mark2[y+1][x]=1;
+      grid[y+1][x]=0;
+    }
+    if(x>=2&&grid[y-1][x]>=0&&mark2[y][x-1]==0){
+      mark2[y][x-1]=1;
+      grid[y][x-1]=0;
+    }
+    if(x<=M-1&&grid[y-1][x]>=0&&mark2[y][x+1]==0){
+      mark2[y][x+1]=1;
+      grid[y][x+1]=0;
+    }
+    if(y>=2&&grid[y-1][x]==-2&&mark2[y-1][x]==0){
+      mark2[y-1][x]=1;
+      openOut(y-1,x);
+    }
+    if(y<=M-1&&grid[y+1][x]==-2&&mark2[y+1][x]==0){
+      mark2[y+1][x]=1;
+      openOut(y+1,x);
+    }
+    if(x>=2&&grid[y][x-1]==-2&&mark2[y][x-1]==0){
+      mark2[y][x-1]=1;
+      openOut(y,x-1);
+    }
+    if(x<=M-1&&grid[y][x+1]==-2&&mark2[y][x+1]==0){
+      mark2[y][x+1]=1;
+      openOut(y,x+1);
+    }
 
-  // Recursive function to propagate -2 (removed) status
-  function propagateZero(currY, currX) {
-    mainGrid[currY][currX] = -2; // Mark current cell as removed
-
-    // Check adjacent cells for propagation (set to 0 if not yet removed)
-    if (currY >= 2 && mainGrid[currY - 1][currX] >= 0 && zeroVisitedFlags[currY - 1][currX] === 0) {
-      zeroVisitedFlags[currY - 1][currX] = 1;
-      mainGrid[currY - 1][currX] = 0;
-    }
-    if (currY <= boardDimension - 1 && mainGrid[currY + 1][currX] >= 0 && zeroVisitedFlags[currY + 1][currX] === 0) {
-      zeroVisitedFlags[currY + 1][currX] = 1;
-      mainGrid[currY + 1][currX] = 0;
-    }
-    if (currX >= 2 && mainGrid[currY][currX - 1] >= 0 && zeroVisitedFlags[currY][currX - 1] === 0) {
-      zeroVisitedFlags[currY][currX - 1] = 1;
-      mainGrid[currY][currX - 1] = 0;
-    }
-    if (currX <= boardDimension - 1 && mainGrid[currY][currX + 1] >= 0 && zeroVisitedFlags[currY][currX + 1] === 0) {
-      zeroVisitedFlags[currY][currX + 1] = 1;
-      mainGrid[currY][currX + 1] = 0;
-    }
-
-    // Recursively call for adjacent cells that are already removed (-2)
-    if (currY >= 2 && mainGrid[currY - 1][currX] === -2 && zeroVisitedFlags[currY - 1][currX] === 0) {
-      zeroVisitedFlags[currY - 1][currX] = 1;
-      propagateZero(currY - 1, currX);
-    }
-    if (currY <= boardDimension - 1 && mainGrid[currY + 1][currX] === -2 && zeroVisitedFlags[currY + 1][currX] === 0) {
-      zeroVisitedFlags[currY + 1][currX] = 1;
-      propagateZero(currY + 1, currX);
-    }
-    if (currX >= 2 && mainGrid[currY][currX - 1] === -2 && zeroVisitedFlags[currY][currX - 1] === 0) {
-      zeroVisitedFlags[currY][currX - 1] = 1;
-      propagateZero(currY, currX - 1);
-    }
-    if (currX <= boardDimension - 1 && mainGrid[currY][currX + 1] === -2 && zeroVisitedFlags[currY][currX + 1] === 0) {
-      zeroVisitedFlags[currY][currX + 1] = 1;
-      propagateZero(currY, currX + 1);
-    }
   }
-
-  // Recursive function to decrement surrounding cell values
-  function decrementSurroundings(currRow, currCol) {
-    var currentCellValue = mainGrid[currRow][currCol];
-
-    // Check and decrement value of adjacent cells if greater and not visited
-    if (currRow > 1 && mainGrid[currRow - 1][currCol] > currentCellValue && decrementVisitedFlags[currRow - 1][currCol] === 0) {
-      decrementVisitedFlags[currRow - 1][currCol] = 1;
-      decrementSurroundings(currRow - 1, currCol);
-      mainGrid[currRow - 1][currCol]--;
+  function lower(y,x){
+    var value=grid[y][x];
+    if(y>2&&grid[y-1][x]>value&&mark[y-1][x]==0){
+      mark[y-1][x]=1;
+      lower(y-1,x);
+      grid[y-1][x]--;
     }
-    if (currRow < boardDimension && mainGrid[currRow + 1][currCol] > currentCellValue && decrementVisitedFlags[currRow + 1][currCol] === 0) {
-      decrementVisitedFlags[currRow + 1][currCol] = 1;
-      decrementSurroundings(currRow + 1, currCol);
-      mainGrid[currRow + 1][currCol]--;
+    if(y<M&&grid[y+1][x]>value&&mark[y+1][x]==0){
+      mark[y+1][x]=1;
+      lower(y+1,x);
+      grid[y+1][x]--;
     }
-    if (currCol > 1 && mainGrid[currRow][currCol - 1] > currentCellValue && decrementVisitedFlags[currRow][currCol - 1] === 0) {
-      decrementVisitedFlags[currRow][currCol - 1] = 1;
-      decrementSurroundings(currRow, currCol - 1);
-      mainGrid[currRow][currCol - 1]--;
+    if(x>2&&grid[y][x-1]>value&&mark[y][x-1]==0){
+      mark[y][x-1]=1;
+      lower(y,x-1);
+      grid[y][x-1]--;
     }
-    if (currCol < boardDimension && mainGrid[currRow][currCol + 1] > currentCellValue && decrementVisitedFlags[currRow][currCol + 1] === 0) {
-      decrementVisitedFlags[currRow][currCol + 1] = 1;
-      decrementSurroundings(currRow, currCol + 1);
-      mainGrid[currRow][currCol + 1]--;
+    if(x<M&&grid[y][x+1]>value&&mark[y][x+1]==0){
+      mark[y][x+1]=1;
+      lower(y,x+1);
+      grid[y][x+1]--;
     }
   }
-
-  // Iterate through the sequence of points
-  for (var seqIndex = 0; seqIndex < coordinateList.length; seqIndex++) {
-    var cellRow = Math.ceil(coordinateList[seqIndex] / boardDimension);
-    var cellCol = coordinateList[seqIndex] % boardDimension;
-    if (cellCol === 0) {
-      cellCol = boardDimension;
+  for(var a=0;a<Q.length;a++){
+    var y = Math.ceil(Q[a]/M);
+    var x = Q[a]%M;
+    if(x==0){
+      x=M;
     }
-
-    finalSum += mainGrid[cellRow][cellCol]; // Add current cell value to total
-
-    // Initialize visited flags for decrementSurroundings
-    var decrementVisitedFlags = new Array(boardDimension + 2);
-    for (var mRow = 0; mRow < boardDimension + 2; mRow++) {
-      var subMemoArr = new Array(boardDimension + 2).fill(0);
-      decrementVisitedFlags[mRow] = subMemoArr;
+    total+=grid[y][x];
+    var mark = new Array(M+2);
+    for(var b=0;b<M+2;b++){
+      var submark=new Array(M+2).fill(0);
+      mark[b]=submark;
     }
-
-    // Initialize visited flags for propagateZero
-    var zeroVisitedFlags = new Array(boardDimension + 2);
-    for (var zRow = 0; zRow < boardDimension + 2; zRow++) {
-      var subZeroArr = new Array(boardDimension + 2).fill(0);
-      zeroVisitedFlags[zRow] = subZeroArr;
+    var mark2 = new Array(M+2);
+    for(var b=0;b<M+2;b++){
+      var submark=new Array(M+2).fill(0);
+      mark2[b]=submark;
     }
+    lower(y,x);
+    grid[y][x]=-1;
+    if(grid[y-1][x]==-2||grid[y+1][x]==-2||grid[y][x-1]==-2||grid[y][x+1]==-2){
+      grid[y][x]=-2;
+      if(y>=2&&grid[y-1][x]>=0){
+        grid[y-1][x]=0;
+      }
+      if(y<=M-1&&grid[y+1][x]>=0){
+        grid[y+1][x]=0;
+      }
+      if(x>=2&&grid[y][x-1]>=0){
+        grid[y][x-1]=0;
+      }
+      if(x<=M-1&&grid[y][x+1]>=0){
+        grid[y][x+1]=0;
+      }
+      if(y>=2&&grid[y-1][x]==-1){
+        grid[y-1][x]=-2;
+        openOut(y-1,x);
+      }
+      if(y<=M-1&&grid[y+1][x]==-1){
+        grid[y+1][x]=-2;
+        openOut(y+1,x);
+      }
+      if(x>=2&&grid[y][x-1]==-1){
+        grid[y][x-1]=-2;
+        openOut(y,x-1);
+      }
+      if(x<=M-1&&grid[y][x+1]==-1){
+        grid[y][x+1]=-2;
+        openOut(y,x+1);
+      }
 
-    decrementSurroundings(cellRow, cellCol); // Apply decrement logic
-    mainGrid[cellRow][cellCol] = -1; // Mark current cell as "about to be removed"
-
-    // Check if any adjacent cell is already removed (-2)
-    if (mainGrid[cellRow - 1][cellCol] === -2 || mainGrid[cellRow + 1][cellCol] === -2 || mainGrid[cellRow][cellCol - 1] === -2 || mainGrid[cellRow][cellCol + 1] === -2) {
-      mainGrid[cellRow][cellCol] = -2; // Mark current cell as fully removed
-
-      // If adjacent cells are valid and not yet removed, set them to 0
-      if (cellRow >= 2 && mainGrid[cellRow - 1][cellCol] >= 0) {
-        mainGrid[cellRow - 1][cellCol] = 0;
-      }
-      if (cellRow <= boardDimension - 1 && mainGrid[cellRow + 1][cellCol] >= 0) {
-        mainGrid[cellRow + 1][cellCol] = 0;
-      }
-      if (cellCol >= 2 && mainGrid[cellRow][cellCol - 1] >= 0) {
-        mainGrid[cellRow][cellCol - 1] = 0;
-      }
-      if (cellCol <= boardDimension - 1 && mainGrid[cellRow][cellCol + 1] >= 0) {
-        mainGrid[cellRow][cellCol + 1] = 0;
-      }
-
-      // If adjacent cells are marked as "about to be removed" (-1), propagate removal
-      if (cellRow >= 2 && mainGrid[cellRow - 1][cellCol] === -1) {
-        mainGrid[cellRow - 1][cellCol] = -2;
-        propagateZero(cellRow - 1, cellCol);
-      }
-      if (cellRow <= boardDimension - 1 && mainGrid[cellRow + 1][cellCol] === -1) {
-        mainGrid[cellRow + 1][cellCol] = -2;
-        propagateZero(cellRow + 1, cellCol);
-      }
-      if (cellCol >= 2 && mainGrid[cellRow][cellCol - 1] === -1) {
-        mainGrid[cellRow][cellCol - 1] = -2;
-        propagateZero(cellRow, cellCol - 1);
-      }
-      if (cellCol <= boardDimension - 1 && mainGrid[cellRow][cellCol + 1] === -1) {
-        mainGrid[cellRow][cellCol + 1] = -2;
-        propagateZero(cellRow, cellCol + 1);
-      }
     }
   }
 
-  console.log('%s', finalSum);
-  return finalSum;
+  console.log('%s', total);
+  return total;
 }
 
-// Function to handle testing in a browser environment
-function TestHandler(testIndex) {
-  var testInputData = webDocument.getElementById("input" + testIndex).value;
-  var calculatedResult = ProcessInput(testInputData);
-  var testVerdict = "WA";
-  if (calculatedResult == webDocument.getElementById("output" + testIndex).value.split("\n")[0]) {
-    testVerdict = "AC";
+function dbg(id){
+  var src = document.getElementById("input"+id).value;
+  var total=Main(src);
+  var verdict="WA";
+  if(total==document.getElementById("output"+id).value.split("\n")[0]){
+    verdict="AC";
   }
-  webDocument.getElementById("result" + testIndex).innerHTML = testVerdict;
+  document.getElementById("result"+id).innerHTML=verdict;
 }
-
-// Execute the main processing function with standard input for competitive programming
-ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

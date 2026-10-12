@@ -1,0 +1,1 @@
+require("fs").readFileSync("/dev/stdin","utf8").split('\n\n').map(function(i){console.log('AE..C.BD.FG'[/1(\d|\n)*1/m.exec(i)[0].length%11])})

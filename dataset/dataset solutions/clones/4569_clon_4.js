@@ -1,65 +1,30 @@
-const processAndOutput = (rawData) => {
-    const [heightDimension, widthDimension] = rawData
-        .trim()
-        .split('\n')[0]
-        .split(' ')
-        .map(Number);
+const fs = require("fs");
 
-    const finalResult = calculateAreaDifference(heightDimension, widthDimension);
-    console.log(finalResult);
-};
+const [h, w] = fs.readFileSync(0, "utf8").trim().split(/\s+/).map(Number);
 
-const calculateAreaDifference = (primaryHeight, primaryWidth) => {
-    if (primaryHeight % 3 === 0 || primaryWidth % 3 === 0) {
-        return 0;
-    }
+function spread(a, b, c) {
+  return Math.max(a, b, c) - Math.min(a, b, c);
+}
 
-    let overallMinimalDifference = primaryHeight * primaryWidth;
+function check(height, width) {
+  let best = height * width;
 
-    const evaluateCuttingScheme = (hDimension, wDimension) => {
-        let currentSchemeMin = hDimension * wDimension;
-        let lastObservedDifference = Infinity;
+  for (let cut = 1; cut < height; cut++) {
+    const first = cut * width;
+    const restH = height - cut;
 
-        function* cutPositionGenerator(maxCutValue) {
-            for (let currentCut = 0; currentCut <= maxCutValue; currentCut++) {
-                const feedbackDifference = yield currentCut;
-                if (feedbackDifference !== undefined && feedbackDifference > lastObservedDifference) {
-                    return;
-                }
-                lastObservedDifference = feedbackDifference;
-            }
-        }
+    const secondH = Math.floor(restH / 2) * width;
+    const thirdH = Math.ceil(restH / 2) * width;
+    best = Math.min(best, spread(first, secondH, thirdH));
 
-        const cutIterator = cutPositionGenerator(wDimension);
-        let iterationState = cutIterator.next();
+    const secondW = restH * Math.floor(width / 2);
+    const thirdW = restH * Math.ceil(width / 2);
+    best = Math.min(best, spread(first, secondW, thirdW));
+  }
 
-        while (!iterationState.done) {
-            const currentCutPoint = iterationState.value;
+  return best;
+}
 
-            const pieceOneArea = currentCutPoint * hDimension;
-            const remainingSegmentWidth = wDimension - currentCutPoint;
-            const pieceTwoArea = remainingSegmentWidth * Math.ceil(hDimension / 2);
-            const pieceThreeArea = remainingSegmentWidth * Math.floor(hDimension / 2);
+let ans = Math.min(check(h, w), check(w, h));
 
-            const currentSchemeDifference = Math.max(
-                Math.abs(pieceOneArea - pieceTwoArea),
-                Math.abs(pieceOneArea - pieceThreeArea),
-                Math.abs(pieceTwoArea - pieceThreeArea)
-            );
-
-            currentSchemeMin = Math.min(currentSchemeMin, currentSchemeDifference);
-
-            iterationState = cutIterator.next(currentSchemeDifference);
-        }
-        return currentSchemeMin;
-    };
-
-    overallMinimalDifference = Math.min(overallMinimalDifference, evaluateCuttingScheme(primaryHeight, primaryWidth));
-    overallMinimalDifference = Math.min(overallMinimalDifference, evaluateCuttingScheme(primaryWidth, primaryHeight));
-
-    overallMinimalDifference = Math.min(overallMinimalDifference, primaryHeight, primaryWidth);
-
-    return overallMinimalDifference;
-};
-
-processAndOutput(require("fs").readFileSync("/dev/stdin", "utf8"));
+process.stdout.write(String(ans));

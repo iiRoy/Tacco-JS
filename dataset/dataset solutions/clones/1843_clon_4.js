@@ -1,148 +1,102 @@
-const solvePuzzle = (rawInputData) => {
-    const dataLines = rawInputData.split("\n");
-    const matrixDimension = parseInt(dataLines[0], 10);
-    const activitySequence = dataLines[1].split(" ").map(Number);
+const fs = require("fs");
 
-    const cellDataMap = new Map(); // Stores cell values, key: "row,col", value: number
+const lines = fs.readFileSync(0, "utf8").trim().split(/\s+/).map(Number);
+const n = lines[0];
+const order = lines.slice(1);
 
-    // Populate the initial cell values based on minimum distance to any border
-    // Using 0-indexed coordinates (r, c) from 0 to matrixDimension-1
-    for (let r = 0; r < matrixDimension; r++) {
-        for (let c = 0; c < matrixDimension; c++) {
-            const edgeDistance = Math.min(r, matrixDimension - 1 - r, c, matrixDimension - 1 - c);
-            cellDataMap.set(`${r},${c}`, edgeDistance);
-        }
-    }
+const OUT = -2;
+const GONE = -1;
 
-    let accumulatedScore = 0;
+const field = Array.from({ length: n }, (_, y) =>
+  Array.from({ length: n }, (_, x) => Math.min(y, x, n - 1 - y, n - 1 - x))
+);
 
-    const adjacentCellShifts = [[-1, 0], [1, 0], [0, -1], [0, 1]]; // Up, Down, Left, Right
+let answer = 0;
 
-    // Recursive function to propagate value decrements
-    // Equivalent to original `check`
-    const initiateValueAdjustment = (currentCellMap, currentR, currentC, currentDim, visitedNodes) => {
-        const currentCoordKey = `${currentR},${currentC}`;
-        const currentCellValue = currentCellMap.get(currentCoordKey);
+const dirs = [
+  [-1, 0],
+  [1, 0],
+  [0, -1],
+  [0, 1]
+];
 
-        for (const [deltaR, deltaC] of adjacentCellShifts) {
-            const nextR = currentR + deltaR;
-            const nextC = currentC + deltaC;
-            const nextCoordKey = `${nextR},${nextC}`;
-
-            // Ensure neighbor is within grid bounds
-            if (nextR >= 0 && nextR < currentDim && nextC >= 0 && nextC < currentDim) {
-                // If not visited in this pass and cell exists
-                if (!visitedNodes.has(nextCoordKey) && currentCellMap.has(nextCoordKey)) {
-                    const neighborValue = currentCellMap.get(nextCoordKey);
-                    if (neighborValue > currentCellValue) {
-                        visitedNodes.add(nextCoordKey); // Mark as visited
-                        initiateValueAdjustment(currentCellMap, nextR, nextC, currentDim, visitedNodes);
-                        currentCellMap.set(nextCoordKey, neighborValue - 1); // Decrement AFTER recursion
-                    }
-                }
-            }
-        }
-    };
-
-    // Recursive function to propagate cell eradication (-2 status)
-    // Equivalent to original `checkout`
-    const propagateEradication = (currentCellMap, currentR, currentC, currentDim, visitedForEradication) => {
-        const currentCoordKey = `${currentR},${currentC}`;
-        currentCellMap.set(currentCoordKey, -2); // Mark current cell as eradicated
-        visitedForEradication.add(currentCoordKey);
-
-        for (const [deltaR, deltaC] of adjacentCellShifts) {
-            const nextR = currentR + deltaR;
-            const nextC = currentC + deltaC;
-            const nextCoordKey = `${nextR},${nextC}`;
-
-            if (nextR >= 0 && nextR < currentDim && nextC >= 0 && nextC < currentDim) {
-                if (!visitedForEradication.has(nextCoordKey) && currentCellMap.has(nextCoordKey)) {
-                    visitedForEradication.add(nextCoordKey); // Mark as visited for this eradication path
-                    const neighborValue = currentCellMap.get(nextCoordKey);
-                    if (neighborValue >= 0) {
-                        currentCellMap.set(nextCoordKey, 0); // Set to 0 if positive
-                    } else if (neighborValue === -2) {
-                        propagateEradication(currentCellMap, nextR, nextC, currentDim, visitedForEradication);
-                    }
-                    // Original `checkout` does not handle -1 cells directly;
-                    // that logic is in the main processing loop.
-                }
-            }
-        }
-    };
-
-    // Iterate through the sequence of interaction points
-    for (const pointVal of activitySequence) {
-        // Convert 1-indexed, flattened point value to 0-indexed (row, col)
-        let focusRow = Math.ceil(pointVal / matrixDimension) - 1;
-        let focusCol = (pointVal % matrixDimension === 0 ? matrixDimension : pointVal % matrixDimension) - 1;
-
-        const currentFocusKey = `${focusRow},${focusCol}`;
-        accumulatedScore += cellDataMap.get(currentFocusKey);
-
-        // Initialize and execute value adjustment for the current point
-        const decayVisitedSet = new Set();
-        decayVisitedSet.add(currentFocusKey); // Current cell is the start of this decay process
-        initiateValueAdjustment(cellDataMap, focusRow, focusCol, matrixDimension, decayVisitedSet);
-
-        cellDataMap.set(currentFocusKey, -1); // Mark current cell as 'temporarily inactive'
-
-        // Determine if the current cell is adjacent to any eradicated cell or boundary
-        let isAdjacentToEradicated = false;
-        for (const [deltaR, deltaC] of adjacentCellShifts) {
-            const neighborR = focusRow + deltaR;
-            const neighborC = focusCol + deltaC;
-            const neighborKey = `${neighborR},${neighborC}`;
-
-            const outOfBounds = neighborR < 0 || neighborR >= matrixDimension || neighborC < 0 || neighborC >= matrixDimension;
-
-            if (outOfBounds) {
-                isAdjacentToEradicated = true; // Out-of-bounds acts like an eradicated cell
-                break;
-            } else if (cellDataMap.get(neighborKey) === -2) {
-                isAdjacentToEradicated = true; // Neighbor is already eradicated
-                break;
-            }
-        }
-
-        if (isAdjacentToEradicated) {
-            cellDataMap.set(currentFocusKey, -2); // Current cell itself becomes eradicated
-
-            const eradicationVisitedSet = new Set();
-            // Propagate eradication status to neighbors
-            for (const [deltaR, deltaC] of adjacentCellShifts) {
-                const neighborR = focusRow + deltaR;
-                const neighborC = focusCol + deltaC;
-                const neighborKey = `${neighborR},${neighborC}`;
-
-                if (neighborR >= 0 && neighborR < matrixDimension && neighborC >= 0 && neighborC < matrixDimension) {
-                    const neighborValue = cellDataMap.get(neighborKey);
-                    if (neighborValue !== undefined) { // Cell exists in our map
-                        if (neighborValue >= 0) {
-                            cellDataMap.set(neighborKey, 0); // Set to 0 if positive
-                        } else if (neighborValue === -1) {
-                            // If neighbor was 'temporarily inactive' (-1), it now becomes eradicated (-2)
-                            // and this eradication propagates further.
-                            if (!eradicationVisitedSet.has(neighborKey)) {
-                                propagateEradication(cellDataMap, neighborR, neighborC, matrixDimension, eradicationVisitedSet);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    console.log('%s', accumulatedScore);
-    return accumulatedScore;
-};
-
-// Standard boilerplate for competitive programming execution
-const initiateProcessing = (inputContent) => {
-    solvePuzzle(inputContent);
-};
-
-if (typeof require !== 'undefined' && require.main === module) {
-    initiateProcessing(require("fs").readFileSync("/dev/stdin", "utf8"));
+function inside(y, x) {
+  return y >= 0 && y < n && x >= 0 && x < n;
 }
+
+function touchesOutside(y, x) {
+  for (const [dy, dx] of dirs) {
+    const ny = y + dy;
+    const nx = x + dx;
+    if (!inside(ny, nx) || field[ny][nx] === OUT) return true;
+  }
+  return false;
+}
+
+function lowerFrom(sy, sx) {
+  const used = Array.from({ length: n }, () => Array(n).fill(false));
+  const stack = [[sy, sx]];
+
+  while (stack.length) {
+    const [y, x] = stack.pop();
+    const level = field[y][x];
+
+    for (const [dy, dx] of dirs) {
+      const ny = y + dy;
+      const nx = x + dx;
+
+      if (!inside(ny, nx)) continue;
+      if (used[ny][nx]) continue;
+      if (field[ny][nx] > level) {
+        used[ny][nx] = true;
+        stack.push([ny, nx]);
+        field[ny][nx]--;
+      }
+    }
+  }
+}
+
+function openArea(sy, sx) {
+  const seen = Array.from({ length: n }, () => Array(n).fill(false));
+  const stack = [[sy, sx]];
+
+  while (stack.length) {
+    const [y, x] = stack.pop();
+    if (!inside(y, x) || seen[y][x]) continue;
+    seen[y][x] = true;
+
+    if (field[y][x] !== GONE && field[y][x] !== OUT) continue;
+
+    field[y][x] = OUT;
+
+    for (const [dy, dx] of dirs) {
+      const ny = y + dy;
+      const nx = x + dx;
+
+      if (!inside(ny, nx)) continue;
+
+      if (field[ny][nx] >= 0) {
+        field[ny][nx] = 0;
+      } else if (!seen[ny][nx]) {
+        stack.push([ny, nx]);
+      }
+    }
+  }
+}
+
+for (const cell of order) {
+  const index = cell - 1;
+  const y = Math.floor(index / n);
+  const x = index % n;
+
+  answer += field[y][x];
+
+  lowerFrom(y, x);
+  field[y][x] = GONE;
+
+  if (touchesOutside(y, x)) {
+    openArea(y, x);
+  }
+}
+
+process.stdout.write(String(answer));

@@ -1,24 +1,41 @@
-((commandLineInputs) => {
-    const obtainAdjustedQuotient = (dividend, divisor) => {
-        const intermediateFraction = dividend / divisor;
-        const truncatedPart = Math.trunc(intermediateFraction);
-        // Custom implementation for floor-like behavior
-        return truncatedPart - (intermediateFraction < 0 && intermediateFraction % 1 !== 0 ? 1 : 0);
-    };
+const fs = require('fs');
 
-    const executionPath = {
-        'processValidInputs': (inputs) => {
-            const firstNumeric = Number(inputs[0]);
-            const secondNumeric = Number(inputs[1]);
-            const finalValue = obtainAdjustedQuotient(firstNumeric, secondNumeric) + 1;
-            console.log(finalValue);
-        },
-        'skipInvalidInputs': () => {
-            // No action, mirroring original behavior for incorrect argument count
-        }
-    };
+const message = fs
+    .readFileSync(0, 'utf8')
+    .trim()
+    .split(/\s+/);
 
-    const inputCondition = commandLineInputs.length === 2 ? 'processValidInputs' : 'skipInvalidInputs';
-    executionPath[inputCondition](commandLineInputs);
+const fleetSize = Number(message.shift());
+const starRoutes = message
+    .slice(0, fleetSize)
+    .sort();
 
-})(process.argv.slice(2));
+if (starRoutes.length === 0) {
+    console.log('SIN PREFIJO');
+} else {
+    const alphabeticallyFirst = starRoutes[0];
+    const alphabeticallyLast =
+        starRoutes[starRoutes.length - 1];
+
+    const sharedCharacters = [];
+
+    let cursor = 0;
+
+    while (
+        cursor < alphabeticallyFirst.length &&
+        cursor < alphabeticallyLast.length &&
+        alphabeticallyFirst[cursor] ===
+            alphabeticallyLast[cursor]
+    ) {
+        sharedCharacters.push(alphabeticallyFirst[cursor]);
+        cursor++;
+    }
+
+    const galacticSector = sharedCharacters.join('');
+
+    console.log(
+        galacticSector.length > 0
+            ? galacticSector
+            : 'SIN PREFIJO'
+    );
+}

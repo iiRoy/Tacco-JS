@@ -1,44 +1,47 @@
-function processTaskSchedule(rawInputString) {
-  function parseTaskLine(lineContent) {
-    return lineContent.split(" ").map(Number);
+function Main(input) {
+  var lines = input.trim().split("\n");
+  var N = parseInt(lines[0], 10);
+  lines.shift();
+
+  var X = [];
+
+  for (var i = 0; i < N; i++) {
+    X.push(lines[i].split(" ").map(function(v) {
+      return parseInt(v, 10);
+    }));
   }
 
-  const inputLines = rawInputString.split("\n");
-  const numTasks = parseInt(inputLines[0], 10);
+  X.sort(function(a, b) {
+    return a[1] - b[1];
+  });
 
-  // Extract and parse task details, ensuring we only process 'numTasks' entries
-  const taskDetails = inputLines
-    .slice(1) // Skip the first line which contains numTasks
-    .filter(line => line.trim() !== '') // Remove any empty lines
-    .slice(0, numTasks) // Take exactly 'numTasks' lines
-    .map(parseTaskLine);
+  var ans = "Yes";
+  var sum = 0;
 
-  // Sort tasks based on their deadline (second element) in ascending order
-  taskDetails.sort((firstTask, secondTask) => firstTask[1] - secondTask[1]);
+  for (var j = 0; j < X.length; j++) {
+    sum = sum + X[j][0];
 
-  let isSchedulePossible = true; // Assume possible until proven otherwise
-  let elapsedTime = 0; // Tracks the cumulative time spent on tasks
-
-  // Iterate through the sorted tasks to determine if all can be completed by their deadlines
-  for (let taskIndex = 0; taskIndex < numTasks; taskIndex++) {
-    const currentTask = taskDetails[taskIndex];
-    const taskDuration = currentTask[0]; // Time required for this task
-    const taskDeadline = currentTask[1]; // Deadline for this task
-
-    elapsedTime += taskDuration; // Add this task's duration to the total elapsed time
-
-    // If the accumulated time exceeds the current task's deadline, the schedule is impossible
-    if (elapsedTime > taskDeadline) {
-      isSchedulePossible = false;
-      break; // No need to check further tasks
+    if (sum > X[j][1]) {
+      ans = "No";
+      break;
     }
   }
 
-  // Convert the boolean result to the required "Yes" or "No" string
-  const finalResultString = isSchedulePossible ? "Yes" : "No";
-
-  console.log('%s', finalResultString);
-  return finalResultString;
+  console.log("%s", ans);
+  return ans;
 }
 
-processTaskSchedule(require("fs").readFileSync("/dev/stdin", "utf8"));
+function debug(n) {
+  var source = document.getElementById("input" + n).value;
+  var answer = Main(source);
+  var expected = document.getElementById("output" + n).value.split("\n")[0];
+  var result = "WA";
+
+  if (answer === expected) {
+    result = "AC";
+  }
+
+  document.getElementById("result" + n).innerHTML = result;
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,46 +1,55 @@
-var rawData = require("fs").readFileSync("/dev/stdin", "utf8");
+var input = require("fs").readFileSync("/dev/stdin", "utf8");
 
-var dataRows = rawData.split('\n');
-var arraySize = Number(dataRows[0]);
+var rows = input.trim().split('\n');
+var N = parseInt(rows[0], 10);
+var An = rows[1].split(' ');
+var Bn = rows[2].split(' ');
+var Cn = rows[3].split(' ');
 
-function parseAndConvert(inputLine) {
-    return inputLine.split(' ').map(function(str) {
-        return Number(str);
-    });
+var listA = new Array(N);
+var listB = new Array(N);
+var listC = new Array(N);
+
+for (var i = 0; i < N; i++) {
+    listA[i] = Number(An[i]);
+    listB[i] = Number(Bn[i]);
+    listC[i] = Number(Cn[i]);
 }
 
-var numArrA = parseAndConvert(dataRows[1]);
-var numArrB = parseAndConvert(dataRows[2]);
-var numArrC = parseAndConvert(dataRows[3]);
-
-function numericSort(val1, val2) {
-    return val1 - val2;
+function asc(a, b) {
+    if (a === b) return 0;
+    return a - b;
 }
 
-numArrA.sort(numericSort);
-numArrB.sort(numericSort);
-numArrC.sort(numericSort);
+listA.sort(asc);
+listB.sort(asc);
+listC.sort(asc);
 
-var totalSum = 0;
-var pointerA = 0;
-var pointerC = 0;
+var sum = 0;
+var indexA = 0;
+var indexC = 0;
+var countA = 0;
+var countC = 0;
 
-for (var currentBIndex = 0; currentBIndex < arraySize; currentBIndex++) {
-    var currentBValue = numArrB[currentBIndex];
+for (var iB = 0; iB < N; iB++) {
+    var b = listB[iB];
 
-    while (pointerA < arraySize && numArrA[pointerA] < currentBValue) {
-        pointerA++;
+    while (indexA < N && listA[indexA] < b) {
+        indexA++;
+        countA = indexA;
     }
-    var countLessThanB = pointerA;
 
-    while (pointerC < arraySize && numArrC[pointerC] <= currentBValue) {
-        pointerC++;
+    while (indexC < N && listC[indexC] <= b) {
+        indexC++;
+        countC = indexC;
     }
-    var countLessEqualB = pointerC;
 
-    var countGreaterThanB = arraySize - countLessEqualB;
-
-    totalSum += countLessThanB * countGreaterThanB;
+    var biggerC = N - countC;
+    if (countA > 0 && biggerC > 0) {
+        sum += countA * biggerC;
+    } else {
+        sum += 0;
+    }
 }
 
-console.log(totalSum);
+console.log(sum);

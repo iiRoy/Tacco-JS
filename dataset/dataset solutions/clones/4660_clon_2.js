@@ -1,17 +1,41 @@
-function processInput(rawData) {
-  // Remove any leading or trailing whitespace from the initial string data.
-  let trimmedData = rawData.trim();
+function transferDisks(amount, origin, helper, destination, steps) {
+  if (amount === 0) {
+    return;
+  }
 
-  // Parse the cleaned string: split by spaces and convert each segment into a numerical value.
-  const numArray = trimmedData.split(" ").map(Number);
+  transferDisks(
+    amount - 1,
+    origin,
+    destination,
+    helper,
+    steps
+  );
 
-  // Compute the sum of the first two numerical elements, then apply a modulo 24 operation.
-  // The result is then printed to the standard output.
-  console.log((numArray[0] + numArray[1]) % 24);
+  steps.push(`${origin} -> ${destination}`);
+
+  transferDisks(
+    amount - 1,
+    helper,
+    origin,
+    destination,
+    steps
+  );
 }
 
-// Execute the primary processing function by reading content from standard input.
-// The 'fs' module is used to access the file system, and 'readFileSync' reads the entire file synchronously.
-// '/dev/stdin' is the conventional path for standard input on Unix-like systems.
-// 'utf8' specifies the character encoding for the input data.
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+const diskAmount = Number(
+  require("fs")
+    .readFileSync("/dev/stdin", "utf8")
+    .trim()
+);
+
+const steps = [];
+
+transferDisks(
+  diskAmount,
+  "A",
+  "B",
+  "C",
+  steps
+);
+
+console.log(steps.join("\n"));

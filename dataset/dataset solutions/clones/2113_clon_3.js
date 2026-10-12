@@ -1,84 +1,83 @@
 "use strict";
 
-const runBingoCheck = (rawInput) => {
-    const lines = rawInput.trim().split("\n");
+const main = (arg) => {
+    const input = arg.trim().split("\n");
 
-    const rowOne = lines[0].split(" ").map(Number);
-    const rowTwo = lines[1].split(" ").map(Number);
-    const rowThree = lines[2].split(" ").map(Number);
+    const bingo1 = input[0].split(" ").map(Number);
+    const bingo2 = input[1].split(" ").map(Number);
+    const bingo3 = input[2].split(" ").map(Number);
+    const count = parseInt(input[3], 10);
 
-    const drawCount = parseInt(lines[3], 10);
-    const calledNumbers = [];
-    const cloneTypeThreeMarker = true;
+    const nums = [];
+    const bingoPattern1 = [];
+    const bingoPattern2 = [];
+    const bingoPattern3 = [];
+    const bingoPattern4 = [];
+    const bingoPattern5 = [];
 
-    for (let lineIndex = 4; lineIndex < lines.length; lineIndex++) {
-        calledNumbers.push(parseInt(lines[lineIndex], 10));
-    }
+    bingoPattern1.push(bingo1[0]);
+    bingoPattern1.push(bingo2[0]);
+    bingoPattern1.push(bingo3[0]);
 
-    const columnOne = [];
-    const columnTwo = [];
-    const columnThree = [];
-    const diagonalOne = [];
-    const diagonalTwo = [];
+    bingoPattern2.push(bingo1[1]);
+    bingoPattern2.push(bingo2[1]);
+    bingoPattern2.push(bingo3[1]);
 
-    columnOne.push(rowOne[0]);
-    columnOne.push(rowTwo[0]);
-    columnOne.push(rowThree[0]);
+    bingoPattern3.push(bingo1[2]);
+    bingoPattern3.push(bingo2[2]);
+    bingoPattern3.push(bingo3[2]);
 
-    columnTwo.push(rowOne[1]);
-    columnTwo.push(rowTwo[1]);
-    columnTwo.push(rowThree[1]);
+    bingoPattern4.push(bingo1[2]);
+    bingoPattern4.push(bingo2[1]);
+    bingoPattern4.push(bingo3[0]);
 
-    columnThree.push(rowOne[2]);
-    columnThree.push(rowTwo[2]);
-    columnThree.push(rowThree[2]);
+    bingoPattern5.push(bingo1[0]);
+    bingoPattern5.push(bingo2[1]);
+    bingoPattern5.push(bingo3[2]);
 
-    diagonalOne.push(rowOne[2]);
-    diagonalOne.push(rowTwo[1]);
-    diagonalOne.push(rowThree[0]);
-
-    diagonalTwo.push(rowOne[0]);
-    diagonalTwo.push(rowTwo[1]);
-    diagonalTwo.push(rowThree[2]);
-
-    const bingoLines = [
-        rowOne,
-        rowTwo,
-        rowThree,
-        columnOne,
-        columnTwo,
-        columnThree,
-        diagonalOne,
-        diagonalTwo
+    const arrays = [
+        bingo1,
+        bingo2,
+        bingo3,
+        bingoPattern1,
+        bingoPattern2,
+        bingoPattern3,
+        bingoPattern4,
+        bingoPattern5
     ];
 
-    for (let patternIndex = 0; patternIndex < bingoLines.length; patternIndex++) {
-        removeCalledNumbers(bingoLines[patternIndex], drawCount, calledNumbers);
+    for (var i = 4; i < input.length; i++) {
+        if (input[i] !== "") {
+            nums.push(parseInt(input[i], 10));
+        }
     }
 
-    console.log(checkBingoLineLength(bingoLines));
+    for (var j = 0; j < arrays.length; j++) {
+        removeNum(arrays[j], count, nums);
+    }
+
+    console.log(checlength(arrays));
 };
 
-const removeCalledNumbers = (targetLine, drawCount, calledNumbers) => {
-    targetLine.forEach((cellValue, cellIndex) => {
-        for (let drawIndex = 0; drawIndex < drawCount; drawIndex++) {
-            const currentCalledNumber = calledNumbers[drawIndex];
-
-            if (cellValue === currentCalledNumber) {
-                targetLine.splice(cellIndex, 1);
+const removeNum = (array, count, nums) => {
+    for (var i = array.length - 1; i >= 0; i--) {
+        for (var j = 0; j < count; j++) {
+            var testnum = nums[j];
+            if (array[i] === testnum) {
+                array.splice(i, 1);
+                break;
             }
         }
-    });
+    }
 };
 
-const checkBingoLineLength = (bingoLines) => {
-    for (let lineIndex = 0; lineIndex < bingoLines.length; lineIndex++) {
-        if (bingoLines[lineIndex].length === 0) {
+const checlength = (arrays) => {
+    for (var i = 0; i < arrays.length; i++) {
+        if (arrays[i].length === 0) {
             return "Yes";
         }
     }
-
     return "No";
 };
 
-runBingoCheck(require("fs").readFileSync("/dev/stdin", "utf8"));
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

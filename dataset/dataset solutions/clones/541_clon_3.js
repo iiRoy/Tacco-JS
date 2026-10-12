@@ -1,26 +1,58 @@
-const inputOutputHandler = require('readline');
+const fs = require('fs');
 
-const streamProcessor = inputOutputHandler.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
+function receiveDroneSignals() {
+    const transmission = fs
+        .readFileSync(0, 'utf8')
+        .trim()
+        .split(/\s+/)
+        .map(Number);
 
-streamProcessor.question('', (inputLineContent) => {
-    const inputDelimiter = " ";
-    const stringParts = inputLineContent.split(inputDelimiter);
+    const expectedSignals = transmission.shift();
 
-    const firstOperandString = stringParts[0];
-    const firstNumericValue = parseInt(firstOperandString, 10);
+    return transmission.slice(0, expectedSignals);
+}
 
-    const secondOperandString = stringParts[1];
-    const secondNumericValue = parseInt(secondOperandString, 10);
+function countBroadcasts(droneSignals) {
+    const frequencyTable = new Map();
 
-    const rawDivisionResult = secondNumericValue / firstNumericValue;
-    const floorDivisionResult = Math.floor(rawDivisionResult);
+    droneSignals.forEach((frequency) => {
+        if (!frequencyTable.has(frequency)) {
+            frequencyTable.set(frequency, 0);
+        }
 
-    const finalComputedValue = floorDivisionResult + 1;
+        const previousVotes = frequencyTable.get(frequency);
 
-    console.log(finalComputedValue);
+        frequencyTable.set(
+            frequency,
+            previousVotes + 1
+        );
+    });
 
-    streamProcessor.close();
-});
+    return frequencyTable;
+}
+
+function findAbsoluteMajority(frequencyTable, totalVotes) {
+    const minimumVotes = Math.floor(totalVotes / 2) + 1;
+
+    for (const [frequency, votes] of frequencyTable.entries()) {
+        if (votes >= minimumVotes) {
+            return frequency;
+        }
+    }
+
+    return undefined;
+}
+
+const receivedSignals = receiveDroneSignals();
+const signalCounts = countBroadcasts(receivedSignals);
+
+const electedFrequency = findAbsoluteMajority(
+    signalCounts,
+    receivedSignals.length
+);
+
+if (electedFrequency === undefined) {
+    process.stdout.write('SIN FRECUENCIA DOMINANTE\n');
+} else {
+    process.stdout.write(`${electedFrequency}\n`);
+}

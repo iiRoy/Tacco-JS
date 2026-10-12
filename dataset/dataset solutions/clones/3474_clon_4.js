@@ -1,83 +1,76 @@
 const fs = require("fs");
 
-const lines = fs.readFileSync(0, "utf8").split("\n");
-const total = parseInt(lines[0], 10);
+const raw = fs.readFileSync(0, "utf8").split(/\n/);
+const n = Number(raw[0]);
 
-const pending = [];
-for (let i = 0; i < total; i++) {
-  pending.push(parseInt(lines[i + 1], 10));
+let pool = [];
+for (let i = 1; i <= n; i++) {
+  pool.push(Number(raw[i]));
 }
 
-pending.sort();
+pool = pool.map(String).sort().map(Number);
 
-function edgeDistance(sequence, value) {
-  return {
-    left: Math.abs(sequence[0] - value),
-    right: Math.abs(sequence[sequence.length - 1] - value)
-  };
+let low = 0;
+let high = pool.length - 1;
+let front = [];
+let back = [];
+let mode = 0;
+
+function size() {
+  return front.length + back.length;
 }
 
-function putSmallest(sequence, values, totalCount) {
-  const value = values.shift();
+function first() {
+  return front.length ? front[front.length - 1] : back[0];
+}
 
-  if (sequence.length === 0) {
-    sequence.push(value);
-    return;
-  }
+function last() {
+  return back.length ? back[back.length - 1] : front[0];
+}
 
-  const distance = edgeDistance(sequence, value);
+function addLeft(v) {
+  front.push(v);
+}
 
-  if (distance.left > distance.right) {
-    sequence.unshift(value);
-    if (sequence.length !== totalCount) {
-      sequence.push(values.shift());
+function addRight(v) {
+  back.push(v);
+}
+
+while (size() < n) {
+  if (mode === 0) {
+    const v = pool[low++];
+
+    if (size() === 0) {
+      addRight(v);
+    } else if (Math.abs(first() - v) > Math.abs(last() - v)) {
+      addLeft(v);
+      if (size() < n) addRight(pool[low++]);
+    } else {
+      addRight(v);
+      if (size() < n) addLeft(pool[low++]);
     }
+
+    mode = 1;
   } else {
-    sequence.push(value);
-    if (sequence.length !== totalCount) {
-      sequence.unshift(values.shift());
+    const v = pool[high--];
+
+    if (Math.abs(first() - v) > Math.abs(last() - v)) {
+      addLeft(v);
+      if (size() < n) addRight(pool[high--]);
+    } else {
+      addRight(v);
+      if (size() < n) addLeft(pool[high--]);
     }
+
+    mode = 0;
   }
 }
 
-function putLargest(sequence, values, totalCount) {
-  const value = values.pop();
-  const distance = edgeDistance(sequence, value);
+const arranged = front.reverse().concat(back);
+let answer = 0;
 
-  if (distance.left > distance.right) {
-    sequence.unshift(value);
-    if (sequence.length !== totalCount) {
-      sequence.push(values.pop());
-    }
-  } else {
-    sequence.push(value);
-    if (sequence.length !== totalCount) {
-      sequence.unshift(values.pop());
-    }
-  }
+for (let i = 1; i < arranged.length; i++) {
+  answer += Math.abs(arranged[i - 1] - arranged[i]);
 }
 
-function adjacentSum(sequence) {
-  let totalDistance = 0;
-
-  for (let i = 0; i + 1 < sequence.length; i++) {
-    totalDistance += Math.abs(sequence[i] - sequence[i + 1]);
-  }
-
-  return totalDistance;
-}
-
-const arranged = [];
-let takeSmall = true;
-
-while (arranged.length < total) {
-  if (takeSmall) {
-    putSmallest(arranged, pending, total);
-  } else {
-    putLargest(arranged, pending, total);
-  }
-
-  takeSmall = !takeSmall;
-}
-
-console.log(adjacentSum(arranged));
+console.log(answer);

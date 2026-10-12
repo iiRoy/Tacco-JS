@@ -1,26 +1,35 @@
 "use strict";
+function Main(input){
+	let xs = input.trim().split('\n');
+    let A = xs[0].trim().split('').map(function(v){
+        return parseInt(v, 10);
+    });
+    let B = xs[1].trim().split('').map(function(v){
+        return parseInt(v, 10);
+    });
 
-const calculateDigitSum = (digitArray) => {
-    const currentSum = digitArray.reduce((accumulator, currentDigit) => {
-        return accumulator + currentDigit;
-    }, 0);
-    return currentSum;
-};
+    let A_len = A.length;
+    let B_len = B.length;
 
-const ProcessInput = (rawData) => {
-    const inputLines = rawData.trim().split('\n');
+    let ansA = 0;
+    let ansB = 0;
 
-    const firstNumberDigits = inputLines[0].trim().split('').map(charValue => parseInt(charValue, 10));
-    const secondNumberDigits = inputLines[1].trim().split('').map(charValue => parseInt(charValue, 10));
-
-    const sumOfFirstNumberDigits = calculateDigitSum(firstNumberDigits);
-    const sumOfSecondNumberDigits = calculateDigitSum(secondNumberDigits);
-
-    if (sumOfFirstNumberDigits > sumOfSecondNumberDigits) {
-        console.log('GREATER');
-    } else {
-        console.log('LESS');
+    for(let i = 0; i < A_len; i++){
+        ansA = ansA + A[i];
     }
-};
 
-ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+    for(let j = 0; j < B_len; j++){
+        ansB = ansB + B[j];
+    }
+
+    let output = '';
+
+    if(ansA > ansB){
+        output = 'GREATER';
+    }else{
+        output = 'LESS';
+    }
+
+    console.log(output);
+}
+Main(require('fs').readFileSync('/dev/stdin', 'utf8'));

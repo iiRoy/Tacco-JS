@@ -1,86 +1,29 @@
-//設定値
-var input = {};
+function areAnagrams(firstWord, secondWord) {
+  const normalizedFirst = firstWord
+    .toLowerCase()
+    .split("")
+    .sort()
+    .join("");
 
-//2次元長方形配列。 要素は-1(横棒の右側),0,1(横棒の左側)
-var data = [];
+  const normalizedSecond = secondWord
+    .toLowerCase()
+    .split("")
+    .sort()
+    .join("");
 
-//経路取得
-var f = function(startLine, startStep){
-	if(!startStep) startStep = 0;
-	var now = startLine;
-	var result = [now];
-	for(var y=startStep; y<data.length; y++){
-		now += data[y][now];
-		result.push(now);
-	}
-	return result;
-};
-//ゴール指定時の経路取得 (経路はスタートから)
-var rf = function(endLine){
-	var now = endLine;
-	var result = [now];
-	for(var y=data.length-1; y>=0; y--){
-		now += data[y][now];
-		result.push(now);
-	}
-	return result.reverse();
-};
+  return normalizedFirst === normalizedSecond;
+}
 
-var lines = [];
-process.stdin.resume();
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', function (chunk)
-{
-    chunk.trim().split('\n').forEach(function(line) {
-        lines.push(line);
-    });
-});
- 
-process.stdin.on('end', function(){
-	var result = "";
-	
-	//データ作成
-	input = {};
-	data = [];
-	for(var i=0; i<lines.length; i++){
-		var e = lines[i];
-		if(e == "0") return false;
-	
-		def = ["lines", "start", "end", "steps"];
-		if(i<def.length){
-			input[def[i]] = parseInt(e);
-			return;
-		}
-	
-		//i>4
-		var line = [];
-		for(var i=0; i<input.lines-1; i++){
-			var c = parseInt(e.charAt(i));
-			if(i>0 && c==0 && line[i-1]==1) c = -1;
-			line.push(c);
-		}
-		line.push((line[line.length-1]==1) ? -1 : 0);
-		data.push(line);
-	}
-	input.start -= 1;
-	input.end -= 1;
+const input = require("fs")
+  .readFileSync("/dev/stdin", "utf8")
+  .trim()
+  .split(/\r?\n/);
 
+const firstWord = input[0] ?? "";
+const secondWord = input[1] ?? "";
 
-
-	var route = f(input.start);
-	if(route[route.length-1] == input.end) {
-		console.log("0");
-		return;
-	}
-	var gRoute = rf(input.end);
-	
-	for(var y=0; y<input.steps; y++){
-		if(Math.abs(route[y]-gRoute[y]) == 1 && data[y][route[y]]==0 && data[y][gRoute[y]]==0){ //隣り合っている
-			result = (y+1) + " " + (Math.min(route[y], gRoute[y])+1);
-			break;
-		}
-	}
-	if(result == "") result = "1";
-	
-	console.log(result);
-});
+console.log(
+  areAnagrams(firstWord, secondWord)
+    ? "ANAGRAM"
+    : "NOT_ANAGRAM"
+);

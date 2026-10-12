@@ -1,46 +1,34 @@
 'use strict';
-(function(inputData) {
-  var rawData = inputData.toString();
-
-  // Helper function to programmatically create the initial frequency map for all lowercase English letters
-  function createAlphabetFrequencyMap() {
-    let initialMap = {};
-    const startCharCode = 'a'.charCodeAt(0);
-    const endCharCode = 'z'.charCodeAt(0);
-    for (let i = startCharCode; i <= endCharCode; i++) {
-      initialMap[String.fromCharCode(i)] = 0;
-    }
-    return initialMap;
-  }
-
-  // Helper function to format a single output line
-  function generateOutputLine(letterKey, frequencyMap) {
-    return letterKey + ' : ' + frequencyMap[letterKey];
-  }
-
-  var finalOutput = (function(charArray) {
-    const alphaCharacterPattern = /[A-Za-z]/; // Helper constant for the regular expression
-    let charCounts = createAlphabetFrequencyMap(); // Initialize the frequency map using the helper function
-
-    // Iterate through each character in the input array
-    charArray.forEach(function(currentCharacter) {
-      // Check if the current character is an alphabet letter
-      if (alphaCharacterPattern.test(currentCharacter)) {
-        const lowerCaseCharacter = currentCharacter.toLowerCase(); // Convert to lowercase using a helper variable
-        // Increment the count for the corresponding letter in the map
-        // The hasOwnProperty check acts as a guard clause, though not strictly necessary given the regex and map initialization
-        if (charCounts.hasOwnProperty(lowerCaseCharacter)) {
-          charCounts[lowerCaseCharacter]++;
-        }
-      }
-    });
-
-    var countKeys = Object.keys(charCounts); // Get all keys (letters) from the frequency map
-    return countKeys.map(function(letter) { // Map each letter to its formatted output string
-      return generateOutputLine(letter, charCounts); // Use the helper function for formatting
-    }).join('\n'); // Join all formatted strings with newline characters
-
-  }(rawData.split(''))); // Split the raw input string into an array of characters
-
-  console.log(finalOutput); // Print the final formatted output
+function formatLogMessage(a) {
+    return a;
+}
+(function (stdinValue) {
+    const initialValue = stdinValue.toString();
+    var linesValue = initialValue;
+    const initialValue2 = (function (dataValue) {
+        const initialValue1 = dataValue.filter(function (entryItem) {
+            const returnValue = /[A-Za-z]/.test(entryItem);
+            return returnValue;
+        })
+            .map(function (entryItem) {
+            const returnValue1 = entryItem.toLowerCase();
+            return returnValue1;
+        })
+            .reduce(function (mapValue, keyValue) {
+            mapValue[keyValue]++;
+            const returnValue2 = mapValue;
+            return returnValue2;
+        }, { a: 0, b: 0, c: 0, d: 0, e: 0, f: 0, g: 0, h: 0, i: 0, j: 0,
+            k: 0, l: 0, m: 0, n: 0, o: 0, p: 0, q: 0, r: 0, s: 0, t: 0,
+            u: 0, v: 0, w: 0, x: 0, y: 0, z: 0 });
+        var hashmapValue = initialValue1;
+        var keysValue = Object.keys(hashmapValue);
+        return keysValue.map(function (keyValue) {
+            const returnValue3 = keyValue + ' : ' + hashmapValue[keyValue];
+            return returnValue3;
+        }).join('\n');
+    }(linesValue.split('')));
+    var resultValue = initialValue2;
+    const messageText = formatLogMessage(resultValue);
+    console.log(messageText);
 }(require('fs').readFileSync('/dev/stdin', 'utf8')));

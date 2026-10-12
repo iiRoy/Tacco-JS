@@ -1,32 +1,26 @@
-const inputBuffer = require('fs').readFileSync('/dev/stdin', 'utf8');
-const inputLines = inputBuffer.trim().split('\n');
-let currentLineIndex = 0;
+const inputValues = require("fs")
+    .readFileSync(0, "utf8")
+    .trim()
+    .split(/\s+/)
+    .map(Number);
 
-function getNextInputLine() {
-    return inputLines[currentLineIndex++];
+const showcaseAmount = inputValues[0];
+const lunarEnergy = inputValues.slice(1, showcaseAmount + 1);
+
+let bestWithoutPrevious = 0;
+let bestUntilNow = 0;
+
+for (let showcaseIndex = 0; showcaseIndex < showcaseAmount; showcaseIndex++) {
+    const takeShowcase =
+        bestWithoutPrevious + lunarEnergy[showcaseIndex];
+
+    const leaveShowcase = bestUntilNow;
+
+    const updatedMaximum =
+        Math.max(takeShowcase, leaveShowcase);
+
+    bestWithoutPrevious = bestUntilNow;
+    bestUntilNow = updatedMaximum;
 }
 
-function executeProcessingLogic() {
-    let innerLoopCounter, unusedVarK, outerLoopCounter, unusedVarB, unusedVarC, unusedVarW, mainCount, accumulatedSum;
-
-    for (outerLoopCounter = 0; ; outerLoopCounter++) {
-        accumulatedSum = 0;
-
-        const lineInputOne = getNextInputLine();
-        const parsedCount = parseInt(lineInputOne, 10);
-
-        if (parsedCount === 0) {
-            break;
-        }
-
-        for (innerLoopCounter = 0; innerLoopCounter < parsedCount / 4; innerLoopCounter++) {
-            const lineInputTwo = getNextInputLine();
-            const parsedValue = parseInt(lineInputTwo, 10);
-            accumulatedSum = accumulatedSum + parsedValue;
-        }
-
-        console.log(accumulatedSum);
-    }
-}
-
-executeProcessingLogic();
+console.log(bestUntilNow);

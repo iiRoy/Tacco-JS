@@ -1,0 +1,12 @@
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const radiusString = rawData;
+const radiusVal = parseFloat(radiusString);
+const mathPiConstant = Math.PI;
+const diameter = 2 * radiusVal;
+const rawCircumference = diameter * mathPiConstant;
+const circumferenceVal = rawCircumference.toFixed(6);
+const radiusSquared = radiusVal * radiusVal;
+const rawSurfaceArea = radiusSquared * mathPiConstant;
+const surfaceArea = rawSurfaceArea.toFixed(6);
+const outputString = `${surfaceArea} ${circumferenceVal}`;
+console.log(outputString);

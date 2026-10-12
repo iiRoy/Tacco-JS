@@ -1,16 +1,18 @@
-function executeConversionCounter(rawInput) {
-  const pieces = rawInput.split(" ");
-  let numberValue = Number(pieces[0]);
-  const targetBase = Number(pieces[1]);
-
-  let convertedDigits = "";
-
-  while (numberValue > 0) {
-    convertedDigits += numberValue % targetBase;
-    numberValue = Math.floor(numberValue / targetBase);
-  }
-
-  console.log(convertedDigits.length);
+function Main(inputValue) {
+    const initialValue = inputValue.split(' ');
+    var splitValue = initialValue;
+    const initialValue1 = +splitValue[0];
+    var valueValue = initialValue1;
+    const initialValue2 = +splitValue[1];
+    var digitValue = initialValue2;
+    const initialValue3 = '';
+    var resultValue = initialValue3;
+    while (valueValue > 0) {
+        resultValue += valueValue % digitValue;
+        const assignedValue = Math.floor(valueValue / digitValue);
+        valueValue = assignedValue;
+    }
+    console.log(resultValue.length);
 }
-
-executeConversionCounter(require("fs").readFileSync("/dev/stdin", "utf8"));
+//*この行以降は編集しないでください（標準入出力から一度に読み込み、Mainを呼び出します）
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

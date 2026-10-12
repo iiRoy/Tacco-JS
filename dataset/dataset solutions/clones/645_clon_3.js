@@ -1,28 +1,65 @@
-const calculateRequiredPacks = (totalAmount, packUnitSize) => {
-    return Math.ceil(totalAmount / packUnitSize);
-};
+const fs = require('fs');
 
-(function processCostComparison() {
-    const commandLineArguments = process.argv.slice(2);
-    const EXPECTED_INPUT_COUNT = 5;
+function readDragonRecords() {
+    const input = fs
+        .readFileSync(0, 'utf8')
+        .trim()
+        .split(/\s+/);
 
-    if (commandLineArguments.length !== EXPECTED_INPUT_COUNT) {
-        return;
+    const cycleLength = parseInt(input.shift(), 10);
+
+    return {
+        length: cycleLength,
+        first: input.splice(0, cycleLength),
+        second: input.splice(0, cycleLength),
+    };
+}
+
+function rotateColors(colors, startingPosition) {
+    const endingFragment = colors.slice(startingPosition);
+    const beginningFragment = colors.slice(0, startingPosition);
+
+    return endingFragment.concat(beginningFragment);
+}
+
+function cyclesAreEqual(first, second) {
+    if (first.length !== second.length) {
+        return false;
     }
 
-    const totalQuantity = parseInt(commandLineArguments[0], 10);
-    const packSizeOptionA = parseInt(commandLineArguments[1], 10);
-    const pricePerPackA = parseInt(commandLineArguments[2], 10);
-    const packSizeOptionC = parseInt(commandLineArguments[3], 10);
-    const pricePerPackC = parseInt(commandLineArguments[4], 10);
+    return first.every(
+        (color, position) => color === second[position]
+    );
+}
 
-    const packsNeededA = calculateRequiredPacks(totalQuantity, packSizeOptionA);
-    const totalPriceOptionA = pricePerPackA * packsNeededA;
+function findMatchingRotation(firstRecord, secondRecord) {
+    let rotation = 0;
 
-    const packsNeededC = calculateRequiredPacks(totalQuantity, packSizeOptionC);
-    const totalPriceOptionC = pricePerPackC * packsNeededC;
+    while (rotation < firstRecord.length) {
+        const rotatedRecord = rotateColors(
+            firstRecord,
+            rotation
+        );
 
-    const minimumOverallCost = Math.min(totalPriceOptionA, totalPriceOptionC);
+        if (cyclesAreEqual(rotatedRecord, secondRecord)) {
+            return rotation;
+        }
 
-    console.log(minimumOverallCost);
-})();
+        rotation++;
+    }
+
+    return -1;
+}
+
+const dragonRecords = readDragonRecords();
+
+const matchingPosition = findMatchingRotation(
+    dragonRecords.first,
+    dragonRecords.second
+);
+
+process.stdout.write(
+    matchingPosition !== -1
+        ? 'CICLO EQUIVALENTE\n'
+        : 'CICLO DIFERENTE\n'
+);

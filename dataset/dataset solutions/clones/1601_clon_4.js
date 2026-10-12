@@ -1,22 +1,36 @@
-function Main(input) {
-  const [initialX, totalK, stepD] = input.trim().split(" ").map(Number);
+const fs = require("fs");
 
-  const absoluteInitialX = Math.abs(initialX);
-  const divisionResult = absoluteInitialX / stepD;
-  const remainderValue = initialX % stepD;
+const nums = fs.readFileSync(0, "utf8").trim().split(/\s+/).map(v => parseInt(v, 10));
+const x = nums[0];
+const k = nums[1];
+const d = nums[2];
 
-  const isInitialPositionClose = absoluteInitialX < stepD;
-  const isTotalMovesEven = totalK % 2 === 0;
-  const isRemainderZero = remainderValue === 0;
+const distance = Math.abs(x);
+const quotient = Math.abs(x / d);
+const rest = x % d;
 
-  const finalOutcome = isInitialPositionClose
-    ? (isTotalMovesEven ? initialX : (initialX + stepD))
-    : (divisionResult > totalK
-        ? Math.abs(initialX - Math.sign(initialX) * totalK * stepD)
-        : (isTotalMovesEven && isRemainderZero ? stepD : remainderValue)
-      );
+let answer;
 
-  console.log(finalOutcome);
+const cases = [
+  {
+    ok: () => distance < d,
+    get: () => (k % 2 === 0 ? x : x + d)
+  },
+  {
+    ok: () => quotient > k,
+    get: () => Math.abs(x + (x > 0 ? -k * d : k * d))
+  },
+  {
+    ok: () => true,
+    get: () => (k % 2 === 0 && rest === 0 ? d : rest)
+  }
+];
+
+for (const rule of cases) {
+  if (rule.ok()) {
+    answer = rule.get();
+    break;
+  }
 }
 
-Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+process.stdout.write(String(answer));

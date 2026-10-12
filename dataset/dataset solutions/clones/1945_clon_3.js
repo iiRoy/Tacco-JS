@@ -1,20 +1,16 @@
-const processInput = rawData => {
-  const NEWLINE_DELIMITER = '\n';
-  const allInputLines = rawData.split(NEWLINE_DELIMITER);
-  
-  const firstLineString = allInputLines[0];
-  const totalItemsExpected = Number(firstLineString);
-  
-  const dataStringCollection = allInputLines.slice(1);
-  
-  const distinctElements = new Set();
-  
-  for (let i = 0; i < dataStringCollection.length; i++) {
-    const currentItem = dataStringCollection[i];
-    distinctElements.add(currentItem);
+const Main = input => {
+  const S_list = input.trim().split('\n');
+  const N = Number(S_list.shift());
+  const set = new Set();
+
+  for(let i = 0; i < N; i++) {
+    if(S_list[i] !== undefined) {
+      set.add(S_list[i]);
+    }
   }
-  
-  console.log(distinctElements.size);
+
+  let count = set.size;
+  console.log(count);
 };
 
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+Main(require('fs').readFileSync('/dev/stdin', 'utf8'));

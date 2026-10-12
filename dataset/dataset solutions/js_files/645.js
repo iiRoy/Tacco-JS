@@ -1,21 +1,40 @@
-public class Main{
+const fs = require('fs');
 
-    public static void main(String[] args){
+const tokens = fs
+    .readFileSync(0, 'utf8')
+    .trim()
+    .split(/\s+/);
 
-        if(args.length == 5){
+const n = Number(tokens[0]);
 
-            int N = Integer.valueOf(args[0]);
-            int A = Integer.valueOf(args[1]);
-            int B = Integer.valueOf(args[2]);
-            int C = Integer.valueOf(args[3]);
-            int D = Integer.valueOf(args[4]);
+const firstCycle = tokens.slice(1, n + 1);
+const secondCycle = tokens.slice(n + 1, 2 * n + 1);
 
-            int num1 = N % A == 0 ? Math.floorDiv(N, A) : Math.floorDiv(N, A) + 1;
-            int num2 = N % C == 0 ? Math.floorDiv(N, C) : Math.floorDiv(N, C) + 1;
-            int min1 = B * num1;
-            int min2 = D * num2;
+let equivalent = false;
 
-            System.out.println((min1 < min2 ? min1 : min2));
+for (let offset = 0; offset < n; offset++) {
+    let matches = true;
+
+    for (let position = 0; position < n; position++) {
+        const rotatedPosition = (position + offset) % n;
+
+        if (
+            firstCycle[rotatedPosition] !==
+            secondCycle[position]
+        ) {
+            matches = false;
+            break;
         }
     }
+
+    if (matches) {
+        equivalent = true;
+        break;
+    }
 }
+
+console.log(
+    equivalent
+        ? 'CICLO EQUIVALENTE'
+        : 'CICLO DIFERENTE'
+);

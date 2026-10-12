@@ -1,33 +1,26 @@
-import java.math.BigInteger;
-import java.util.Scanner;
-
-public class Main {
-
-  public static void main(String... args) throws Exception{
-    Scanner scanner  = null;
-
-    try{
-      scanner = new Scanner(System.in);
-      
-      // 1行目：データセット数
-      int dataSetNums = scanner.nextInt();
-
-      // データセット単位でループする
-      for(int i = 0; i < dataSetNums; i++){
-        BigInteger firstNumber = scanner.nextBigInteger();
-        BigInteger secondNumber = scanner.nextBigInteger();
-
-        // BigIntegerであれば桁あふれせずに巨大な数値を扱える
-        String result = firstNumber.add(secondNumber).toString();
-        System.out.println(result.length() > 80 ? "overflow" : result);
-      }
-
-    }finally{
-      if(scanner != null){
-        scanner.close();
-      }
+function longestIncreasingSubsequence(numbers) {
+    if (numbers.length === 0) {
+        return 0;
     }
 
-  }
-  
+    const lengths = new Array(numbers.length).fill(1);
+    let maximumLength = 1;
+
+    for (let current = 1; current < numbers.length; current++) {
+        for (let previous = 0; previous < current; previous++) {
+            if (numbers[previous] < numbers[current]) {
+                lengths[current] = Math.max(
+                    lengths[current],
+                    lengths[previous] + 1
+                );
+            }
+        }
+
+        maximumLength = Math.max(maximumLength, lengths[current]);
+    }
+
+    return maximumLength;
 }
+
+const values = [10, 9, 2, 5, 3, 7, 101, 18];
+console.log(longestIncreasingSubsequence(values));

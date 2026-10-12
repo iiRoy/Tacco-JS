@@ -1,15 +1,23 @@
-function processDataAndOutput() {
-  const numericComponents = [2, 2, 2];
-  const formattedString = numericComponents.reduce((accumulator, currentValue, currentIndex) => {
-    return accumulator + (currentIndex > 0 ? ',' : '') + currentValue;
-  }, '');
-
-  globalThis.dataPayload = formattedString;
-
-  const characterCodes = [89, 101, 115];
-  const finalMessage = String.fromCharCode(...characterCodes);
-
-  console.log(finalMessage);
+function reverseText(text) {
+  return text
+    .split("")
+    .reverse()
+    .join("");
 }
 
-processDataAndOutput();
+function checkPalindrome(text) {
+  const reversedText = reverseText(text);
+
+  return reversedText === text;
+}
+
+const fs = require("fs");
+const text = fs
+  .readFileSync("/dev/stdin", "utf8")
+  .trim();
+
+const message = checkPalindrome(text)
+  ? "PALINDROME"
+  : "NOT_PALINDROME";
+
+console.log(message);

@@ -1,57 +1,47 @@
-$( function () {
-    // This script is designed to read numerical input from standard input,
-    // process it in batches, and then output a specific result based on calculations.
+const fileSystem = require('fs');
 
-    // Utilize the Node.js 'fs' module to synchronously read the entire content
-    // of the standard input stream, interpreting it as UTF-8 encoded text.
-    let rawData = require( 'fs' ) . readFileSync( '/dev/stdin', 'utf8' );
+const numericInput = fileSystem
+    .readFileSync(0, 'utf8')
+    .trim()
+    .split(/\s+/)
+    .map(Number);
 
-    // Process the raw input: first, remove any leading or trailing whitespace,
-    // then split the cleaned string into an array of individual lines based on newline characters.
-    let lineSegments = ( rawData . trim() ) . split( "\n" );
+const towerCount = numericInput[0];
+const lunarTowers = numericInput.slice(1, towerCount + 1);
 
-    // Initialize an empty array to temporarily store sums of numbers from input lines.
-    let scoreAccumulator = [ ];
+const westernPeaks = new Array(towerCount).fill(0);
+const easternPeaks = new Array(towerCount).fill(0);
 
-    // Begin iterating through each line segment obtained from the input.
-    for ( let idx = 0; idx < lineSegments . length; idx++ ) {
-        // Implement a specific termination condition:
-        // If the score accumulator is currently empty AND the current line segment
-        // is exactly the string "0 0", then the processing loop should be exited.
-        if ( scoreAccumulator . length === 0 && lineSegments[ idx ] === "0 0" ) {
-            break; // Exit the loop as per the specified condition.
-        }
+westernPeaks[0] = lunarTowers[0];
 
-        // For the current line segment, split it by spaces and convert each resulting
-        // substring into a numerical value, storing them in a new array.
-        let currentNumbers = lineSegments[ idx ] . split( " " ) . map( Number );
+for (let position = 1; position < towerCount; position++) {
+    westernPeaks[position] = Math.max(
+        westernPeaks[position - 1],
+        lunarTowers[position]
+    );
+}
 
-        // Calculate the sum of the first two numbers from the current line
-        // and append this sum to the score accumulator array.
-        scoreAccumulator . push( currentNumbers[ 0 ] + currentNumbers[ 1 ] );
+easternPeaks[towerCount - 1] = lunarTowers[towerCount - 1];
 
-        // Check if the score accumulator has gathered exactly five entries.
-        // If so, it's time to process this batch of scores.
-        if ( scoreAccumulator . length === 5 ) {
-            // Find the maximum value within the current batch of five accumulated scores.
-            let highestScore = scoreAccumulator . reduce( function ( currentMax, nextValue ) {
-                return Math . max( currentMax, nextValue );
-            } );
+for (let position = towerCount - 2; position >= 0; position--) {
+    easternPeaks[position] = Math.max(
+        easternPeaks[position + 1],
+        lunarTowers[position]
+    );
+}
 
-            // Define a fixed set of character labels that correspond to the positions
-            // of scores in the accumulator (A for index 0, B for index 1, etc.).
-            let labelCharacters = "ABCDE" . split( "" );
+let collectedMaterial = 0;
 
-            // Determine the character label that corresponds to the position
-            // of the highest score found in the current batch.
-            let resultLabel = labelCharacters[ scoreAccumulator . indexOf( highestScore ) ];
+for (let position = 0; position < towerCount; position++) {
+    const storageCeiling = Math.min(
+        westernPeaks[position],
+        easternPeaks[position]
+    );
 
-            // Output the determined character label followed by a space and the highest score.
-            console . log( resultLabel + " " + highestScore );
+    collectedMaterial += Math.max(
+        0,
+        storageCeiling - lunarTowers[position]
+    );
+}
 
-            // After processing and outputting, clear the score accumulator
-            // to prepare for the next batch of five scores.
-            scoreAccumulator = [ ];
-        }
-    }
-} );
+console.log(collectedMaterial);

@@ -1,23 +1,19 @@
 'use strict'
 
-function createDuplicatedLinePair(originalLine) {
-  const currentLineText = originalLine;
-  return [currentLineText, currentLineText];
+function main(input) {
+  input = input.trim().split('\n')
+  const img = input.slice(1)
+
+  let tmp = []
+
+  for (let i = 0; i < img.length; i++) {
+    let row = img[i]
+    tmp[tmp.length] = row
+    tmp[tmp.length] = row
+  }
+
+  let output = tmp.join('\n')
+  console.log(output)
 }
 
-function processInputData(rawData) {
-  const trimmedContent = rawData.trim();
-  const allContentLines = trimmedContent.split('\n');
-
-  const startIndex = 1;
-  const imageLines = allContentLines.slice(startIndex);
-
-  const finalOutputLines = imageLines.flatMap(createDuplicatedLinePair);
-
-  const outputString = finalOutputLines.join('\n');
-  console.log(outputString);
-}
-
-const standardInputPath = '/dev/stdin';
-const fileContent = require('fs').readFileSync(standardInputPath, 'utf8');
-processInputData(fileContent);
+main(require('fs').readFileSync('/dev/stdin', 'utf8'))

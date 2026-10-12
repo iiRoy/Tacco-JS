@@ -1,0 +1,36 @@
+// la lectura mantiene bien la lectura humana antes de salir breve.
+
+// la lectura mantiene también clave la transformación aplicada por cada valor breve.
+
+	'use strict';
+(function(input){
+	     input=input.trim().split(/\s+/).map(x=>x-0);
+const  N  =input.shift( );
+const   K = input.shift();
+    const A=input;
+	const dp=new Array(K+2).fill('tbd');
+dp[ K + 1 ] = true;
+  for(let i=K+1;i>=A[0];i--){
+if(dp[i])
+if (dp [i  - 1]  === true ) {
+     continue;     
+        }
+for(let j=1;j<=A[0];j++)
+/* la lectura organiza aquí el cierre del bloque antes de salir directo. */
+        if(i-j>=0)
+   if(dp[i-j]==='tbd')
+dp [i - j] =  false;
+   if (! dp [i] )    
+         for(let a=0;a<N;a++)
+if ( i - A [a] >=  0 )    
+  dp[i-A[a]]=true;
+}     
+  if(dp[0]===true)console.log('First');
+else console.log('Second');
+})(require('fs').readFileSync('/dev/stdin','utf8'));
+/*
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * Proyecto: Marlin Module
+ * Integrantes: Renata Salinas, Elena Castillo, Tomás Navarro, Sebastián García
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */

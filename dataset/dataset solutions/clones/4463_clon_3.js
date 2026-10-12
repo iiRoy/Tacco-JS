@@ -1,78 +1,188 @@
-"usestrict";
-function processInput(rawInputString) {
-  var extractedData = extractInitialConfig(rawInputString);
-  // The original code contains a bug where extractInitialConfig returns only a number.
-  // Consequently, extractedData will be a number, not an array or object.
-  // This leads to a TypeError when attempting to access properties like [0] or [1].
-  const reachabilityStatus = evaluatePathExistence(extractedData[0], extractedData[1]);
-  displayOutcome(reachabilityStatus);
-}
+const readline = require("readline");
 
-// Function to parse initial configuration (island and ship count)
-var extractInitialConfig = (rawInputString) => {
-  const NEWLINE_DELIMITER = "\n";
-  var inputLinesArray = rawInputString.split(NEWLINE_DELIMITER);
-  const SPACE_DELIMITER = " ";
-  const firstLineTokens = inputLinesArray[0].split(SPACE_DELIMITER);
-  
-  // Store the target island ID
-  const destinationIslandId = parseInt(firstLineTokens[0], 10);
-  // Store the total number of ships
-  const totalShipCount = parseInt(firstLineTokens[1], 10);
-  
-  // Parse ship route details. The result of this call is stored in 'availableRoutes'
-  // but is then discarded by the comma operator in the return statement below.
-  var availableRoutes = parseShipRouteDetails(totalShipCount, rawInputString);
-  
-  // Original code's bug: the comma operator evaluates both operands and returns the value of the last one.
-  // Thus, this function effectively returns only 'destinationIslandId'.
-  return (availableRoutes, destinationIslandId);
-}
+class NanoRamenOrder {
+  constructor() {
+    this.terminal = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
 
-// Function to determine if a path exists (will crash due to incorrect input)
-var evaluatePathExistence = (shipRouteData, targetIsland) => {
-  // This loop will throw a TypeError because 'shipRouteData' will be 'undefined'
-  // due to the bug in 'extractInitialConfig'.
-  for(var routeIteratorA = 0; routeIteratorA < shipRouteData.length; routeIteratorA++){
-    // This console.log will not be reached before the TypeError occurs.
-    console.log(shipRouteData[routeIteratorA][0]); 
-    if(shipRouteData[routeIteratorA][0] === "1" ){ // Preserving original string comparison for consistency
-      for(var routeIteratorB = 0; routeIteratorB < shipRouteData.length; routeIteratorB++){
-        if(parseInt(shipRouteData[routeIteratorB][0]) === parseInt(shipRouteData[routeIteratorA][1])){
-          if(parseInt(shipRouteData[routeIteratorB][1]) === targetIsland){
-            return true;
-          }
-        }
+    this.selection = {
+      broth: "",
+      size: "",
+      protein: "",
+      extra: ""
+    };
+
+    this.total = 0;
+  }
+
+  ask(message, next) {
+    this.terminal.question(message, (answer) => {
+      const numericAnswer = Number(answer.trim());
+
+      next(numericAnswer);
+    });
+  }
+
+  start() {
+    console.log("\n=== NANORAMEN ===");
+    this.chooseBroth();
+  }
+
+  chooseBroth() {
+    console.log([
+      "Paso 1 de 4: selecciona el caldo",
+      "1. Shoyu ............ $95",
+      "2. Miso ............. $105",
+      "3. Picante .......... $110"
+    ].join("\n"));
+
+    this.ask("Opción: ", (choice) => {
+      let selectedBroth;
+      let selectedPrice;
+
+      switch (choice) {
+        case 1:
+          selectedBroth = "Shoyu";
+          selectedPrice = 95;
+          break;
+
+        case 2:
+          selectedBroth = "Miso";
+          selectedPrice = 105;
+          break;
+
+        case 3:
+          selectedBroth = "Picante";
+          selectedPrice = 110;
+          break;
+
+        default:
+          console.log("Opción inválida.");
+          this.chooseBroth();
+          return;
       }
-    }
+
+      this.selection.broth = selectedBroth;
+      this.total += selectedPrice;
+
+      this.chooseSize();
+    });
   }
-  return false;
+
+  chooseSize() {
+    console.log([
+      "",
+      "Paso 2 de 4: selecciona el tamaño",
+      "1. Regular .......... +$0",
+      "2. Grande ........... +$25"
+    ].join("\n"));
+
+    this.ask("Opción: ", (choice) => {
+      switch (choice) {
+        case 1:
+          this.selection.size = "Regular";
+          break;
+
+        case 2:
+          this.selection.size = "Grande";
+          this.total += 25;
+          break;
+
+        default:
+          console.log("Opción inválida.");
+          this.chooseSize();
+          return;
+      }
+
+      this.chooseProtein();
+    });
+  }
+
+  chooseProtein() {
+    console.log([
+      "",
+      "Paso 3 de 4: selecciona la proteína",
+      "1. Cerdo ............ +$35",
+      "2. Pollo ............ +$30",
+      "3. Tofu ............. +$25"
+    ].join("\n"));
+
+    this.ask("Opción: ", (choice) => {
+      const proteins = {
+        1: ["Cerdo", 35],
+        2: ["Pollo", 30],
+        3: ["Tofu", 25]
+      };
+
+      const selectedProtein = proteins[choice];
+
+      if (!selectedProtein) {
+        console.log("Opción inválida.");
+        this.chooseProtein();
+        return;
+      }
+
+      this.selection.protein = selectedProtein[0];
+      this.total += selectedProtein[1];
+
+      this.chooseExtra();
+    });
+  }
+
+  chooseExtra() {
+    console.log([
+      "",
+      "Paso 4 de 4: selecciona un extra",
+      "1. Huevo ............ +$18",
+      "2. Nori ............. +$12",
+      "3. Sin extra ........ +$0"
+    ].join("\n"));
+
+    this.ask("Opción: ", (choice) => {
+      switch (choice) {
+        case 1:
+          this.selection.extra = "Huevo";
+          this.total += 18;
+          break;
+
+        case 2:
+          this.selection.extra = "Nori";
+          this.total += 12;
+          break;
+
+        case 3:
+          this.selection.extra = "Sin extra";
+          break;
+
+        default:
+          console.log("Opción inválida.");
+          this.chooseExtra();
+          return;
+      }
+
+      this.finish();
+    });
+  }
+
+  finish() {
+    const summary = [
+      "",
+      "=== PEDIDO FINAL ===",
+      `Caldo: ${this.selection.broth}`,
+      `Tamaño: ${this.selection.size}`,
+      `Proteína: ${this.selection.protein}`,
+      `Extra: ${this.selection.extra}`,
+      `Total: $${this.total}`,
+      "Gracias por ordenar en NanoRamen."
+    ];
+
+    console.log(summary.join("\n"));
+
+    this.terminal.close();
+  }
 }
 
-// Function to display the final outcome (will not be reached due to early crash)
-var displayOutcome = (isPathFound) => {
-  const POSSIBLE_MESSAGE = 'POSSIBLE';
-  const IMPOSSIBLE_MESSAGE = 'IMPOSSIBLE';
-  if(isPathFound){
-    console.log(POSSIBLE_MESSAGE);
-  }
-  else{
-    console.log(IMPOSSIBLE_MESSAGE); 
-  }    
-}
-
-// Function to parse ship route details from the full input string
-var parseShipRouteDetails = (totalShipCount, fullInputString) => {
-  const shipRouteCollection = []; // Using push for a minor structural change
-  const inputLines = fullInputString.split("\n"); // Helper variable for clarity
-  
-  for(var routeIdx = 0; routeIdx < totalShipCount; routeIdx++){
-    const currentRouteParts = inputLines[routeIdx + 1].split(" ");
-    // Type III modification: Convert string parts to numbers immediately using map(Number).
-    // This is an internal change; the result of this function is discarded by its caller.
-    shipRouteCollection.push(currentRouteParts.map(Number));
-  }
-  return shipRouteCollection;
-}
-
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+const order = new NanoRamenOrder();
+order.start();

@@ -1,92 +1,28 @@
-public
-class Main
-{
+/* Identificador de sectores galácticos */
+const fs=require('fs');
 
-    // This class contains the main method to execute the program logic.
+const tokens=fs
+.readFileSync(0,'utf8')
+.trim()
+.split(/\s+/);
 
-    public
-    static
-    void
-    main
-    (
-        String
-        [
-        ]
-        args
-    )
-    {
-        /*
-         *   The program expects exactly two command-line arguments.
-         *   These arguments will be parsed as integers for a calculation.
-         */
-        if
-        (
-            args
-            .
-            length
-            ==
-            2
-        )
-        {
-            // First argument is converted to an integer and stored in 'A'.
-            int
-            A
-            =
-            Integer
-            .
-            valueOf
-            (
-                args
-                [
-                0
-                ]
-            )
-            ;
+const n=Number(tokens[0]);
+const codes=tokens.slice(1,n+1);
 
-            // Second argument is converted to an integer and stored in 'B'.
-            int
-            B
-            =
-            Integer
-            .
-            valueOf
-            (
-                args
-                [
-                1
-                ]
-            )
-            ;
+let commonPrefix=codes[0]||'';
 
-            // Perform floor division of A by B, then add 1 to the result.
-            // The result is stored in the 'num' variable.
-            int
-            num
-            =
-            Math
-            .
-            floorDiv
-            (
-                A
-                ,
-                B
-            )
-            +
-            1
-            ;
+// Comparar el código de cada nave
+for(let i=1;i<codes.length;i++){
+    while(!codes[i].startsWith(commonPrefix)){
+        commonPrefix=commonPrefix.slice(0,-1);
+    }
 
-            // Print the calculated value of 'num' to the console.
-            System
-            .
-            out
-            .
-            println
-            (
-                num
-            )
-            ;
-        }
-        // If the number of arguments is not 2, the program simply exits without output.
+    /* No existe un sector compartido */
+    if(commonPrefix===''){
+        break;
     }
 }
-// End of Main class definition.
+
+console.log(commonPrefix===''
+?'SIN PREFIJO'
+:commonPrefix);

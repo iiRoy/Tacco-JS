@@ -1,141 +1,123 @@
-var inputReader = require('readline').createInterface({
+var read = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
-var dataProcessor;
-var inputLines = [];
-inputReader.on('line', function(currentLine){inputLines.push(currentLine);});
-inputReader.on('close', function(){
-  dataProcessor = initializeProcessor(inputLines);
-  console.error("\n");
-  var startTime = Date.now();
-  executeMainLogic();
-  var endTime = Date.now() - startTime;
-  printDebug("time : " + (endTime) + "ms");
-  printDebug("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+
+var obj;
+var inLine = [];
+
+read.on('line', function(line){
+  inLine[inLine.length] = line;
 });
 
-function createDeepCopy(sourceObject){
-  return JSON.parse(JSON.stringify(sourceObject));
+read.on('close', function(){
+  obj = init(inLine);
+  Main();
+});
+
+function makeClone(obj){
+  return JSON.parse(JSON.stringify(obj));
 }
 
-function readNextInteger(){
-  return convertInput(getNextInputLine(), 1);
-}
+function nextInt(){return myconv(next(),1);}
+function nextStrArray(){return myconv(next(),2);}
+function nextIntArray(){return myconv(next(),4);}
+function nextCharArray(){return myconv(next(),6);}
+function next(){return obj.next();}
+function hasNext(){return obj.hasNext();}
 
-function readNextStringArray(){
-  return convertInput(getNextInputLine(), 2);
-}
-
-function readNextIntegerArray(){
-  return convertInput(getNextInputLine(), 4);
-}
-
-function readNextCharacterArray(){
-  return convertInput(getNextInputLine(), 6);
-}
-
-function getNextInputLine(){
-  return dataProcessor.getNext();
-}
-
-function hasMoreInput(){
-  return dataProcessor.hasMoreInput();
-}
-
-function initializeProcessor(linesArray){  
-  var processorInstance = {
-    lineList : linesArray,
-    currentIndex : 0,
-    maxIndex : linesArray.length,
-    hasMoreInput : function(){
-      return (this.currentIndex < this.maxIndex);
+function init(input){
+  var returnObj = {
+    list : input,
+    index : 0,
+    max : input.length,
+    hasNext : function(){
+      return this.index < this.max;
     },
-    getNext : function(){
-      if(!this.hasMoreInput()){
-        throw "ArrayIndexOutOfBoundsException No more input lines available";
-      } else {
-        var currentInputLine = this.lineList[this.currentIndex];
-        this.currentIndex++;
-        return currentInputLine;
+    next : function(){
+      if(!this.hasNext()){
+        throw "ArrayIndexOutOfBoundsException";
       }
+      var returnInput = this.list[this.index];
+      this.index++;
+      return returnInput;
     }
   };
-  return processorInstance;
+  return returnObj;
 }
 
-function printOutput(outputValue){
-  console.log(outputValue);
+function myout(s){
+  console.log(s);
 }
 
-const utilInspector = require("util").inspect;
-function printDebug(debugMessage){
-  console.error("debug:" + utilInspector(debugMessage, false, null));
+function myerr(s){
+  console.error("debug:" + require("util").inspect(s,false,null));
 }
 
-function convertInput(inputValue, conversionType){
+function myconv(i,no){
   try{
-    switch(conversionType){
+    switch(no){
       case 1:
-        return parseInt(inputValue);
+        return parseInt(i,10);
       case 2:
-        return inputValue.split(" ");
+        return i.split(" ");
       case 4:
-        var stringParts = inputValue.split(" ");
-        return stringParts.map(Number);
+        return i.split(" ").map(function(a){return Number(a);});
       case 6:
-        return inputValue.split("");
+        return i.split("");
       case 7:
-        var charParts = inputValue.split("");
-        return charParts.map(Number);
+        return i.split("").map(function(a){return Number(a);});
       case 8:
-        return inputValue.join(" ");
+        return i.join(" ");
       case 9:
-        return inputValue.join("\n");
+        return i.join("\n");
       case 0:
-        return inputValue.join("");
+        return i.join("");
       default:
-        return inputValue;
+        return i;
     }
   }catch(e){
-    return inputValue;
+    return i;
   }
 }
 
-function executeMainLogic(){
-  var totalElements = readNextInteger();
-  var resultList = [];
-  var loopCounter = 0;
+function Main(){
+	var N = nextInt();
+	var list = [];
 
-  for (; loopCounter < totalElements; loopCounter++){
-    var currentValue = readNextInteger();
-    if(loopCounter === 0){
-      resultList.push(currentValue);
-      continue;
-    }
-    var insertionIndex = findInsertionPoint(resultList, currentValue);
-    if(insertionIndex === resultList.length){
-      resultList.push(currentValue);
-    }else{
-      resultList[insertionIndex] = currentValue;
-    }
-  }
-  printOutput(resultList.length);
+	for(var i = 0; i < N; i++){
+		var a = nextInt();
+
+		if(list.length === 0){
+			list.push(a);
+		}else{
+			var index = binarySearch(list,a);
+
+			if(index >= list.length){
+				list.push(a);
+			}else{
+				list.splice(index,1,a);
+			}
+		}
+	}
+
+	myout(list.length);
 }
 
-function findInsertionPoint(sortedCollection, targetValue){
-  var lowIdx = -1;
-  var highIdx = sortedCollection.length;
-  var midIdx;
+function binarySearch(list,search){
+  var ng = -1;
+  var ok = list.length;
+  var center = 0;
 
-  while((highIdx - lowIdx) > 1){
-    midIdx = Math.floor((highIdx + lowIdx) / 2);
-    var midElement = sortedCollection[midIdx];
-    if(midElement < targetValue){
-       highIdx = midIdx;
+  while(ok - ng > 1){
+    center = ((ok + ng) / 2) | 0;
+
+    if(list[center] < search){
+       ok = center;
     }else{
-       lowIdx = midIdx;
+       ng = center;
     }
   }
-  return highIdx;
+
+  return ok;
 }

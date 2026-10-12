@@ -1,52 +1,81 @@
-var callStackPtr = null,
-    exceptionHandlerCount = 0,
-    lastJsErrorObj = null;
+const fs = require('fs');
 
-// Polyfills for Typed Arrays if not defined
-function ensureTypedArray(typeName, constructor) {
-    if (typeof globalThis[typeName] === "undefined") {
-        globalThis[typeName] = constructor;
+function buildFloatingCityMap() {
+    const input = fs
+        .readFileSync(0, 'utf8')
+        .trim()
+        .split(/\s+/)
+        .map(Number);
+
+    const totalCities = input.shift();
+    const totalBridges = input.shift();
+
+    const routes = Array.from(
+        { length: totalCities + 1 },
+        () => []
+    );
+
+    for (let bridge = 0; bridge < totalBridges; bridge++) {
+        const from = input.shift();
+        const to = input.shift();
+
+        routes[from].push(to);
+        routes[to].push(from);
+    }
+
+    return {
+        totalCities,
+        routes,
+    };
+}
+
+function markConnectedCities(startingCity, routes, marked) {
+    const pendingCities = [startingCity];
+
+    while (pendingCities.length > 0) {
+        const currentCity = pendingCities.pop();
+
+        if (marked[currentCity]) {
+            continue;
+        }
+
+        marked[currentCity] = true;
+
+        for (const adjacentCity of routes[currentCity]) {
+            if (!marked[adjacentCity]) {
+                pendingCities.push(adjacentCity);
+            }
+        }
     }
 }
-ensureTypedArray("Int8Array", Array);
-ensureTypedArray("Int16Array", Array);
-ensureTypedArray("Int32Array", Array);
-ensureTypedArray("Uint8Array", Array);
-ensureTypedArray("Uint16Array", Array);
-ensureTypedArray("Uint32Array", Array);
-ensureTypedArray("Float32Array", Array);
-ensureTypedArray("Float64Array", Array);
 
-// Helper for Nim Type Information (NTI) objects
-function createNimTypeInfo(kind, base = null, node = null, finalizer = null) {
-    return { size: 0, kind: kind, base: base, node: node, finalizer: finalizer };
+function countIndependentNetworks(cityMap) {
+    const marked = new Array(
+        cityMap.totalCities + 1
+    ).fill(false);
+
+    let components = 0;
+    let currentCity = 1;
+
+    while (currentCity <= cityMap.totalCities) {
+        if (!marked[currentCity]) {
+            markConnectedCities(
+                currentCity,
+                cityMap.routes,
+                marked
+            );
+
+            components++;
+        }
+
+        currentCity++;
+    }
+
+    return components;
 }
 
-// Helper for Nim Node Information (NNI) objects
-function createNimNodeInfo(kind, len, sons = []) {
-    return { kind: kind, len: len, offset: 0, typ: null, name: null, sons: sons };
-}
+const floatingCityMap = buildFloatingCityMap();
 
-// Nim Type Information declarations
-var nimTypeInfo3648 = createNimTypeInfo(17);
-var nimTypeInfo3650 = createNimTypeInfo(17);
-var nimTypeInfo37154 = createNimTypeInfo(24);
-var nimTypeInfo3640 = createNimTypeInfo(17);
-var nimTypeInfo3644 = createNimTypeInfo(17);
-var nimTypeInfo3660 = createNimTypeInfo(17);
-var nimTypeInfo104 = createNimTypeInfo(31);
-var nimTypeInfo14009 = createNimTypeInfo(18);
-var nimTypeInfo3608 = createNimTypeInfo(17);
-var nimTypeInfo3711 = createNimTypeInfo(22);
-var nimTypeInfo140 = createNimTypeInfo(29);
-var nimTypeInfo3706 = createNimTypeInfo(22);
-var nimTypeInfo3626 = createNimTypeInfo(17);
-var nimTypeInfo3656 = createNimTypeInfo(17);
-var nimTypeInfo138 = createNimTypeInfo(28);
-var nimTypeInfo37199 = createNimTypeInfo(24, nimTypeInfo138); // Base set here
-
-// Nim Node Information declarations and assignments
-nimTypeInfo3656.node = createNimNodeInfo(2, 0);
-
-nimTypeInfo3706.base = nimTypeInfo3626;
-nimTypeInfo3711
+process.stdout.write(
+    `${countIndependentNetworks(floatingCityMap)}\n`
+);

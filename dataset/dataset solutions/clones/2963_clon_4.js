@@ -1,68 +1,38 @@
-var inputBuffer = [];
-var inputReader = require('readline');
+const fs = require("fs");
 
-var ioInterface = inputReader.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-});
+const data = fs.readFileSync(0, "utf8").trim().split(/\s+/).map(Number);
+let ptr = 0;
 
-ioInterface.on('line', function (lineContent) {
-    inputBuffer.push(lineContent);
-});
+const n = data[ptr++];
+const g = Array.from({ length: n }, () => []);
 
-ioInterface.on('close', function () {
-    var totalNodes = Number(inputBuffer[0]);
-    var rawEdgeInfo = inputBuffer.slice(1).map(entry => entry.split(" ").map(Number));
+for (let i = 0; i < n - 1; i++) {
+  const a = data[ptr++] - 1;
+  const b = data[ptr++] - 1;
+  const w = data[ptr++];
 
-    var graphConnections = Array(totalNodes).fill(null).map(() => []);
+  g[a].push([b, w & 1]);
+  g[b].push([a, w & 1]);
+}
 
-    rawEdgeInfo.forEach(edgeTriplet => {
-        var sourceNode = edgeTriplet[0] - 1;
-        var targetNode = edgeTriplet[1] - 1;
-        var edgeWeight = edgeTriplet[2];
+const color = Array(n).fill(-1);
+const stack = [0];
+color[0] = 0;
 
-        graphConnections[sourceNode].push({ neighbor: targetNode, weight: edgeWeight });
-        graphConnections[targetNode].push({ neighbor: sourceNode, weight: edgeWeight });
-    });
+while (stack.length > 0) {
+  const v = stack.pop();
 
-    function determineNodeColors(nodeCount, connections) {
-        var colorsAssigned = Array(nodeCount).fill(null);
-        var initialVertex = 0;
+  for (const edge of g[v]) {
+    const to = edge[0];
+    const parity = edge[1];
 
-        colorsAssigned[initialVertex] = "0";
-        var traversalQueue = [{ index: initialVertex, color: "0" }];
-        let queueHead = 0;
-
-        while (queueHead < traversalQueue.length) {
-            var currentVertexInfo = traversalQueue[queueHead++];
-            var currentVertexIndex = currentVertexInfo.index;
-            var currentVertexColor = currentVertexInfo.color;
-
-            for (const connectionDetail of connections[currentVertexIndex]) {
-                var adjacentVertexIndex = connectionDetail.neighbor;
-                var connectionWeight = connectionDetail.weight;
-
-                if (colorsAssigned[adjacentVertexIndex] !== null) {
-                    continue;
-                }
-
-                var nextVertexColor;
-                if (connectionWeight % 2 === 0) {
-                    nextVertexColor = currentVertexColor;
-                } else {
-                    nextVertexColor = (currentVertexColor === "0" ? "1" : "0");
-                }
-
-                colorsAssigned[adjacentVertexIndex] = nextVertexColor;
-                traversalQueue.push({ index: adjacentVertexIndex, color: nextVertexColor });
-            }
-        }
-        return colorsAssigned;
+    if (color[to] !== -1) {
+      continue;
     }
 
-    var finalColors = determineNodeColors(totalNodes, graphConnections);
+    color[to] = color[v] ^ parity;
+    stack.push(to);
+  }
+}
 
-    finalColors.forEach(nodeColor => {
-        console.log(nodeColor);
-    });
-});
+console.log(color.join("\n"));

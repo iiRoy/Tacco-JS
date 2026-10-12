@@ -1,26 +1,62 @@
-const retrieveLine = require('readline-sync').question;
+const fs = require('fs');
 
-const convertToInteger = (textualInput) => parseInt(textualInput, 10);
+const packet = fs
+    .readFileSync(0, 'utf8')
+    .trim()
+    .split(/\s+/)
+    .map(Number);
 
-function processInputSeries() {
-    const primaryInputLine = retrieveLine();
-    const primaryValue = convertToInteger(primaryInputLine);
+const shieldAmount = packet.shift();
+const events = [];
 
-    if (primaryValue === 0) {
-        return;
-    }
+for (let shield = 0; shield < shieldAmount; shield++) {
+    const activationPoint = packet.shift();
+    const deactivationPoint = packet.shift();
 
-    const subIterationQuantity = Math.floor(primaryValue / 4);
+    events.push({
+        coordinate: activationPoint,
+        variation: 1,
+    });
 
-    const accumulatedSubtotal = Array.from({ length: subIterationQuantity }).reduce((currentAccumulation) => {
-        const secondaryInputLine = retrieveLine();
-        const secondaryValue = convertToInteger(secondaryInputLine);
-        return currentAccumulation + secondaryValue;
-    }, 0);
-
-    console.log(accumulatedSubtotal);
-
-    processInputSeries();
+    events.push({
+        coordinate: deactivationPoint,
+        variation: -1,
+    });
 }
 
-processInputSeries();
+events.sort(
+    (firstEvent, secondEvent) =>
+        firstEvent.coordinate - secondEvent.coordinate
+);
+
+let activeShields = 0;
+let previousCoordinate = events[0].coordinate;
+let coveredTerritory = 0;
+let eventIndex = 0;
+
+while (eventIndex < events.length) {
+    const currentCoordinate =
+        events[eventIndex].coordinate;
+
+    if (activeShields > 0) {
+        coveredTerritory +=
+            currentCoordinate - previousCoordinate;
+    }
+
+    let simultaneousVariation = 0;
+
+    while (
+        eventIndex < events.length &&
+        events[eventIndex].coordinate === currentCoordinate
+    ) {
+        simultaneousVariation +=
+            events[eventIndex].variation;
+
+        eventIndex++;
+    }
+
+    activeShields += simultaneousVariation;
+    previousCoordinate = currentCoordinate;
+}
+
+console.log(coveredTerritory);

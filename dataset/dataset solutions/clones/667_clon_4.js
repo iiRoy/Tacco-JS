@@ -1,49 +1,39 @@
-const rli = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
+const fs = require('fs');
 
-async function* inputLineStream() {
-  for await (const line of rli) {
-    yield line;
-  }
+const transmission = fs
+    .readFileSync(0, 'utf8')
+    .trim()
+    .split(/\s+/)
+    .map(Number);
+
+const verticalSize = transmission.shift();
+const horizontalSize = transmission.shift();
+
+let coolingBarrier = 0;
+
+const previousRow = new Array(horizontalSize).fill(0);
+
+for (let row = 0; row < verticalSize; row++) {
+    let leftCell = 0;
+
+    for (let column = 0; column < horizontalSize; column++) {
+        const currentCell = transmission.shift();
+
+        if (currentCell === 1) {
+            coolingBarrier += 4;
+
+            if (leftCell === 1) {
+                coolingBarrier -= 2;
+            }
+
+            if (previousRow[column] === 1) {
+                coolingBarrier -= 2;
+            }
+        }
+
+        previousRow[column] = currentCell;
+        leftCell = currentCell;
+    }
 }
 
-const lineProvider = inputLineStream();
-
-const aggregateNumbers = async (countRemaining, currentAccumulation) => {
-  if (countRemaining === 0) {
-    return currentAccumulation;
-  }
-
-  const nextEntry = await lineProvider.next();
-  const numericValue = Number(nextEntry.value);
-
-  return aggregateNumbers(countRemaining - 1, currentAccumulation + numericValue);
-};
-
-const orchestrateProcessing = async () => {
-  const controlEntry = await lineProvider.next();
-
-  if (controlEntry.done) {
-    rli.close();
-    return;
-  }
-
-  const controlValue = Number(controlEntry.value);
-
-  if (controlValue === 0) {
-    rli.close();
-    return;
-  }
-
-  const segmentSize = Math.floor(controlValue / 4);
-
-  const segmentTotal = await aggregateNumbers(segmentSize, 0);
-
-  console.log(segmentTotal);
-
-  await orchestrateProcessing();
-};
-
-orchestrateProcessing();
+console.log(coolingBarrier);

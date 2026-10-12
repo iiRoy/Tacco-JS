@@ -1,4 +1,4 @@
-zfunction Main(input) {
+function Main(input) {
     input = input.trim().split("\n").map(function(x) {
         return x.split(" ")
     });
@@ -9,7 +9,8 @@ zfunction Main(input) {
     var ans = 0;
     var n = (X + Y) / 3;
     var r = (4 * X - 2 * Y) / 6;
-    var r2 = (4 * Y - 2 * X) / 6if (r >= 0 && r2 >= 0 && Number.isInteger(r)) {
+    var r2 = (4 * Y - 2 * X) / 6
+if (r >= 0 && r2 >= 0 && Number.isInteger(r)) {
         var tmp = nCr_amari(n, r, 1, C, C2);
         ans = tmp[0];
     }

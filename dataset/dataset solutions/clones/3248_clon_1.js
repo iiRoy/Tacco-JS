@@ -10,9 +10,9 @@ function main(input) {
    const a = input.split(' ');
 
    if (a[1] == '+') {
-      console.log(parseInt(a[0]) + parseInt(a[  2  ]));
+      console.log(parseInt(a[0]) + parseInt(a[  2  ]))
    } else if (a[1] == '-') {
-      console.log(parseInt(a[0]) - parseInt(a[  2  ]));
+      console.log(parseInt(a[0]) - parseInt(a[  2  ]))
    }
 }
 

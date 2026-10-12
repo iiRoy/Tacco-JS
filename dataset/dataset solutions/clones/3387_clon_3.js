@@ -1,36 +1,33 @@
-function processInputData(rawInputString) {
-    const LINE_DELIMITER = "\n";
-    const FIRST_PLAYER_MESSAGE = "first";
-    const SECOND_PLAYER_MESSAGE = "second";
-
-    let inputLines = rawInputString.split(LINE_DELIMITER);
-    
-    inputLines.shift(); 
-    
-    let numericValues = inputLines.map(Number);
-
-    let calculatedSum = computeArrayTotal(numericValues);
-
-    const isSumOdd = (calculatedSum % 2 !== 0);
-
-    if (isSumOdd) {
-        console.log(FIRST_PLAYER_MESSAGE);
-    } else {
-        console.log(SECOND_PLAYER_MESSAGE);
+function formatLogMessage() {
+    return "first";
+}
+function formatLogMessage1() {
+    return "second";
+}
+function Main(inputValue) {
+    const assignedValue = inputValue.split("\n").map(Number);
+    inputValue = assignedValue;
+    inputValue.shift();
+    const initialValue = arrsum(inputValue);
+    var limitValue = initialValue;
+    const conditionMet = limitValue % 2 == 1;
+    if (conditionMet) {
+        const messageText = formatLogMessage();
+        console.log(messageText);
+    }
+    else {
+        const messageText1 = formatLogMessage1();
+        console.log(messageText1);
     }
 }
-
-const STDIN_FILE_PATH = "/dev/stdin";
-const FILE_ENCODING_TYPE = "utf8";
-
-function readAndTrimStandardInput() {
-    return require("fs").readFileSync(STDIN_FILE_PATH, FILE_ENCODING_TYPE).trim();
-}
-
-processInputData(readAndTrimStandardInput());
-
-function computeArrayTotal(sourceArray) {
-    return sourceArray.reduce((currentTotal, currentValue) => {
-        return currentTotal + currentValue;
-    }, 0);
+Main(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+function arrsum(itemsList) {
+    const initialValue1 = 0;
+    var sumValue = initialValue1;
+    for (var leftFactor = 0, lenValue = itemsList.length; leftFactor < lenValue; ++leftFactor) {
+        sumValue += itemsList[leftFactor];
+    }
+    ;
+    const returnValue = sumValue;
+    return returnValue;
 }

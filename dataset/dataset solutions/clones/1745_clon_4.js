@@ -1,21 +1,13 @@
-function processInputAndConvert(inputString) {
-  let initialValue = parseInt(inputString, 10);
+const fs = require("fs");
 
-  const characterMap = "abcdefghijklmnopqrstuvwhyz";
+let value = Number(fs.readFileSync(0, "utf8").trim());
+const letters = ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","h","y","z"];
+const out = [];
 
-  function generateColumnIdentifier(currentValue) {
-    if (currentValue === 0) {
-      return "";
-    }
-
-    const digitIndex = (currentValue - 1) % 26;
-    const nextValue = Math.floor((currentValue - 1) / 26);
-
-    return generateColumnIdentifier(nextValue) + characterMap[digitIndex];
-  }
-
-  let finalOutput = generateColumnIdentifier(initialValue);
-  console.log(finalOutput);
+while (value !== 0) {
+  value--;
+  out.push(letters[value % 26]);
+  value = Math.floor(value / 26);
 }
 
-processInputAndConvert(require("fs").readFileSync("/dev/stdin", "utf8"));
+process.stdout.write(out.reverse().join(""));

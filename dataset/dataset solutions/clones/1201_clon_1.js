@@ -1,10 +1,48 @@
-'use strict';
+/* Combina dos listas previamente ordenadas. */
+function mezclar ( lista , otra )
+{
+    const resultado=[];
+    let posicionLista=0;
+    let posicionOtra=0;
 
-(function(stdin) {
-    var inputs = stdin.toString().trim();
+    // Compara los primeros elementos pendientes.
+    while(
+        posicionLista<lista.length&&
+        posicionOtra<otra.length
+    )
+    {
+        if(
+            lista[posicionLista]<=
+            otra[posicionOtra]
+        )
+        {
+            resultado.push(
+                lista[posicionLista]
+            );
+            posicionLista++;
+        }
+        else
+        {
+            resultado.push(
+                otra[posicionOtra]
+            );
+            posicionOtra++;
+        }
+    }
 
-    function (x) ;{
-        // This is a comment
-        console.log(Math,pow(03))}
+    // Agrega los elementos restantes de la primera lista.
+    while(posicionLista<lista.length)
+    {
+        resultado.push(lista[posicionLista]);
+        posicionLista++;
+    }
 
-    parseInt(inputs, 10)}(require('fs').readFileSync('/dev/stdin', 'utf8')));
+    // Agrega los elementos restantes de la segunda lista.
+    while(posicionOtra<otra.length)
+    {
+        resultado.push(otra[posicionOtra]);
+        posicionOtra++;
+    }
+
+    return resultado;
+}

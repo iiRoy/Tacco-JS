@@ -1,120 +1,137 @@
-var fileSys = require('fs');
+var fs = require('fs'),
+    input = fs.readFileSync('/dev/stdin', 'utf8').split('\n');
 
-var inputDataSize = fileSys.fstatSync(process.stdin.fd).size;
-var dataBuffer = Buffer.alloc(inputDataSize);
-var actualBytesRead = fileSys.readSync(process.stdin.fd, dataBuffer, 0, inputDataSize, 0);
-var inputLines = dataBuffer.toString('utf8', 0, actualBytesRead).split('\n');
+main();
 
-processInput();
+function UF(n) {
+  var i,
+      par = [],
+      size = [];
 
-function DisjointSet(nodeCount) {
-  const INITIAL_PARENT_VALUE = -1;
-  var parentArray = [];
-
-  for (let idx = 0; idx < nodeCount; idx++) {
-    parentArray[idx] = INITIAL_PARENT_VALUE;
+  for (i = 0; i < n; i++) {
+    par[i] = -1;
+    size[i] = 1;
   }
 
-  function uniteSets(x, y) {
-    let rootX = findRoot(x);
-    let rootY = findRoot(y);
+  function union(x, y) {
+    x = find(x);
+    y = find(y);
 
-    if (rootX !== rootY) {
-      if (parentArray[rootX] < parentArray[rootY]) {
-        parentArray[rootX] += parentArray[rootY];
-        parentArray[rootY] = rootX;
-      } else {
-        parentArray[rootY] += parentArray[rootX];
-        parentArray[rootX] = rootY;
-      }
-      return true;
+    if (x === y) {
+      return false;
     }
-    return false;
+
+    if (par[x] < par[y]) {
+      par[x] += par[y];
+      par[y] = x;
+      size[x] += size[y];
+    } else {
+      par[y] += par[x];
+      par[x] = y;
+      size[y] += size[x];
+    }
+
+    return true;
   }
 
-  function findRoot(x) {
-    if (parentArray[x] < 0) {
+  function find(x) {
+    if (par[x] < 0) {
       return x;
     }
-    let root = findRoot(parentArray[x]);
-    parentArray[x] = root;
-    return root;
+    par[x] = find(par[x]);
+    return par[x];
   }
 
-  function countDistinctSets(activeNodes) {
-    let distinctSetCount = 0;
-    for (let idx = 0; idx < nodeCount; idx++) {
-      if (activeNodes[idx] && parentArray[idx] < 0) {
-        distinctSetCount++;
+  function count(using) {
+    var c = 0;
+    for (var j = 0; j < n; j++) {
+      if (using[j] && find(j) === j) {
+        c++;
       }
     }
-    return distinctSetCount;
+    return c;
   }
 
-  function areConnected(x, y) {
-    return findRoot(x) === findRoot(y);
+  function same(x, y) {
+    var rx = find(x);
+    var ry = find(y);
+    return rx === ry;
   }
 
   return {
-    unite: uniteSets,
-    find: findRoot,
-    count: countDistinctSets,
-    connected: areConnected
+    union: union,
+    find: find,
+    count: count,
+    same: same
   };
 }
 
-function processInput() {
-  const TERMINATION_VALUE = 0;
-  let lineParts,
-      nodeCount,
-      edgeCount,
-      loopVar,
-      nodeInfoList,
-      graphEdges,
-      disjointSetInstance,
-      finalResult,
-      activeNodes;
+function main() {
+  var temp, n, m,
+      i, j,
+      h,
+      edges, e,
+      uf,
+      res,
+      use;
 
-  while (true) {
-    lineParts = inputLines.shift().split(' ');
-    nodeCount = Number(lineParts[0]);
-    edgeCount = Number(lineParts[1]);
+  while (input.length > 0) {
+    temp = input.shift().split(' ');
+    n = +temp[0];
+    m = +temp[1];
 
-    if (nodeCount === TERMINATION_VALUE) {
+    if (n === 0 || isNaN(n)) {
       break;
     }
 
-    nodeInfoList = [];
-    activeNodes = [];
-    for (loopVar = 0; loopVar < nodeCount; loopVar++) {
-      nodeInfoList[loopVar] = {
-        nodeIdentifier: loopVar,
-        daysToActivate: Number(inputLines.shift())
+    h = [];
+    use = [];
+
+    for (i = 0; i < n; i++) {
+      h[i] = {
+        node: i,
+        days: +input.shift()
       };
-      activeNodes[loopVar] = false;
+      use[i] = false;
     }
 
-    graphEdges = [];
-    for (loopVar = 0; loopVar < edgeCount; loopVar++) {
-      lineParts = inputLines.shift().split(' ');
-      graphEdges[loopVar] = [
-        Number(lineParts[0]) - 1,
-        Number(lineParts[1]) - 1,
-        Number(lineParts[2])
-      ];
+    edges = [];
+
+    for (i = 0; i < m; i++) {
+      temp = input.shift().split(' ');
+      e = [temp[0] - 1, temp[1] - 1, temp[2] - 0];
+      edges.push(e);
     }
 
-    nodeInfoList.sort((infoA, infoB) => infoA.daysToActivate - infoB.daysToActivate);
+    h.sort(function (a, b) {
+      if (a.days === b.days) {
+        return a.node - b.node;
+      }
+      return a.days - b.days;
+    });
 
-    graphEdges.sort((edgeA, edgeB) => edgeA[2] - edgeB[2]);
+    edges.sort(function (e1, e2) {
+      if (e1[2] === e2[2]) {
+        return e1[0] - e2[0];
+      }
+      return e1[2] - e2[2];
+    });
 
-    disjointSetInstance = DisjointSet(nodeCount);
-    finalResult = TERMINATION_VALUE;
+    uf = UF(n);
+    res = 0;
 
-    // The original Kruskal-like logic was commented out and thus non-essential
-    // to the observable behavior. It has been removed.
-    // The observable behavior (printing '0') is preserved.
+    for (j = 0; j < 0; j++) {
+      use[j] = true;
+      if (edges[j] && !uf.same(edges[j][0], edges[j][1])) {
+        uf.union(edges[j][0], edges[j][1]);
+        res += edges[j][2];
+      }
+    }
 
-    console.log(finalResult);
+    if (uf.count(use) < 0) {
+      res = -1;
+    }
+
+    console.log(res);
   }
 }

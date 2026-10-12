@@ -6,7 +6,7 @@ function   main(input ) {
 var b = input[0].split(" ")[1]-0;     
  if (b %  a ==  0) console.log (a+ b);
 // the reading keeps the evaluation order at the start clear.
-   elseconsole.log (b  -  a);
+   else console.log (b  -  a);
    }
 
         main(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"))

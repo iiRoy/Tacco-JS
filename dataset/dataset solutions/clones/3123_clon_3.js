@@ -1,56 +1,54 @@
-const checkArrayForDuplicates = (arr) => {
-    const seenElements = new Set();
-    for (const element of arr) {
-        if (seenElements.has(element)) {
-            return true;
-        }
-        seenElements.add(element);
-    }
-    return false;
-};
+function x(s) {
+	var n = s.length;
+	var ans = 0;
+	var chars = s.split("");
+	var count = 0;
 
-function processStringCombinations(inputStr) {
-    const stringLength = inputStr.length;
-    const charArray = inputStr.split("");
-    let uniqueSubsequenceCounter = 0;
+	for (var i = 1; i < Math.pow(2, n); i++) {
+		var pattern = i.toString(2).split("").reverse().map(Number);
 
-    const minCombinationValue = Math.pow(2, stringLength);
-    const maxCombinationValue = Math.pow(2, stringLength + 1) - 1;
+		while (pattern.length < n) {
+			pattern.push(0);
+		}
 
-    for (let combinationIdx = minCombinationValue; combinationIdx <= maxCombinationValue; combinationIdx++) {
-        const binaryRepresentation = combinationIdx.toString(2);
-        const selectionPattern = binaryRepresentation
-            .slice(-stringLength)
-            .split("")
-            .reverse()
-            .map(Number);
+		var result = [];
+		for (var j = 0; j < n; j++) {
+			if (pattern[j] == 1) {
+				result.push(chars[j]);
+			}
+		}
 
-        let currentSubsequence = [];
-        for (let charIdx = 0; charIdx < stringLength; charIdx++) {
-            if (selectionPattern[charIdx] === 1) {
-                currentSubsequence.push(charArray[charIdx]);
-            }
-        }
+		if (result.length == 0) {
+			continue;
+		}
 
-        if (currentSubsequence.length === 0) {
-            continue;
-        }
+		var used = {};
+		var bad = false;
+		for (var k = 0; k < result.length; k++) {
+			if (used[result[k]]) {
+				bad = true;
+				break;
+			}
+			used[result[k]] = true;
+		}
 
-        if (checkArrayForDuplicates(currentSubsequence)) {
-            continue;
-        }
+		if (bad) {
+			continue;
+		}
 
-        uniqueSubsequenceCounter++;
-    }
+		count++;
+		ans = count;
+	}
 
-    return uniqueSubsequenceCounter;
+	return ans;
 }
 
-function executeProgram(programArgs) {
-    const lines = programArgs.split("\n");
-    const targetString = lines[1];
+function main(arg) {
+	arg = arg.trim().split("\n");
+	var N = Number(arg[0]);
+	var S = arg[1];
 
-    console.log(processStringCombinations(targetString));
+	console.log(x(S));
 }
 
-executeProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

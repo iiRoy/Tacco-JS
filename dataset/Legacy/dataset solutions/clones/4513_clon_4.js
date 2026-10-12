@@ -1,0 +1,68 @@
+var read = require('readline').createInterface({
+  input: process.stdin, output: process.stdout
+});
+var obj; var inLine = [];
+read.on('line', function(input){inLine.push(input);});
+read.on('close', function(){
+  obj = init(inLine);
+  console.error('\n↑入力 ↓出力');
+  Main();
+});
+function makeClone(obj){return (obj instanceof Set) ? new Set(Array.from(obj)) : JSON.parse(JSON.stringify(obj));}
+function nextInt(){return myconv(next(),1);} function nextStrArray(){return myconv(next(),2);}
+function nextIntArray(){return myconv(next(),4);} function nextCharArray(){return myconv(next(),6);}
+function next(){return obj.next();} function hasNext(){return obj.hasNext();}
+function init(input){  
+  return {
+    list : input, index : 0, max : input.length,
+    hasNext : function(){return (this.index < this.max);},
+    next : function(){if(this.hasNext()){return this.list[this.index++];}else{throw 'ArrayIndexOutOfBoundsException ‚There is no more input';}}
+  };
+}
+function myout(s){console.log(s);}
+function myerr(s){console.error('debug:' + require('util').inspect(s,false,null));}
+
+function myconv(inputItem, conversionKey) {
+  const conversionMap = {
+    1: (val) => parseInt(val),
+    2: (val) => val.split(' '),
+    4: (val) => val.split(' ').map(Number),
+    6: (val) => val.split(''),
+    7: (val) => val.split('').map(Number),
+    8: (val) => val.join(' '),
+    9: (val) => val.join('\n'),
+    0: (val) => val.join('')
+  };
+  try {
+    const converter = conversionMap[conversionKey];
+    return converter ? converter(inputItem) : inputItem;
+  } catch (e) {
+    return inputItem;
+  }
+}
+
+const calculateFactorialMod = (limit, modulus) => {
+  return Array.from({ length: limit }, (_, idx) => idx + 1)
+              .reduce((acc, current) => (acc * current) % modulus, 1);
+};
+
+function Main(){
+  const inputNumbers = nextIntArray();
+  const firstNum = inputNumbers[0];
+  const secondNum = inputNumbers[1];
+  const modulusValue = 1000000007;
+
+  if (Math.abs(firstNum - secondNum) >= 2) {
+    myout(0);
+  } else {
+    const factorialFirst = calculateFactorialMod(firstNum, modulusValue);
+    const factorialSecond = calculateFactorialMod(secondNum, modulusValue);
+
+    let combinedProduct = (factorialFirst * factorialSecond) % modulusValue;
+
+    if (firstNum === secondNum) {
+      combinedProduct = (combinedProduct * 2) % modulusValue;
+    }
+    myout(combinedProduct);
+  }
+}

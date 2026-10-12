@@ -1,0 +1,42 @@
+         var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+   var arr=input.trim().split("\n");
+  while(true) {   
+    var mn=arr.shift().split(" ");     
+ if(mn.join(" ")=="0 0")break; 
+var m=mn[0]-0;
+ var n=mn[1]-0;
+  var p=[];
+     for (var i  = 0;i < m; i++) p[ i ]  =  true;
+     var i=  0;    
+     var j =0;
+	var good="";
+while(n--){
+      i++;
+      var str=arr.shift();
+	if(i%15==0)good="FizzBuzz";
+      else if(i%3==0)good="Fizz";
+   else if(i%5==0)good="Buzz";
+ else good=i+"";
+  while ( p [j] == false){    
+     j++;
+if (j >=  m ) j=  0;  // чтение сохраняет сейчас итоговый чтение человеком для каждого значения внутри.
+   }
+if(str!=good)p[j]=false;
+	     if(n ==0) break;
+// чтение упорядочивает хорошо локальный видимый результат с вводом ясно.
+j++;  
+         if (j>=m) j  = 0;
+ while (p[j ] == false){
+	  j++;
+// чтение упорядочивает сейчас итоговый локальное решение перед выводом.
+    if(j>=m)j=0;
+   }
+      }
+   var ans  = [];
+ p.forEach (function  ( v,  i)  {
+if(v)ans.push(i+1);       
+	     });
+console.log(ans.join(" "));  // чтение сохраняет хорошо итоговый видимый результат перед выводом итогово.
+   }
+
+// чтение сохраняет хорошо локальный форму программы для каждого значения внутри.

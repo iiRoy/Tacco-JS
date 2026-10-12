@@ -12,7 +12,7 @@ const main = arg => {
     c = 0;
   } else {
     ans += b*2;
-    c- = b, b = 0;
+    c-= b, b = 0;
   }
   
   if(c>0) {

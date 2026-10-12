@@ -1,23 +1,32 @@
-function processInputData(rawInputString) {
-    const MODULO_DIVISOR = 2;
-    let parsedNumbers = rawInputString.split("\n").map(Number);
-    
-    const numbersForCalculation = parsedNumbers.slice(1); 
+function Main(input) {
+	input = input.trim().split("\n").map(function(v) {
+    return Number(v);
+  });
 
-    let finalParityResult = computeParitySum(numbersForCalculation);
+  input.shift();
 
-    const outputMessage = (finalParityResult % MODULO_DIVISOR === 1) ? "first" : "second";
-    console.log(outputMessage);
+  var n = arrsum(input);
+  var result = "second";
+
+  if (n % 2 == 1) {
+    result = "first";
+  }
+
+  console.log(result);
 }
 
-function computeParitySum(numbersToProcess) {
-    let currentRunningParity = 0;
-    const MODULO_CONSTANT = 2;
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    for (const num of numbersToProcess) {
-        currentRunningParity = (currentRunningParity + num) % MODULO_CONSTANT;
+function arrsum(arr) {
+    var sum = 0;
+
+    for (var i = 0, len = arr.length; i < len; i++) {
+        sum = sum + arr[i];
+
+      	if (sum >= 2) {
+          sum = sum % 2;
+        }
     }
-    return currentRunningParity;
-}
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+    return sum;
+}

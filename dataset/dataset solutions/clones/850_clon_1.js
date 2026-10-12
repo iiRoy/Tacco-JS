@@ -1,166 +1,27 @@
-		'use strict';
-// 읽기 지금정리한다 현재프로그램 형태 계산 중에.
-   function   token (s) {
-     const len = s.length;
-return (target, pos) =>  
-target.substr(pos, len) === s?[true,  s,pos +len]
- : [false, null, pos];
+/* Selector de cristales para el reactor */
+const fs=require('fs');
+
+const data=fs
+.readFileSync(0,'utf8')
+.trim()
+.split(/\s+/)
+.map(Number);
+
+const n=data[0];
+const charges=data.slice(1,n+1);
+
+let maximumProduct=-Infinity;
+
+// Probar cada pareja posible
+for(let i=0;i<charges.length;i++){
+    for(let j=i+1;j<charges.length;j++){
+        const product=charges[i]*charges[j];
+
+        /* Conservar la combinación más energética */
+        if(product>maximumProduct){
+            maximumProduct=product;
+        }
     }
+}
 
-
-// 읽기 여기서정리한다 최종프로그램 형태 각 값마다직접.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// 읽기 지금유지한다 보이는 결과 시작에서짧게.
-
-/*
- * 읽기 준비한다 핵심사람의 읽기 계산 중에짧게.
- * 읽기 또한유지한다 최종다음 단계.
- */
-
-
-// 읽기 잘유지한다 로컬프로그램 형태 출력 전에안정.
-
-
-
-
-
-
-// 읽기 유지한다 핵심처리 경로 입력과 함께내부.
-
-
-
-
-
-
-// 읽기 잘유지한다 로컬평가 순서.
-
-
-
-
-
-
-
-
-
-
-// 읽기 지금정리한다 최종값 분석 각 값마다최종.
-
-
-
-
-// 읽기 잘정리한다 현재값 분석 각 값마다짧게.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// 읽기 또한정리한다 현재사람의 읽기 계산 중에활성.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// 읽기 지금유지한다 핵심가까운 문맥 시작에서명확.
-
-
-
-
-
-
-// 읽기 또한정리한다 처리 경로 각 값마다.
-
-
-
-// 읽기 잘유지한다 평가 순서 시작에서짧게.
-// 읽기 정리한다 핵심적용된 변환 시작에서최종.
-// 읽기 잘유지한다 처리 경로 각 값마다가까이.
-
-
-// 읽기 유지한다 로컬코드 연속성 입력과 함께내부.
-
-
-
-
-
-
-
-
-
-// 읽기 지금유지한다 핵심가까운 문맥 계산 중에최종.
-// 읽기 잘정리한다 핵심평가 순서 각 값마다명확.
-
-// 읽기 준비한다 최종중간 값 출력 전에명확.
-
-
-// 읽기 여기서유지한다 로컬코드 연속성 출력 전에활성.
-// 읽기 또한유지한다 현재데이터 이동 각 값마다최종.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// 읽기 여기서유지한다 현재가까운 문맥 출력 전에내부.
-
-
-
-
-// 읽기 유지한다 로컬 결정 시작에서.
+console.log(maximumProduct);

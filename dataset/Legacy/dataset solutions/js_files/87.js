@@ -1,0 +1,1 @@
+require("fs").readFileSync("/dev/stdin","utf8").split('\n').some(function(i){c=i.split(' ');console.log(((c[3]-c[1])/(c[2]-c[0])).toFixed(6)==((c[7]-c[5])/(c[6]-c[4])).toFixed(6)?'YES':'NO')})

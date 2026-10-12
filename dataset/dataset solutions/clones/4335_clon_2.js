@@ -1,8 +1,47 @@
-// This is a block comment detailing the purpose of the first statement.
-// It involves assigning a specific textual sequence to a designated storage element.
-let     dataContainer    =    "2 2 2"    ; // The string literal represents some numerical data.
+function selectCreatures(selectedOption) {
+  let creatures;
 
+  switch (selectedOption) {
+    case 1:
+      creatures = ["Charmander", "Vulpix", "Growlithe"];
+      break;
 
-// The second statement executes a procedure to communicate a status.
-// A dedicated helper function is invoked to relay a short affirmative response.
-displayOutput (  "yes"  )  ; // This function call outputs the string 'yes'.
+    case 2:
+      creatures = ["Squirtle", "Psyduck", "Totodile"];
+      break;
+
+    case 3:
+      creatures = ["Bulbasaur", "Oddish", "Chikorita"];
+      break;
+
+    case 4:
+      creatures = ["Pikachu", "Magnemite", "Electabuzz"];
+      break;
+
+    default:
+      creatures = [];
+  }
+
+  if (creatures.length === 0) {
+    return "OPCION_INVALIDA";
+  }
+
+  return creatures.join("\n");
+}
+
+const options = [
+  "1. Fuego",
+  "2. Agua",
+  "3. Planta",
+  "4. Electrico"
+];
+
+console.log(options.join("\n"));
+
+const selectedOption = Number(
+  require("fs")
+    .readFileSync("/dev/stdin", "utf8")
+    .trim()
+);
+
+console.log(selectCreatures(selectedOption));

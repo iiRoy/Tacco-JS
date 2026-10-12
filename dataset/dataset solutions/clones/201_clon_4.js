@@ -1,8 +1,28 @@
-const fileSystem = require("fs");
-const inputContent = fileSystem.readFileSync("/dev/stdin", "utf8");
-const replacementMap = {
-  "apple": "peach",
-  "peach": "apple"
+const adjacentNotes = {
+  "DO":   ["DO#", "RE", "RE#"],
+  "DO#":  ["RE", "RE#", "MI"],
+  "RE":   ["RE#", "MI", "FA"],
+  "RE#":  ["MI", "FA", "FA#"],
+  "MI":   ["FA", "FA#", "SOL"],
+  "FA":   ["FA#", "SOL", "SOL#"],
+  "FA#":  ["SOL", "SOL#", "LA"],
+  "SOL":  ["SOL#", "LA", "LA#"],
+  "SOL#": ["LA", "LA#", "SI"],
+  "LA":   ["LA#", "SI", "DO"],
+  "LA#":  ["SI", "DO", "DO#"],
+  "SI":   ["DO", "DO#", "RE"]
 };
-const transformedContent = inputContent.replace(/(apple|peach)/g, (match) => replacementMap[match]);
-console.log(transformedContent);
+
+const fs = require("fs");
+const requestedNote = fs
+  .readFileSync("/dev/stdin", "utf8")
+  .trim()
+  .toUpperCase();
+
+const result = adjacentNotes[requestedNote];
+
+if (result) {
+  console.log(result.join(" "));
+} else {
+  console.log("NOT_FOUND");
+}

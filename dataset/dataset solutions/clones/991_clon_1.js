@@ -1,57 +1,35 @@
-/* This script reads two numbers from standard input,
- * then calculates and prints their Greatest Common Divisor (GCD)
- * using the Euclidean algorithm.
- */
+/* Calculadora de pantallas solares orbitales */
+const fs=require('fs');
 
-const   config   =   {
-  input   :   '/dev/stdin',   // Specifies the standard input file path
-  newline :   '\n'            // Defines the newline character for splitting input
-}   ;
+const data=fs
+.readFileSync(0,'utf8')
+.trim()
+.split(/\s+/)
+.map(Number);
 
+const n=data[0];
+const towerHeights=data.slice(1,n+1);
 
+let maximumArea=0;
 
-// Read the first line from input, parse it, and assign to x
-const   x   =   require   (   'fs'   )
-  .   readFileSync   (   config.input   ,   'utf8'   )
-  .   split   (   config.newline   )   ;
+// Probar cada posible inicio de la pantalla
+for(let left=0;left<towerHeights.length;left++){
+    let minimumHeight=Infinity;
 
-// Read the second line from input, parse it, and assign to y
-const   y   =   require   (   'fs'   )
-  .   readFileSync   (   config.input   ,   'utf8'   )
-  .   split   (   config.newline   )   ;
+    for(let right=left;
+        right<towerHeights.length;
+        right++){
+        minimumHeight=Math.min(
+        minimumHeight,
+        towerHeights[right]
+        );
 
+        const width=right-left+1;
+        const area=minimumHeight*width;
 
-// Declare a temporary variable z, which will be used for calculations
-const   z   ;
-
-
-
-// Ensure that x is greater than or equal to y before starting the GCD calculation
-if   (   x   <   y   )
-{
-  // Swap x and y using the temporary variable z
-  z   =   x   ;   // Store the value of x in z
-  x   =   y   ;   // Assign the value of y to x
-  y   =   z   ;   // Assign the original value of x (from z) to y
+        /* Conservar la superficie más grande */
+        maximumArea=Math.max(maximumArea,area);
+    }
 }
 
-
-
-// Begin the Euclidean algorithm to find the GCD
-while   (   (   z   =   x   %   y   )   !=   0   )
-{
-  /*
-   * In each iteration:
-   * 1. Calculate the remainder of x divided by y, and assign it to z.
-   * 2. If the remainder (z) is not zero, continue.
-   * 3. Update x to the current value of y.
-   * 4. Update y to the current value of z (the remainder).
-   */
-  x   =   y   ;
-  y   =   z   ;
-}
-
-
-// After the loop, y holds the Greatest Common Divisor (GCD)
-// Print the result to the console
-console   .   log   (   y   )   ;
+console.log(maximumArea);

@@ -1,30 +1,32 @@
-'use strict';
+const fs = require("fs");
 
-const ProcessInput = (rawInput) => {
-    const components = rawInput.trim().split(' ').map(Number);
-    let [firstVal, secondVal, thirdVal] = components;
+const nums = fs.readFileSync(0, "utf8").trim().split(/\s+/).map(Number);
 
-    if (firstVal === secondVal && secondVal === thirdVal && firstVal % 2 === 0) {
-        console.log(-1);
-        return -1;
+const a = nums[0];
+const b = nums[1];
+const c = nums[2];
+
+if (a === b && b === c && a % 2 === 0) {
+  console.log(-1);
+} else {
+  let x = Math.abs(a - b);
+  let y = Math.abs(b - c);
+  let z = Math.abs(c - a);
+
+  function twos(n) {
+    if (n === 0) return 60;
+
+    let cnt = 0;
+    while (n % 2 === 0) {
+      n = n / 2;
+      cnt++;
     }
+    return cnt;
+  }
 
-    let iterationCount = 0;
-    let currentSet = [firstVal, secondVal, thirdVal];
-
-    while (currentSet.every(n => n % 2 === 0)) {
-        const [aPrev, bPrev, cPrev] = currentSet;
-
-        const aNext = (bPrev + cPrev) / 2;
-        const bNext = (aPrev + cPrev) / 2;
-        const cNext = (aPrev + bPrev) / 2;
-
-        currentSet = [aNext, bNext, cNext];
-        iterationCount++;
-    }
-
-    console.log(iterationCount);
-    return iterationCount;
-};
-
-ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+  if (a % 2 !== 0 || b % 2 !== 0 || c % 2 !== 0) {
+    console.log(0);
+  } else {
+    console.log(Math.min(twos(x), twos(y), twos(z)));
+  }
+}

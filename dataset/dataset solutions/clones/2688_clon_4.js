@@ -1,50 +1,31 @@
-"use strict";
+const fs = require("fs");
 
-const dataAcquisition = (sourceText) => sourceText.trim().split("\n")[0];
+const s = fs.readFileSync(0, "utf8").trim();
+const n = s.length;
+const result = Array(n).fill(0);
 
-const determineFinalPositions = (inputString) => {
-    const characterSequence = inputString.split("");
-    const sequenceDimension = characterSequence.length;
-    const outcomeArray = new Array(sequenceDimension).fill(0);
+let i = 0;
 
-    const boundaryMarkers = [];
-    for (let currentIdx = 0; currentIdx < sequenceDimension - 1; currentIdx++) {
-        if (characterSequence[currentIdx] === "R" && characterSequence[currentIdx + 1] === "L") {
-            boundaryMarkers.push(currentIdx);
-        }
-    }
+while (i < n) {
+  let rStart = i;
 
-    for (const transitionPoint of boundaryMarkers) {
-        let rightwardParticleCount = 0;
-        for (let scanIdx = transitionPoint; scanIdx >= 0; scanIdx--) {
-            if (characterSequence[scanIdx] === "R") {
-                rightwardParticleCount++;
-            } else {
-                break;
-            }
-        }
+  while (i < n && s[i] === "R") {
+    i++;
+  }
 
-        let leftwardParticleCount = 0;
-        for (let scanIdx = transitionPoint + 1; scanIdx < sequenceDimension; scanIdx++) {
-            if (characterSequence[scanIdx] === "L") {
-                leftwardParticleCount++;
-            } else {
-                break;
-            }
-        }
+  let boundary = i - 1;
+  let rCount = i - rStart;
 
-        const totalParticles = rightwardParticleCount + leftwardParticleCount;
+  let lStart = i;
 
-        if (totalParticles % 2 === 0) {
-            outcomeArray[transitionPoint] = totalParticles / 2;
-            outcomeArray[transitionPoint + 1] = totalParticles / 2;
-        } else {
-            outcomeArray[transitionPoint] = Math.ceil(leftwardParticleCount / 2) + 1;
-            outcomeArray[transitionPoint + 1] = Math.ceil(rightwardParticleCount / 2) + 1;
-        }
-    }
+  while (i < n && s[i] === "L") {
+    i++;
+  }
 
-    console.log(outcomeArray.join(" "));
-};
+  let lCount = i - lStart;
 
-determineFinalPositions(dataAcquisition(require("fs").readFileSync("/dev/stdin", "utf8")));
+  result[boundary] = Math.ceil(rCount / 2) + Math.floor(lCount / 2);
+  result[boundary + 1] = Math.floor(rCount / 2) + Math.ceil(lCount / 2);
+}
+
+process.stdout.write(result.join(" "));

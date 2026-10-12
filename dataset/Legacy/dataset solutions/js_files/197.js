@@ -1,0 +1,1 @@
+n='\n',for(w=x=y=z=0,i=require("fs").readFileSync("/dev/stdin","utf8").split(/\s|,/),c=j=-1;c=i[j+=2];)console.log(j,c),c=='A'?w++:c=='B'?x++:c=='O'?z++:y++;console.log(w+n+x+n+y+n+z)

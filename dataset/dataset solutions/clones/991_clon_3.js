@@ -1,51 +1,63 @@
-const applicationConfiguration = {
-    sourceInputPath: '/dev/stdin',
-    lineBreakCharacter: '\n'
-};
+const fs = require('fs');
 
-const fileSystemUtility = require('fs');
+function receiveTowerBlueprint() {
+    const measurements = fs
+        .readFileSync(0, 'utf8')
+        .trim()
+        .split(/\s+/)
+        .map(Number);
 
-// Helper function to read raw content from a specified path
-const retrieveRawFileContent = (pathIdentifier) => {
-    return fileSystemUtility.readFileSync(pathIdentifier, 'utf8');
-};
+    const declaredTowers = measurements.shift();
 
-// Helper function to split content into an array of lines
-const processContentToLines = (contentString, delimiterChar) => {
-    return contentString.split(delimiterChar);
-};
-
-let primaryDataSet = processContentToLines(
-    retrieveRawFileContent(applicationConfiguration.sourceInputPath),
-    applicationConfiguration.lineBreakCharacter
-);
-
-let secondaryDataSet = processContentToLines(
-    retrieveRawFileContent(applicationConfiguration.sourceInputPath),
-    applicationConfiguration.lineBreakCharacter
-);
-
-let interimValue; // Declared with 'let' to allow reassignment, assuming original 'const z;' was a typo for 'let z;'
-
-// Conditional reordering of data sets to ensure primaryDataSet is not less than secondaryDataSet
-if (primaryDataSet < secondaryDataSet) {
-    const swapTemporaryHolder = primaryDataSet;
-    primaryDataSet = secondaryDataSet;
-    secondaryDataSet = swapTemporaryHolder;
+    return measurements.slice(0, declaredTowers);
 }
 
-// Iterative calculation using a do-while loop structure for Euclidean algorithm
-// Note: Due to the nature of input reading from /dev/stdin twice,
-// primaryDataSet and secondaryDataSet will likely be multi-element arrays,
-// leading to NaN results in modulo operations and an infinite loop.
-let currentModuloResult;
-do {
-    currentModuloResult = primaryDataSet % secondaryDataSet; // This operation will likely yield NaN
-    if (currentModuloResult === 0) { // NaN === 0 evaluates to false, so this break condition will not be met
-        break;
-    }
-    primaryDataSet = secondaryDataSet;
-    secondaryDataSet = currentModuloResult;
-} while (true); // This loop will continue indefinitely as the break condition is never met
+function calculateBestPanelFrom(towers, beginning) {
+    let shortestTower = towers[beginning];
+    let bestLocalArea = 0;
+    let ending = beginning;
 
-console.log(secondaryDataSet);
+    while (ending < towers.length) {
+        if (towers[ending] < shortestTower) {
+            shortestTower = towers[ending];
+        }
+
+        const occupiedTowers = ending - beginning + 1;
+        const candidateArea =
+            shortestTower * occupiedTowers;
+
+        if (candidateArea > bestLocalArea) {
+            bestLocalArea = candidateArea;
+        }
+
+        ending++;
+    }
+
+    return bestLocalArea;
+}
+
+function determinePanelArea(towers) {
+    let answer = 0;
+    let beginning = 0;
+
+    while (beginning < towers.length) {
+        const localArea = calculateBestPanelFrom(
+            towers,
+            beginning
+        );
+
+        if (localArea > answer) {
+            answer = localArea;
+        }
+
+        beginning++;
+    }
+
+    return answer;
+}
+
+const orbitalTowers = receiveTowerBlueprint();
+
+process.stdout.write(
+    `${determinePanelArea(orbitalTowers)}\n`
+);

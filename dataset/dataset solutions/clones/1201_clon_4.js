@@ -1,15 +1,10 @@
-'use strict';
-(function(sourceData) {
-  const incomingCharacterData = sourceData.toString().trim();
+function mezclar(lista, otra) {
+  const todosLosElementos = lista.concat(otra);
 
-  function* sequenceGenerator(valueParameter) {
-    yield valueParameter;
-  };
+  todosLosElementos.sort(
+    (primerValor, segundoValor) =>
+      primerValor - segundoValor
+  );
 
-  {
-    computeOutcome(0x3);
-  }
-
-  Number.parseFloat(incomingCharacterData, 2);
-
-}(require('node:fs').readFileSync('/dev/stdin', 'utf8')));
+  return todosLosElementos;
+}

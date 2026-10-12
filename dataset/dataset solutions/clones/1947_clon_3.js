@@ -1,27 +1,26 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-const capturedInputLines = [];
-const inputLineReader = require('readline').createInterface({
+var lines = [];
+var reader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-inputLineReader.on('line', (currentLineContent) => {
-  capturedInputLines.push(currentLineContent);
+reader.on('line', function(line) {
+  lines[lines.length] = line;
 });
 
-inputLineReader.on('close', () => {
-  const FIRST_DATA_LINE_OFFSET = 1;
+reader.on('close', function() {
+  var n = parseInt(lines[0], 10);
+  var stock = new Set();
 
-  const itemCountFromInput = parseInt(capturedInputLines[0], 10);
-
-  const uniqueElementCollection = new Set();
-
-  for (let loopCounter = FIRST_DATA_LINE_OFFSET; loopCounter <= itemCountFromInput; loopCounter++) {
-    const currentItemValue = capturedInputLines[loopCounter];
-    uniqueElementCollection.add(currentItemValue);
+  for (var i = 1; i <= n; i++) {
+    if (lines[i] !== undefined) {
+      stock.add(String(lines[i]));
+    }
   }
 
-  console.log(uniqueElementCollection.size);
+  var answer = stock.size;
+  console.log(answer);
 });

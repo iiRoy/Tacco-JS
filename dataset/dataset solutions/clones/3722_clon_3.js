@@ -1,27 +1,31 @@
-"use strict"
-
-function processInput(rawInputString) {
-    const firstLineContent = rawInputString.split('\n')[0];
-    let initialValue = Number(firstLineContent);
-
-    let workingNumber = initialValue;
-    let totalDigitSum = 0;
-
-    // Iterate through the digits of the number
-    // This loop structure is a common alternative for digit extraction
-    while (workingNumber > 0) {
-        const currentDigit = workingNumber % 10;
-        totalDigitSum += currentDigit;
-        workingNumber = Math.floor(workingNumber / 10);
-    }
-
-    // For the case where initialValue is 0, totalDigitSum will be 0.
-    // 0 % 0 results in NaN. The comparison (NaN === 0) is false,
-    // which correctly leads to 'No', matching the original behavior.
-    const isDivisible = (initialValue % totalDigitSum === 0);
-    const outputMessage = isDivisible ? 'Yes' : 'No';
-
-    console.log(outputMessage);
+"use strict";
+function formatLogMessage() {
+    return 'Yes';
 }
-
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+function formatLogMessage1() {
+    return 'No';
+}
+function main(inputValue) {
+    const initialValue = Number(inputValue.split('\n')[0]);
+    let numValue = initialValue;
+    const initialValue1 = numValue;
+    let tmpValue = initialValue1;
+    const initialValue2 = 0;
+    let sumValue = initialValue2;
+    for (let leftFactor = 1; leftFactor <= inputValue.length; leftFactor++) {
+        sumValue += tmpValue % 10; //一の位
+        const assignedValue = Math.floor(tmpValue / 10) //一桁削る
+        ;
+        tmpValue = assignedValue;
+    }
+    const conditionMet = numValue % sumValue == 0;
+    if (conditionMet) {
+        const messageText = formatLogMessage();
+        console.log(messageText);
+    }
+    else {
+        const messageText1 = formatLogMessage1();
+        console.log(messageText1);
+    }
+}
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));
