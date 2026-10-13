@@ -1,3 +1,11 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Rodrigo López Guerra
+ * SPDX-FileCopyrightText: 2026 Abigail Pérez García
+ * SPDX-FileCopyrightText: 2026 Fernando Maggi Llerandi
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 // -- Example path: ../dataset/'dataset general'/js_files/2.js
 // -- Execution command: node Tokenizer-Tokenizr.js ../dataset/'dataset general'/js_files/2.js
 

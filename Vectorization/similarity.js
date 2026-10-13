@@ -1,3 +1,11 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Rodrigo López Guerra
+ * SPDX-FileCopyrightText: 2026 Abigail Pérez García
+ * SPDX-FileCopyrightText: 2026 Fernando Maggi Llerandi
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -45,6 +53,8 @@ const SELECTED_METRIC_NAMES = [
   "CFG_NodeCountRatio",
   "CFG_EdgeCountRatio",
   "CFG_CyclomaticRatio",
+
+  "ExactTokenSequence",
 ];
 
 function normalizePath(filePath) {
@@ -124,6 +134,62 @@ function safeTokenizeFile(filePath) {
 
 function tokenizeAsSequence(filePath, mode = "type") {
   return safeTokenizeFile(filePath).map((token) => tokenKey(token, mode));
+}
+
+function exactLexicalTokenSequence(filePath) {
+  const source = fs.readFileSync(filePath, "utf8");
+
+  try {
+    const tokenizer = acorn.tokenizer(source, {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      allowHashBang: true,
+      allowAwaitOutsideFunction: true,
+    });
+
+    const sequence = [];
+
+    while (true) {
+      const token = tokenizer.getToken();
+
+      if (token.type.label === "eof") {
+        break;
+      }
+
+      // Acorn omite comentarios y espacios. Se conserva el texto exacto
+      // de cada token para detectar identificadores, literales, paréntesis,
+      // operadores, puntos y comas, etc.
+      const rawToken = source.slice(token.start, token.end);
+
+      sequence.push(`${token.type.label}:${rawToken}`);
+    }
+
+    return sequence;
+  } catch {
+    return null;
+  }
+}
+
+function exactTokenSequence(fileA, fileB) {
+  const sequenceA = exactLexicalTokenSequence(fileA);
+  const sequenceB = exactLexicalTokenSequence(fileB);
+
+  // Si algún archivo no se puede tokenizar, no se declara Type I.
+  if (sequenceA === null || sequenceB === null) {
+    return 0;
+  }
+
+  if (sequenceA.length !== sequenceB.length) {
+    return 0;
+  }
+
+  for (let index = 0; index < sequenceA.length; index += 1) {
+    if (sequenceA[index] !== sequenceB[index]) {
+      return 0;
+    }
+  }
+
+  return 1;
 }
 
 function sequenceToSet(sequence) {
@@ -676,6 +742,10 @@ function compareTwoFiles(fileA, fileB, options = {}) {
     ...selectedIRFeatures(normalizedFileA, normalizedFileB),
     ...extractNormAstFeatures(normalizedFileA, normalizedFileB),
     ...extractCfgFeatures(normalizedFileA, normalizedFileB),
+    ExactTokenSequence: exactTokenSequence(
+      normalizedFileA,
+      normalizedFileB,
+    ),
   };
 
   const metrics = {
@@ -819,4 +889,5 @@ export {
   ngramSimilarities,
   lengthRatio,
   vocabularyRatio,
+  exactTokenSequence,
 };

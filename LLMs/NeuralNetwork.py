@@ -1,3 +1,9 @@
+# SPDX-FileCopyrightText: 2026 Rodrigo López Guerra
+# SPDX-FileCopyrightText: 2026 Abigail Pérez García
+# SPDX-FileCopyrightText: 2026 Fernando Maggi Llerandi
+#
+# SPDX-License-Identifier: Apache-2.0
+
 #python NeuralNetwork.py --rebuild-cache --save-cache
 import argparse
 import csv
@@ -83,6 +89,7 @@ METRIC_NAMES = [
     "CFG_NodeCountRatio",
     "CFG_EdgeCountRatio",
     "CFG_CyclomaticRatio",
+    "ExactTokenSequence",
 ]
 
 # Keep empty for the official baseline. You can edit this list to experiment

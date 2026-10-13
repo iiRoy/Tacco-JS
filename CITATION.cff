@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use Tacco JS in your research, please cite this software."
+type: software
+title: "Tacco JS"
+
+authors:
+  - family-names: "López Guerra"
+    given-names: "Rodrigo"
+  - family-names: "Pérez García"
+    given-names: "Abigail"
+  - family-names: "Maggi Llerandi"
+    given-names: "Fernando"
+
+version: "1.5.0"
+date-released: "2026-10-12"
+
+repository-code: "https://github.com/iiRoy/Tacco-JS"
+license: "Apache-2.0"
