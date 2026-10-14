@@ -26,9 +26,11 @@ from sklearn.preprocessing import StandardScaler
 # Paths
 # ------------------------------------------------------------
 
-COMPARE_JS = Path("../Vectorization/compare.js")
-BASE_DIR = Path("../dataset/dataset solutions/js_files")
-CLONES_DIR = Path("../dataset/dataset solutions/clones")
+PROJECT_DIR = Path(__file__).resolve().parent.parent
+
+COMPARE_JS = PROJECT_DIR / "Vectorization" / "compare.js"
+BASE_DIR   = PROJECT_DIR / "dataset" / "dataset solutions" / "js_files"
+CLONES_DIR = PROJECT_DIR / "dataset" / "dataset solutions" / "clones"
 
 CACHE_DIR = Path(".cache")
 FEATURE_CACHE = CACHE_DIR / "mlp_features_cache.npz"

@@ -9,16 +9,16 @@
 // -- Example path: ../dataset/'dataset general'/js_files/2.js
 // -- Execution command: node Tokenizer-Tokenizr.js ../dataset/'dataset general'/js_files/2.js
 
-import fs   from "fs";
-import path from "path";
-import { createHash } from "crypto";
-import { createRequire } from "module";
-import { fileURLToPath } from "url";
-
-import { Tokenizr } from "tokenizr";
+import fs from "node:fs";
+import path from "node:path";
+import { createHash } from "node:crypto";
+import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
-const acorn   = require("acorn");
+const acorn = require("acorn");
+
+const { Tokenizr } = require("tokenizr");
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SECTION 1 — TOKENIZER
