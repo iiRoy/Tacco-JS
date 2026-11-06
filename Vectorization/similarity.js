@@ -1,9 +1,17 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Rodrigo López Guerra
+ * SPDX-FileCopyrightText: 2026 Abigail Pérez García
+ * SPDX-FileCopyrightText: 2026 Fernando Maggi Llerandi
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { tokenizeFile } from "../Tokenizer/Tokenizer-Parser.js";
-import { buildIRFromFile, extractIRFeatures, IR_FEATURE_NAMES } from "../Tokenizer/ir.js";
+import { buildIRFromFile, extractIRFeatures, buildCFGFromIR, IR_FEATURE_NAMES } from "../Tokenizer/ir.js";
 
 const require = createRequire(import.meta.url);
 const acorn = require("acorn");
@@ -45,6 +53,8 @@ const SELECTED_METRIC_NAMES = [
   "CFG_NodeCountRatio",
   "CFG_EdgeCountRatio",
   "CFG_CyclomaticRatio",
+
+  "ExactTokenSequence",
 ];
 
 function normalizePath(filePath) {
@@ -124,6 +134,62 @@ function safeTokenizeFile(filePath) {
 
 function tokenizeAsSequence(filePath, mode = "type") {
   return safeTokenizeFile(filePath).map((token) => tokenKey(token, mode));
+}
+
+function exactLexicalTokenSequence(filePath) {
+  const source = fs.readFileSync(filePath, "utf8");
+
+  try {
+    const tokenizer = acorn.tokenizer(source, {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      allowHashBang: true,
+      allowAwaitOutsideFunction: true,
+    });
+
+    const sequence = [];
+
+    while (true) {
+      const token = tokenizer.getToken();
+
+      if (token.type.label === "eof") {
+        break;
+      }
+
+      // Acorn omite comentarios y espacios. Se conserva el texto exacto
+      // de cada token para detectar identificadores, literales, paréntesis,
+      // operadores, puntos y comas, etc.
+      const rawToken = source.slice(token.start, token.end);
+
+      sequence.push(`${token.type.label}:${rawToken}`);
+    }
+
+    return sequence;
+  } catch {
+    return null;
+  }
+}
+
+function exactTokenSequence(fileA, fileB) {
+  const sequenceA = exactLexicalTokenSequence(fileA);
+  const sequenceB = exactLexicalTokenSequence(fileB);
+
+  // Si algún archivo no se puede tokenizar, no se declara Type I.
+  if (sequenceA === null || sequenceB === null) {
+    return 0;
+  }
+
+  if (sequenceA.length !== sequenceB.length) {
+    return 0;
+  }
+
+  for (let index = 0; index < sequenceA.length; index += 1) {
+    if (sequenceA[index] !== sequenceB[index]) {
+      return 0;
+    }
+  }
+
+  return 1;
 }
 
 function sequenceToSet(sequence) {
@@ -527,14 +593,15 @@ function normalizedAstSequence(filePath) {
 
   return sequence;
 }
-
-function estimateCfgStats(filePath) {
+function estimateCfgStatsFromAst(filePath) {
   let ast;
 
   try {
     ast = parseJsAst(filePath);
   } catch (error) {
+    console.warn(`[AST → tokens] ${filePath}: ${error.message}`);
     const fallbackTokens = tokenizeAsSequence(filePath, "type");
+
     return {
       nodeCount: fallbackTokens.length,
       edgeCount: Math.max(0, fallbackTokens.length - 1),
@@ -567,7 +634,9 @@ function estimateCfgStats(filePath) {
         break;
 
       case "LogicalExpression":
-        if (node.operator === "&&" || node.operator === "||") decisionCount += 1;
+        if (node.operator === "&&" || node.operator === "||") {
+          decisionCount += 1;
+        }
         nodeCount += 1;
         edgeCount += 1;
         break;
@@ -597,7 +666,6 @@ function estimateCfgStats(filePath) {
           nodeCount += 1;
           edgeCount += 1;
         }
-        break;
     }
   });
 
@@ -606,6 +674,34 @@ function estimateCfgStats(filePath) {
     edgeCount,
     cyclomaticComplexity: decisionCount + 1,
   };
+}
+
+function estimateCfgStats(filePath) {
+  try {
+    const ir = buildIRFromFile(filePath);
+    const cfg = buildCFGFromIR(ir);
+
+    if (
+      !cfg ||
+      !Array.isArray(cfg.nodes) ||
+      !cfg.nodes.every((block) => Array.isArray(block.successors))
+    ) {
+      throw new Error("La construcción devolvió un CFG inválido");
+    }
+
+    const nodeCount = cfg.nodes.length;
+    const edgeCount = cfg.nodes.reduce(
+      (total, block) => total + block.successors.length,
+      0,
+    );
+    const cyclomaticComplexity =
+      nodeCount === 0 ? 0 : Math.max(1, edgeCount - nodeCount + 2);
+
+    return { nodeCount, edgeCount, cyclomaticComplexity };
+  } catch (error) {
+    console.warn(`[CFG → AST] ${filePath}: ${error.message}`);
+    return estimateCfgStatsFromAst(filePath);
+  }
 }
 
 function extractNormAstFeatures(fileA, fileB) {
@@ -676,6 +772,10 @@ function compareTwoFiles(fileA, fileB, options = {}) {
     ...selectedIRFeatures(normalizedFileA, normalizedFileB),
     ...extractNormAstFeatures(normalizedFileA, normalizedFileB),
     ...extractCfgFeatures(normalizedFileA, normalizedFileB),
+    ExactTokenSequence: exactTokenSequence(
+      normalizedFileA,
+      normalizedFileB,
+    ),
   };
 
   const metrics = {
@@ -819,4 +919,5 @@ export {
   ngramSimilarities,
   lengthRatio,
   vocabularyRatio,
+  exactTokenSequence,
 };

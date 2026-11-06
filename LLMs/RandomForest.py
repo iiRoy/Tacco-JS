@@ -1,3 +1,9 @@
+# SPDX-FileCopyrightText: 2026 Rodrigo López Guerra
+# SPDX-FileCopyrightText: 2026 Abigail Pérez García
+# SPDX-FileCopyrightText: 2026 Fernando Maggi Llerandi
+#
+# SPDX-License-Identifier: Apache-2.0
+
 import json
 import random
 import subprocess
@@ -26,9 +32,11 @@ warnings.filterwarnings(
 #  Paths
 # ─────────────────────────────────────────────
 
-COMPARE_JS = Path("../Vectorization/compare.js")
-BASE_DIR   = Path("../dataset/dataset solutions/js_files")
-CLONES_DIR = Path("../dataset/dataset solutions/clones")
+PROJECT_DIR = Path(__file__).resolve().parent.parent
+
+COMPARE_JS = PROJECT_DIR / "Vectorization" / "compare.js"
+BASE_DIR   = PROJECT_DIR / "dataset" / "dataset solutions" / "js_files"
+CLONES_DIR = PROJECT_DIR / "dataset" / "dataset solutions" / "clones"
 
 CACHE_DIR     = Path(".cache")
 FEATURE_CACHE = CACHE_DIR / "rf_features_cache.npz"
@@ -78,6 +86,7 @@ METRIC_NAMES = [
     "CFG_NodeCountRatio",
     "CFG_EdgeCountRatio",
     "CFG_CyclomaticRatio",
+    "ExactTokenSequence",
 ]
 
 
@@ -122,6 +131,7 @@ def compare_with_js(file_a: Path, file_b: Path) -> list:
     try:
         result = subprocess.run(
             ["node", str(COMPARE_JS), str(file_a), str(file_b), str(COMPARE_MODE)],
+            cwd=str(PROJECT_DIR),
             capture_output=True, text=True,
             encoding="utf-8", errors="ignore", timeout=30,
         )

@@ -1,3 +1,11 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Rodrigo López Guerra
+ * SPDX-FileCopyrightText: 2026 Abigail Pérez García
+ * SPDX-FileCopyrightText: 2026 Fernando Maggi Llerandi
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 /**
  *
  * IR grammar (text representation)

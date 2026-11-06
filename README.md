@@ -460,4 +460,14 @@ Tecnológico de Monterrey — School of Engineering and Sciences.
 
 ## License
 
-This project is licensed under the MIT License. See [`LICENSE`](LICENSE) for details.
+The original Tacco JS source code is licensed under the Apache License, Version 2.0. See LICENSE for details.
+
+Copyright © 2026 Rodrigo López Guerra, Abigail Pérez García, and Fernando Maggi Llerandi, subject to the ownership of their respective contributions.
+
+The following materials may be governed by separate terms:
+
+Datasets: See Dataset Provenance and Licensing.
+
+Logos and visual assets: Copyright © 2026 Rodrigo López Guerra. All rights reserved. See Assets.
+
+Third-party dependencies and materials: Subject to their respective licenses and attribution requirements.

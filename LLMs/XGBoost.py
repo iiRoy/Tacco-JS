@@ -1,3 +1,9 @@
+# SPDX-FileCopyrightText: 2026 Rodrigo López Guerra
+# SPDX-FileCopyrightText: 2026 Abigail Pérez García
+# SPDX-FileCopyrightText: 2026 Fernando Maggi Llerandi
+#
+# SPDX-License-Identifier: Apache-2.0
+
 #python XGBoost.py --rebuild-cache --save-cache
 import argparse
 import csv
@@ -23,9 +29,11 @@ except ImportError:  # handled in main/train with a clear message
 # Paths
 # ------------------------------------------------------------
 
-COMPARE_JS = Path("../Vectorization/compare.js")
-BASE_DIR = Path("../dataset/dataset solutions/js_files")
-CLONES_DIR = Path("../dataset/dataset solutions/clones")
+PROJECT_DIR = Path(__file__).resolve().parent.parent
+
+COMPARE_JS = PROJECT_DIR / "Vectorization" / "compare.js"
+BASE_DIR   = PROJECT_DIR / "dataset" / "dataset solutions" / "js_files"
+CLONES_DIR = PROJECT_DIR / "dataset" / "dataset solutions" / "clones"
 
 CACHE_DIR = Path(".cache")
 FEATURE_CACHE = CACHE_DIR / "xgb_features_cache.npz"
@@ -89,6 +97,7 @@ METRIC_NAMES = [
     "CFG_NodeCountRatio",
     "CFG_EdgeCountRatio",
     "CFG_CyclomaticRatio",
+    "ExactTokenSequence",
 ]
 
 # Keep empty for the official baseline. You can edit this list to experiment
@@ -448,8 +457,8 @@ def train_and_evaluate(
         num_class=4,
         eval_metric="mlogloss",
         random_state=RANDOM_STATE,
-        verbosity=0,
-        n_jobs=-1,
+        verbosity=1,
+        n_jobs=1,
         tree_method="hist",
     )
 
@@ -457,7 +466,12 @@ def train_and_evaluate(
     print(f"  TRAINING  (XGBoost  n_estimators={XGB_N_ESTIMATORS}  - {n_feats} features  4 classes)")
     print("=" * 78)
     t0 = time.perf_counter()
-    clf.fit(X_train, y_train_xgb, eval_set=[(X_test, y_test_xgb)], verbose=False)
+    clf.fit(
+        X_train,
+        y_train_xgb,
+        eval_set=[(X_test, y_test_xgb)],
+        verbose=25
+    )
     print(f"  Training completed in {time.perf_counter() - t0:.2f}s.")
 
     script_dir = Path(__file__).resolve().parent
